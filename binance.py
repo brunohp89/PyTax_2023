@@ -5,8 +5,6 @@ import pandas as pd
 import tax_library as tx
 
 
-first_use = True
-
 bin_prices = Prices()
 
 
@@ -210,8 +208,8 @@ def get_transactions_df(raw=False, card_transactions=False):
 
         for asset in set(final_df["Coin"]):
             final_df.loc[final_df["Coin"] == asset, :] = final_df.loc[
-                final_df["Coin"] == asset, :
-            ].drop_duplicates(subset=["UTC_Time", "Change"])
+                                                         final_df["Coin"] == asset, :
+                                                         ].drop_duplicates(subset=["UTC_Time", "Change"])
 
         final_df.loc[
             final_df["Operation"] == "Small Assets Exchange BNB", "Operation"
@@ -364,8 +362,8 @@ def get_transactions_df(raw=False, card_transactions=False):
                 elif final_df.loc[trade_time, :].shape[0] > 3:
                     group_trx = (
                         temp_df[["Change", "Operation", "Coin"]]
-                        .groupby(by=["Operation", "Coin"])
-                        .sum()
+                            .groupby(by=["Operation", "Coin"])
+                            .sum()
                     )
                     operations = [operation for operation, coin in group_trx.index]
                     if "Fee" not in operations:
@@ -423,9 +421,9 @@ def get_transactions_df(raw=False, card_transactions=False):
         for i, rec in enumerate(rec_trx):
             if rec == auto_df.shape[0]:
                 break
-            temp_df = auto_df.iloc[rec : rec_trx[i + 1], :]
+            temp_df = auto_df.iloc[rec: rec_trx[i + 1], :]
             in_val = -temp_df.loc[temp_df["Change"] < 0, "Change"].values[0] / (
-                temp_df.shape[0] - 1
+                    temp_df.shape[0] - 1
             )
             in_coin = temp_df.loc[temp_df["Change"] < 0, "Coin"].values[0]
             for k in range(temp_df.loc[temp_df["Change"] > 0].shape[0]):
@@ -656,11 +654,11 @@ def get_binance_card_spending(total_spending=False, year=None):
 def get_eur_invested(year=None):
     all_trx = get_transactions_df(raw=True)
     if year is not None:
-        all_trx=all_trx[all_trx.index.year==year]
+        all_trx = all_trx[all_trx.index.year == year]
         return -all_trx.loc[np.logical_and(
             all_trx["Coin"] == "EUR",
-            ~all_trx["Operation"].isin(["Deposit", "Withdraw", "Fiat Deposit","Binance Card Spending"])),
-            "Change"
+            ~all_trx["Operation"].isin(["Deposit", "Withdraw", "Fiat Deposit", "Binance Card Spending"])),
+                            "Change"
         ].sum()
 
     all_eur_in = all_trx.loc[

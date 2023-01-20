@@ -66,7 +66,7 @@ class Prices:
                     self.call_prices(symbol)
                 else:
                     if not force_update:
-                        print("Prices already updated")
+                        print(f"{symbol.upper()} prices already updated")
                 if force_update:
                     print(f"Getting prices for {symbol.upper()}")
                     self.call_prices(symbol)
