@@ -1,0 +1,5 @@
+binance
+exchange_rates.pickle
+prices.pickle
+.idea/
+__pycache__
