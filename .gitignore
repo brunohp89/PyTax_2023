@@ -1,5 +1,6 @@
 binance
 exchange_rates.pickle
 prices.pickle
+coinbase
 .idea/
 __pycache__

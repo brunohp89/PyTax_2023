@@ -208,8 +208,8 @@ def get_transactions_df(raw=False, card_transactions=False):
 
         for asset in set(final_df["Coin"]):
             final_df.loc[final_df["Coin"] == asset, :] = final_df.loc[
-                                                         final_df["Coin"] == asset, :
-                                                         ].drop_duplicates(subset=["UTC_Time", "Change"])
+                final_df["Coin"] == asset, :
+            ].drop_duplicates(subset=["UTC_Time", "Change"])
 
         final_df.loc[
             final_df["Operation"] == "Small Assets Exchange BNB", "Operation"
@@ -268,6 +268,11 @@ def get_transactions_df(raw=False, card_transactions=False):
         not_considered = [
             k for k in set(final_df["Operation"]) if k not in operations_col
         ]
+
+        if len(not_considered) > 0:
+            print(
+                f'WARNING BINANCE: columns {", ".join(not_considered)} are not being included in the calculation'
+            )
 
         for j in final_df["UTC_Time"]:
             tx.str_to_datetime(j)
@@ -362,8 +367,8 @@ def get_transactions_df(raw=False, card_transactions=False):
                 elif final_df.loc[trade_time, :].shape[0] > 3:
                     group_trx = (
                         temp_df[["Change", "Operation", "Coin"]]
-                            .groupby(by=["Operation", "Coin"])
-                            .sum()
+                        .groupby(by=["Operation", "Coin"])
+                        .sum()
                     )
                     operations = [operation for operation, coin in group_trx.index]
                     if "Fee" not in operations:
@@ -421,9 +426,9 @@ def get_transactions_df(raw=False, card_transactions=False):
         for i, rec in enumerate(rec_trx):
             if rec == auto_df.shape[0]:
                 break
-            temp_df = auto_df.iloc[rec: rec_trx[i + 1], :]
+            temp_df = auto_df.iloc[rec : rec_trx[i + 1], :]
             in_val = -temp_df.loc[temp_df["Change"] < 0, "Change"].values[0] / (
-                    temp_df.shape[0] - 1
+                temp_df.shape[0] - 1
             )
             in_coin = temp_df.loc[temp_df["Change"] < 0, "Coin"].values[0]
             for k in range(temp_df.loc[temp_df["Change"] > 0].shape[0]):
@@ -451,6 +456,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         trades_df["Fiat Price"] = None
         trades_df["Tag"] = tag
         trades_df["Source"] = "Binance"
+        trades_df["Notes"] = ""
         trades_df.index = timestamp
         trades_df.sort_index(inplace=True)
 
@@ -508,6 +514,7 @@ def get_transactions_df(raw=False, card_transactions=False):
     withdraw_df["Source"] = "Binance"
 
     movements_df = pd.concat([deposits_df, withdraw_df])
+    movements_df["Notes"] = ""
     del withdraw_df, deposits_df
 
     # Tutte le operazioni reward
@@ -531,6 +538,10 @@ def get_transactions_df(raw=False, card_transactions=False):
             ]
         )
     ].copy()
+    cashback["Notes"] = ""
+
+    cashback.loc[cashback["Operation"] == "Card Cashback", "Notes"] = "Cashback"
+
     cashback["From"] = None
     cashback["To"] = None
     cashback["From Coin"] = None
@@ -556,6 +567,7 @@ def get_transactions_df(raw=False, card_transactions=False):
 
     tokens = vout["From Coin"].tolist()
     tokens.extend(vout["To Coin"].tolist())
+    tokens.extend(vout["Fee Coin"].tolist())
     tokens = [
         x.upper() for x in list(set(tokens)) if x not in tx.fiat_list and not pd.isna(x)
     ]
@@ -655,10 +667,15 @@ def get_eur_invested(year=None):
     all_trx = get_transactions_df(raw=True)
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
-        return -all_trx.loc[np.logical_and(
-            all_trx["Coin"] == "EUR",
-            ~all_trx["Operation"].isin(["Deposit", "Withdraw", "Fiat Deposit", "Binance Card Spending"])),
-                            "Change"
+        all_trx = all_trx[all_trx["Change"] < 0]
+        return -all_trx.loc[
+            np.logical_and(
+                all_trx["Coin"] == "EUR",
+                ~all_trx["Operation"].isin(
+                    ["Deposit", "Withdraw", "Fiat Deposit", "Binance Card Spending"]
+                ),
+            ),
+            "Change",
         ].sum()
 
     all_eur_in = all_trx.loc[
