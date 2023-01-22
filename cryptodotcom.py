@@ -1,11 +1,8 @@
 import os
-import datetime as dt
 import numpy as np
 import pandas as pd
 import tax_library as tx
 from PricesClass import Prices
-
-# Aggiunte transazioni finte di -34.92794 USDC e -0.00335 per appianare delle discrepanze non individuuate dal file/codice
 
 
 def get_transactions_df(raw=False, return_fiat=False):
@@ -123,12 +120,22 @@ def get_transactions_df(raw=False, return_fiat=False):
             final_df["Transaction Description"] == "Recurring", "From Amount"
         ] *= -1
 
+        final_df["Notes"] = ""
+
         final_df.loc[
-            final_df["Tag"].str.contains("cashback|Rebate"), "Tag"
-        ] = "Cashback"
+            final_df["Transaction Description"].isin(
+                ["Card Cashback", "Card Rebate: Spotify", "Card Cashback Reversal"]
+            ),
+            "Tag",
+        ] = "Reward"
+
         final_df.loc[
-            final_df["Transaction Description"].str.contains("Rebate"), "Tag"
+            final_df["Transaction Description"].isin(
+                ["Card Cashback", "Card Rebate: Spotify", "Card Cashback Reversal"]
+            ),
+            "Notes",
         ] = "Cashback"
+
         final_df.loc[
             final_df["Tag"].str.contains("earn|supercharger"), "Tag"
         ] = "Interest"
@@ -146,27 +153,10 @@ def get_transactions_df(raw=False, return_fiat=False):
             inplace=True,
         )
 
-        final_df = final_df.reindex(
-            columns=[
-                "From",
-                "To",
-                "From Coin",
-                "From Amount",
-                "To Coin",
-                "To Amount",
-                "Fiat Price",
-                "Fiat",
-                "Fee",
-                "Fee Coin",
-                "Tag",
-            ]
-        )
-
         final_df.loc[
             np.logical_and(final_df["From"] == "", final_df["From Amount"] < 0), "From"
         ] = "Crypto.com"
         final_df["Source"] = "Crypto.com"
-        final_df["Notes"] = ""
 
         # Aggiunta fee che non è nello storico
         final_df.loc[final_df.index == "2022-08-08 18:21:40", "Fee"] = -0.00335
@@ -181,6 +171,26 @@ def get_transactions_df(raw=False, return_fiat=False):
             final_df["From Amount"] > 0, ["From Amount", "From Coin"]
         ] = sub2.values
 
+        final_df["Fee Fiat"] = None
+        final_df = tx.price_transactions_df(final_df, Prices())
+        final_df = final_df[
+            [
+                "From",
+                "To",
+                "From Coin",
+                "To Coin",
+                "From Amount",
+                "To Amount",
+                "Fee",
+                "Fee Coin",
+                "Fee Fiat",
+                "Fiat",
+                "Fiat Price",
+                "Tag",
+                "Source",
+                "Notes",
+            ]
+        ]
         return final_df
 
 

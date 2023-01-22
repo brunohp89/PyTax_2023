@@ -161,8 +161,15 @@ def get_transactions_df(raw=False):
             inplace=True,
         )
 
-        final_df = final_df.reindex(
-            columns=[
+        final_df.loc[final_df["From"] == "XYO", "Tag"] = "COIN"
+        final_df.loc[final_df["Tag"] == "COIN", "Tag"] = "Reward"
+        final_df.loc[final_df["From"] == "COIN", "Tag"] = "Reward"
+        final_df["Notes"] = ""
+
+        final_df["Fee Fiat"] = final_df["Fee"]
+
+        final_df = final_df[
+            [
                 "From",
                 "To",
                 "From Coin",
@@ -171,20 +178,14 @@ def get_transactions_df(raw=False):
                 "To Amount",
                 "Fee",
                 "Fee Coin",
+                "Fee Fiat",
                 "Fiat",
                 "Fiat Price",
                 "Tag",
                 "Source",
-                "Fee Fiat",
+                "Notes",
             ]
-        )
-
-        final_df.loc[final_df["From"] == "XYO", "Tag"] = "COIN"
-        final_df.loc[final_df["Tag"] == "COIN", "Tag"] = "Reward"
-        final_df.loc[final_df["From"] == "COIN", "Tag"] = "Reward"
-        final_df["Notes"] = ""
-
-        final_df["Fee Fiat"] = final_df["Fee"]
+        ]
 
         return final_df
 

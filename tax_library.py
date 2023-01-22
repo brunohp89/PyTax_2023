@@ -278,36 +278,36 @@ def calcolo_giacenza_media(df):
 
 
 def join_dfs(**df_to_join):
-    vout = pd.DataFrame()
+    df_in = pd.DataFrame()
     for df in df_to_join:
         if df_to_join[df].shape[0] == 0:
             continue
         df_to_join[df].columns = [p.upper() for p in df_to_join[df].columns]
-        if vout.shape[0] == 0:
-            vout = df_to_join[df].copy()
+        if df_in.shape[0] == 0:
+            df_in = df_to_join[df].copy()
         else:
-            vout = vout.join(df_to_join[df], rsuffix="--R").copy()
-        vout.iloc[0, :].fillna(0, inplace=True)
-        vout.ffill(inplace=True)
+            df_in = df_in.join(df_to_join[df], rsuffix="--R").copy()
+        df_in.iloc[0, :].fillna(0, inplace=True)
+        df_in.ffill(inplace=True)
 
-    vout.columns = [l.replace("--R", "") for l in vout.columns]
-    vout = vout.groupby(by=vout.columns, axis=1).sum()
-    return vout
+    df_in.columns = [l.replace("--R", "") for l in df_in.columns]
+    df_in = df_in.groupby(by=df_in.columns, axis=1).sum()
+    return df_in
 
 
 def concat_dfs(**df_to_concat):
-    vout = pd.DataFrame()
+    df_in = pd.DataFrame()
     for df in df_to_concat:
         if df_to_concat[df].shape[0] == 0:
             continue
-        if vout.shape[0] == 0:
-            vout = df_to_concat[df].copy()
+        if df_in.shape[0] == 0:
+            df_in = df_to_concat[df].copy()
         else:
-            if vout.shape[1] != df_to_concat[df].shape[1]:
+            if df_in.shape[1] != df_to_concat[df].shape[1]:
                 print(f"{df} --> PROBLEMI DI DIMENSIONE")
-            vout = pd.concat([vout, df_to_concat[df]], axis=0)
-    vout.sort_index(inplace=True)
-    return vout
+            df_in = pd.concat([df_in, df_to_concat[df]], axis=0)
+    df_in.sort_index(inplace=True)
+    return df_in
 
 
 def get_primo_ultimo_giorno(df, tax_year):
@@ -379,12 +379,7 @@ def prepare_df(df_in: pd.DataFrame, year_sel=None, cummulative=True):
 
     return temp_df
 
-
-def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None, income=False):
-
-    if income:
-        transactions = transactions[transactions["Tag"] == "Reward"]
-
+def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None):
     # Obtain daily balances in native cryptocurrency
     from_df = transactions[["From Coin", "From Amount"]].copy()
     to_df = transactions[["To Coin", "To Amount"]].copy()
@@ -422,3 +417,141 @@ def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None, income
 
     temp_df.fillna(0, inplace=True)
     return prepare_df(temp_df, year_sel, cummulative)
+
+
+def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False):
+    tokens = df_in["Fee Coin"].tolist()
+    if not only_fee:
+        tokens.extend(df_in["To Coin"].tolist())
+        tokens.extend(df_in["From Coin"].tolist())
+    tokens = [
+        x.upper() for x in list(set(tokens)) if x not in fiat_list and not pd.isna(x)
+    ]
+
+    prices_in.get_prices(tokens)
+    prices_in.convert_prices(tokens, "EUR")
+
+    if not only_fee:
+        df_in.loc[df_in["From Coin"] == "EUR", "Fiat Price"] = df_in.loc[
+            df_in["From Coin"] == "EUR", "From Amount"
+        ]
+        df_in.loc[df_in["To Coin"] == "EUR", "Fiat Price"] = df_in.loc[
+            df_in["To Coin"] == "EUR", "To Amount"
+        ]
+
+    for tok in tokens:
+        if not only_fee:
+            temp_df = df_in[
+                np.logical_and(df_in["From Coin"] == tok, pd.isna(df_in["Fiat Price"]))
+            ]
+            if temp_df.shape[0] > 0:
+                temp_df.index = [k.date() for k in temp_df.index]
+                fiat_prices = pd.merge(
+                    prices_in.prices["Prices"]["EUR"][tok.upper()][
+                        ["Open", "Close", "High", "Low"]
+                    ],
+                    temp_df["From Amount"],
+                    how="right",
+                    left_index=True,
+                    right_index=True,
+                )
+                fiat_prices = list(
+                    fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["From Amount"]
+                )
+                df_in.loc[
+                    np.logical_and(
+                        df_in["From Coin"] == tok, pd.isna(df_in["Fiat Price"])
+                    ),
+                    "Fiat Price",
+                ] = fiat_prices
+
+            temp_df = df_in[
+                np.logical_and(df_in["To Coin"] == tok, pd.isna(df_in["Fiat Price"]))
+            ]
+            if temp_df.shape[0] > 0:
+                temp_df.index = [k.date() for k in temp_df.index]
+                fiat_prices = pd.merge(
+                    prices_in.prices["Prices"]["EUR"][tok.upper()][
+                        ["Open", "Close", "High", "Low"]
+                    ],
+                    temp_df["To Amount"],
+                    how="right",
+                    left_index=True,
+                    right_index=True,
+                )
+                fiat_prices = list(
+                    fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["To Amount"]
+                )
+                df_in.loc[
+                    np.logical_and(
+                        df_in["To Coin"] == tok, pd.isna(df_in["Fiat Price"])
+                    ),
+                    "Fiat Price",
+                ] = fiat_prices
+
+        temp_df = df_in[
+            np.logical_and(df_in["Fee Coin"] == tok, pd.isna(df_in["Fee Fiat"]))
+        ]
+        if temp_df.shape[0] > 0:
+            temp_df.index = [k.date() for k in temp_df.index]
+            fiat_prices = pd.merge(
+                prices_in.prices["Prices"]["EUR"][tok.upper()][
+                    ["Open", "Close", "High", "Low"]
+                ],
+                temp_df["Fee"],
+                how="right",
+                left_index=True,
+                right_index=True,
+            )
+            fiat_prices = list(
+                fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["Fee"]
+            )
+            df_in.loc[
+                np.logical_and(df_in["Fee Coin"] == tok, pd.isna(df_in["Fee Fiat"])),
+                "Fee Fiat",
+            ] = fiat_prices
+    return df_in
+
+
+def income(transactions: pd.DataFrame, type_out='fiat', cummulative=True, year_sel=None, name=None, include_cashback=True):
+    # Obtain daily income (earn products/supercharge) in cryptocurrency of native fiat
+    rendita = transactions[transactions['Tag'].isin(['Reward', 'Interest'])].copy()
+    if not include_cashback:
+        rendita = rendita[rendita['Notes'] != 'Cashback']
+    if rendita.shape[0] == 0:
+        if type_out == 'fiat':
+            print(f'No income for {name}')
+        return pd.DataFrame()
+    temp_df_fiat = pd.DataFrame()
+    temp_df_token = pd.DataFrame()
+    tokens = transactions["To Coin"].tolist()
+    tokens.extend(transactions["From Coin"].tolist())
+    tokens = [k for k in tokens if k != '']
+    tokens = [k for k in tokens if ~pd.isna(k)]
+    tokens = [k for k in tokens if k is not None]
+
+    for col in ['From Coin', 'To Coin']:
+        for index, tok in enumerate(np.unique(tokens)):
+            temp_df = rendita[rendita[col] == tok]
+            if temp_df.shape[0] == 0:
+                continue
+            if index == 0:
+                temp_df_token = pd.DataFrame(temp_df['From Amount'])
+                temp_df_fiat = pd.DataFrame(temp_df['Fiat Price'])
+                temp_df_fiat.columns = temp_df_token.columns = [tok]
+            else:
+                colnames = list(temp_df_fiat.columns)
+                colnames.append(tok)
+                temp_df_token = temp_df_token.join(pd.DataFrame(temp_df['From Amount']), how='outer')
+                temp_df_fiat = temp_df_fiat.join(pd.DataFrame(temp_df['Fiat Price']), how='outer')
+                temp_df_fiat.columns = temp_df_token.columns = colnames
+
+    temp_df_fiat.fillna(0, inplace=True)
+    temp_df_token.fillna(0, inplace=True)
+    if year_sel is not None:
+        temp_df_fiat[temp_df_fiat.index < dt.datetime(year_sel, 1, 1, 0, 0, 0)] = 0
+        temp_df_token[temp_df_token.index < dt.datetime(year_sel, 1, 1, 0, 0, 0)] = 0
+    if type_out == 'fiat':
+        return prepare_df(temp_df_fiat, year_sel, cummulative)
+    else:
+        return prepare_df(temp_df_token, year_sel, cummulative)

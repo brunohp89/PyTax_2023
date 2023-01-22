@@ -456,7 +456,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         trades_df["Fiat Price"] = None
         trades_df["Tag"] = tag
         trades_df["Source"] = "Binance"
-        trades_df["Notes"] = ""
+        trades_df["Notes"] = "Trade"
         trades_df.index = timestamp
         trades_df.sort_index(inplace=True)
 
@@ -565,92 +565,33 @@ def get_transactions_df(raw=False, card_transactions=False):
     vout["Fee Fiat"] = None
     vout.sort_index(inplace=True)
 
-    tokens = vout["From Coin"].tolist()
-    tokens.extend(vout["To Coin"].tolist())
-    tokens.extend(vout["Fee Coin"].tolist())
-    tokens = [
-        x.upper() for x in list(set(tokens)) if x not in tx.fiat_list and not pd.isna(x)
+    vout.loc[vout["Notes"] == "Trade", "Tag"] = vout.loc[
+        vout["Notes"] == "Trade", "Notes"
     ]
+    vout.loc[vout["Notes"] == "Trade", "Notes"] = ""
 
     global bin_prices
     bin_prices = Prices()
-    bin_prices.get_prices(tokens)
-    bin_prices.convert_prices(tokens, "EUR")
 
-    vout.loc[vout["From Coin"] == "EUR", "Fiat Price"] = vout.loc[
-        vout["From Coin"] == "EUR", "From Amount"
+    vout = tx.price_transactions_df(vout, bin_prices)
+    vout = vout[
+        [
+            "From",
+            "To",
+            "From Coin",
+            "To Coin",
+            "From Amount",
+            "To Amount",
+            "Fee",
+            "Fee Coin",
+            "Fee Fiat",
+            "Fiat",
+            "Fiat Price",
+            "Tag",
+            "Source",
+            "Notes",
+        ]
     ]
-    vout.loc[vout["To Coin"] == "EUR", "Fiat Price"] = vout.loc[
-        vout["To Coin"] == "EUR", "To Amount"
-    ]
-
-    for tok in tokens:
-        temp_df = vout[
-            np.logical_and(vout["From Coin"] == tok, pd.isna(vout["Fiat Price"]))
-        ]
-        if temp_df.shape[0] > 0:
-            temp_df.index = [k.date() for k in temp_df.index]
-            fiat_prices = pd.merge(
-                bin_prices.prices["Prices"]["EUR"][tok.upper()][
-                    ["Open", "Close", "High", "Low"]
-                ],
-                temp_df["From Amount"],
-                how="right",
-                left_index=True,
-                right_index=True,
-            )
-            fiat_prices = list(
-                fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["From Amount"]
-            )
-            vout.loc[
-                np.logical_and(vout["From Coin"] == tok, pd.isna(vout["Fiat Price"])),
-                "Fiat Price",
-            ] = fiat_prices
-
-        temp_df = vout[
-            np.logical_and(vout["To Coin"] == tok, pd.isna(vout["Fiat Price"]))
-        ]
-        if temp_df.shape[0] > 0:
-            temp_df.index = [k.date() for k in temp_df.index]
-            fiat_prices = pd.merge(
-                bin_prices.prices["Prices"]["EUR"][tok.upper()][
-                    ["Open", "Close", "High", "Low"]
-                ],
-                temp_df["To Amount"],
-                how="right",
-                left_index=True,
-                right_index=True,
-            )
-            fiat_prices = list(
-                fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["To Amount"]
-            )
-            vout.loc[
-                np.logical_and(vout["To Coin"] == tok, pd.isna(vout["Fiat Price"])),
-                "Fiat Price",
-            ] = fiat_prices
-
-        temp_df = vout[
-            np.logical_and(vout["Fee Coin"] == tok, pd.isna(vout["Fee Fiat"]))
-        ]
-        if temp_df.shape[0] > 0:
-            temp_df.index = [k.date() for k in temp_df.index]
-            fiat_prices = pd.merge(
-                bin_prices.prices["Prices"]["EUR"][tok.upper()][
-                    ["Open", "Close", "High", "Low"]
-                ],
-                temp_df["Fee"],
-                how="right",
-                left_index=True,
-                right_index=True,
-            )
-            fiat_prices = list(
-                fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["Fee"]
-            )
-            vout.loc[
-                np.logical_and(vout["Fee Coin"] == tok, pd.isna(vout["Fee Fiat"])),
-                "Fee Fiat",
-            ] = fiat_prices
-
     return vout
 
 

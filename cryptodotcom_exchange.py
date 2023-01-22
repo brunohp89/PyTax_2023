@@ -164,20 +164,6 @@ def get_transactions_df(raw=False, update_prices=True):
         if not update_prices:
             return final_df
 
-        tokens = final_df["From Coin"].tolist()
-        tokens.extend(final_df["To Coin"].tolist())
-        tokens.extend(final_df["Fee Coin"].tolist())
-        tokens = [
-            x.upper()
-            for x in list(set(tokens))
-            if x not in tx.fiat_list and not pd.isna(x)
-        ]
-
-        global exch_prices
-        exch_prices = Prices()
-        exch_prices.get_prices(tokens)
-        exch_prices.convert_prices(tokens, "EUR")
-
         final_df.loc[final_df["From Coin"] == "EUR", "Fiat Price"] = final_df.loc[
             final_df["From Coin"] == "EUR", "From Amount"
         ]
@@ -185,84 +171,9 @@ def get_transactions_df(raw=False, update_prices=True):
             final_df["To Coin"] == "EUR", "To Amount"
         ]
 
-        for tok in tokens:
-            temp_df = final_df[
-                np.logical_and(
-                    final_df["From Coin"] == tok, pd.isna(final_df["Fiat Price"])
-                )
-            ]
-            if temp_df.shape[0] > 0:
-                temp_df.index = [k.date() for k in temp_df.index]
-                fiat_prices = pd.merge(
-                    exch_prices.prices["Prices"]["EUR"][tok.upper()][
-                        ["Open", "Close", "High", "Low"]
-                    ],
-                    temp_df["From Amount"],
-                    how="right",
-                    left_index=True,
-                    right_index=True,
-                )
-                fiat_prices = list(
-                    fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["From Amount"]
-                )
-                final_df.loc[
-                    np.logical_and(
-                        final_df["From Coin"] == tok, pd.isna(final_df["Fiat Price"])
-                    ),
-                    "Fiat Price",
-                ] = fiat_prices
-
-            temp_df = final_df[
-                np.logical_and(
-                    final_df["To Coin"] == tok, pd.isna(final_df["Fiat Price"])
-                )
-            ]
-            if temp_df.shape[0] > 0:
-                temp_df.index = [k.date() for k in temp_df.index]
-                fiat_prices = pd.merge(
-                    exch_prices.prices["Prices"]["EUR"][tok.upper()][
-                        ["Open", "Close", "High", "Low"]
-                    ],
-                    temp_df["To Amount"],
-                    how="right",
-                    left_index=True,
-                    right_index=True,
-                )
-                fiat_prices = list(
-                    fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["To Amount"]
-                )
-                final_df.loc[
-                    np.logical_and(
-                        final_df["To Coin"] == tok, pd.isna(final_df["Fiat Price"])
-                    ),
-                    "Fiat Price",
-                ] = fiat_prices
-
-            temp_df = final_df[
-                np.logical_and(
-                    final_df["Fee Coin"] == tok, pd.isna(final_df["Fee Fiat"])
-                )
-            ]
-            if temp_df.shape[0] > 0:
-                temp_df.index = [k.date() for k in temp_df.index]
-                fiat_prices = pd.merge(
-                    exch_prices.prices["Prices"]["EUR"][tok.upper()][
-                        ["Open", "Close", "High", "Low"]
-                    ],
-                    temp_df["Fee"],
-                    how="right",
-                    left_index=True,
-                    right_index=True,
-                )
-                fiat_prices = list(
-                    fiat_prices.iloc[:, 0:4].mean(axis=1) * fiat_prices["Fee"]
-                )
-                final_df.loc[
-                    np.logical_and(
-                        final_df["Fee Coin"] == tok, pd.isna(final_df["Fee Fiat"])
-                    ),
-                    "Fee Fiat",
-                ] = fiat_prices
+        global exch_prices
+        exch_prices = Prices()
+        final_df = tx.price_transactions_df(final_df, exch_prices)
 
         sub1 = final_df.loc[final_df["From Amount"] > 0, ["From Amount", "From Coin"]]
         sub2 = final_df.loc[final_df["From Amount"] > 0, ["To Amount", "To Coin"]]
@@ -272,7 +183,25 @@ def get_transactions_df(raw=False, update_prices=True):
         final_df.loc[
             final_df["From Amount"] > 0, ["From Amount", "From Coin"]
         ] = sub2.values
-
+        final_df["Source"] = "Crypto.com Exchange"
+        final_df = final_df[
+            [
+                "From",
+                "To",
+                "From Coin",
+                "To Coin",
+                "From Amount",
+                "To Amount",
+                "Fee",
+                "Fee Coin",
+                "Fee Fiat",
+                "Fiat",
+                "Fiat Price",
+                "Tag",
+                "Source",
+                "Notes",
+            ]
+        ]
         return final_df
 
 
