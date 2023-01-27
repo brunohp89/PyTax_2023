@@ -524,8 +524,8 @@ def income(transactions: pd.DataFrame, type_out='fiat', cummulative=True, year_s
         return pd.DataFrame()
     temp_df_fiat = pd.DataFrame()
     temp_df_token = pd.DataFrame()
-    tokens = transactions["To Coin"].tolist()
-    tokens.extend(transactions["From Coin"].tolist())
+    tokens = rendita["To Coin"].tolist()
+    tokens.extend(rendita["From Coin"].tolist())
     tokens = [k for k in tokens if k != '']
     tokens = [k for k in tokens if ~pd.isna(k)]
     tokens = [k for k in tokens if k is not None]
@@ -536,13 +536,13 @@ def income(transactions: pd.DataFrame, type_out='fiat', cummulative=True, year_s
             if temp_df.shape[0] == 0:
                 continue
             if index == 0:
-                temp_df_token = pd.DataFrame(temp_df['From Amount'])
+                temp_df_token = pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount'])
                 temp_df_fiat = pd.DataFrame(temp_df['Fiat Price'])
                 temp_df_fiat.columns = temp_df_token.columns = [tok]
             else:
                 colnames = list(temp_df_fiat.columns)
                 colnames.append(tok)
-                temp_df_token = temp_df_token.join(pd.DataFrame(temp_df['From Amount']), how='outer')
+                temp_df_token = temp_df_token.join(pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount']), how='outer')
                 temp_df_fiat = temp_df_fiat.join(pd.DataFrame(temp_df['Fiat Price']), how='outer')
                 temp_df_fiat.columns = temp_df_token.columns = colnames
 
