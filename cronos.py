@@ -1,4 +1,3 @@
-import numpy as np
 from PricesClass import Prices
 import tax_library as tx
 import datetime as dt
@@ -137,7 +136,7 @@ def get_transactions_df(address, beacon_address=None):
     )
 
     # INTERNAL TRANSACTIONS
-    url = f"https://api.cronoscan.com/api?module=account&action=txlistinternal&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey=PQGZXHK6QJDCW1KCKSN7TR76UUBVRV9A23"
+    url = f"https://api.cronoscan.com/api?module=account&action=txlistinternal&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={apikey}"
     response_internal = requests.get(url)
     internal_transactions = pd.DataFrame(response_internal.json().get("result"))
     internal_transactions = internal_transactions[
@@ -170,7 +169,7 @@ def get_transactions_df(address, beacon_address=None):
     )
 
     # CRC20 TRANSACTIONS
-    url = f"https://api.cronoscan.com/api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey=PQGZXHK6QJDCW1KCKSN7TR76UUBVRV9A23"
+    url = f"https://api.cronoscan.com/api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={apikey}"
     response = requests.get(url)
     erc20_transactions = pd.DataFrame(response.json().get("result"))
 
