@@ -347,7 +347,9 @@ def balances_fiat(
         return balances_in
 
 
-def prepare_df(df_in: pd.DataFrame, year_sel=None, cummulative=True):
+def prepare_df(
+    df_in: pd.DataFrame, year_sel=None, cummulative=True, allow_negative=False
+):
     # Il df dev'essere un dataframe con index orario senza NaN
     df = df_in.copy()
     df.index = [k.date() for k in df.index]
@@ -369,7 +371,8 @@ def prepare_df(df_in: pd.DataFrame, year_sel=None, cummulative=True):
         temp_df = temp_df[temp_df.index >= dt.date(year_sel, 1, 1)]
         temp_df = temp_df[temp_df.index <= dt.date(year_sel, 12, 31)]
 
-    temp_df[temp_df < 10**-9] = 0
+    if not allow_negative:
+        temp_df[temp_df < 10**-9] = 0
     temp_df = temp_df.loc[
         :,
         ~temp_df.columns.isin(
@@ -378,6 +381,7 @@ def prepare_df(df_in: pd.DataFrame, year_sel=None, cummulative=True):
     ]
 
     return temp_df
+
 
 def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None):
     # Obtain daily balances in native cryptocurrency
@@ -513,45 +517,61 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
     return df_in
 
 
-def income(transactions: pd.DataFrame, type_out='fiat', cummulative=True, year_sel=None, name=None, include_cashback=True):
+def income(
+    transactions: pd.DataFrame,
+    type_out="fiat",
+    cummulative=True,
+    year_sel=None,
+    name=None,
+    include_cashback=True,
+    allow_negative=False,
+):
     # Obtain daily income (earn products/supercharge) in cryptocurrency of native fiat
-    rendita = transactions[transactions['Tag'].isin(['Reward', 'Interest'])].copy()
+    rendita = transactions[transactions["Tag"].isin(["Reward", "Interest"])].copy()
     if not include_cashback:
-        rendita = rendita[rendita['Notes'] != 'Cashback']
+        rendita = rendita[rendita["Notes"] != "Cashback"]
     if rendita.shape[0] == 0:
-        if type_out == 'fiat':
-            print(f'No income for {name}')
+        if type_out == "fiat":
+            print(f"No income for {name}")
         return pd.DataFrame()
     temp_df_fiat = pd.DataFrame()
     temp_df_token = pd.DataFrame()
     tokens = rendita["To Coin"].tolist()
     tokens.extend(rendita["From Coin"].tolist())
-    tokens = [k for k in tokens if k != '']
+    tokens = [k for k in tokens if k != ""]
     tokens = [k for k in tokens if ~pd.isna(k)]
     tokens = [k for k in tokens if k is not None]
 
-    for col in ['From Coin', 'To Coin']:
+    for col in ["From Coin", "To Coin"]:
         for index, tok in enumerate(np.unique(tokens)):
             temp_df = rendita[rendita[col] == tok]
             if temp_df.shape[0] == 0:
                 continue
             if index == 0:
                 temp_df_token = pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount'])
-                temp_df_fiat = pd.DataFrame(temp_df['Fiat Price'])
+                temp_df_fiat = pd.DataFrame(temp_df["Fiat Price"])
                 temp_df_fiat.columns = temp_df_token.columns = [tok]
             else:
                 colnames = list(temp_df_fiat.columns)
                 colnames.append(tok)
-                temp_df_token = temp_df_token.join(pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount']), how='outer')
-                temp_df_fiat = temp_df_fiat.join(pd.DataFrame(temp_df['Fiat Price']), how='outer')
+                temp_df_token = temp_df_token.join(
+                    pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount']), how="outer"
+                )
+                temp_df_fiat = temp_df_fiat.join(
+                    pd.DataFrame(temp_df["Fiat Price"]), how="outer"
+                )
                 temp_df_fiat.columns = temp_df_token.columns = colnames
 
     temp_df_fiat.fillna(0, inplace=True)
     temp_df_token.fillna(0, inplace=True)
+
+    temp_df_token = temp_df_token.groupby(lambda x: x, axis=1).sum()
+    temp_df_fiat = temp_df_fiat.groupby(lambda x: x, axis=1).sum()
+
     if year_sel is not None:
         temp_df_fiat[temp_df_fiat.index < dt.datetime(year_sel, 1, 1, 0, 0, 0)] = 0
         temp_df_token[temp_df_token.index < dt.datetime(year_sel, 1, 1, 0, 0, 0)] = 0
-    if type_out == 'fiat':
-        return prepare_df(temp_df_fiat, year_sel, cummulative)
+    if type_out == "fiat":
+        return prepare_df(temp_df_fiat, year_sel, cummulative, allow_negative)
     else:
-        return prepare_df(temp_df_token, year_sel, cummulative)
+        return prepare_df(temp_df_token, year_sel, cummulative, allow_negative)
