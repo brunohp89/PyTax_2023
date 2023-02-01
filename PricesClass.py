@@ -32,6 +32,10 @@ class Prices:
             exc_rate = yf.Ticker("APE18876-USD")
         elif symbol.upper() == "HFT":
             exc_rate = yf.Ticker("HFT22461-USD")
+        elif symbol.upper() == 'GMT':
+            exc_rate = yf.Ticker("GMT18069-USD")
+        elif symbol.upper() == 'GST':
+            exc_rate = yf.Ticker("GST16352-USD")
         else:
             exc_rate = yf.Ticker(f"{symbol.upper()}-USD")
         exc_rate_history = exc_rate.history(period="max")
