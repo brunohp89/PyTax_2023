@@ -282,21 +282,22 @@ def get_transactions_df(address):
             vout["From"].str.contains("STEPN"), vout["To"].str.contains("STEPN")
         )
     ]
-    stepn_bal = tx.balances(stepn)
-    vout.loc[
-        np.logical_and(
-            np.logical_or(
-                vout["From"].str.contains("STEPN"), vout["To"].str.contains("STEPN")
+    if stepn.shape[0] > 0:
+        stepn_bal = tx.balances(stepn)
+        vout.loc[
+            np.logical_and(
+                np.logical_or(
+                    vout["From"].str.contains("STEPN"), vout["To"].str.contains("STEPN")
+                ),
+                np.logical_or(
+                    vout["From Coin"].isin(stepn_bal.columns),
+                    vout["To Coin"].isin(stepn_bal.columns),
+                ),
             ),
-            np.logical_or(
-                vout["From Coin"].isin(stepn_bal.columns),
-                vout["To Coin"].isin(stepn_bal.columns),
-            ),
-        ),
-        "Tag",
-    ] = "Reward"
+            "Tag",
+        ] = "Reward"
 
-    # Means that we have some staking rewards or rewards from stepn
+    # Means that we have some staking rewards
     if vout["From Amount"].sum() + vout["To Amount"].sum() + vout["Fee"].sum() < 1:
         temp_df = vout.iloc[[-1], :].copy()
         temp_df["From Amount"] = -(
