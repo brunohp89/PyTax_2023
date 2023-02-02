@@ -21,7 +21,6 @@ scam_tokens = [
 
 
 def get_nfts(address):
-    # ERC721 and ERC1155 tokens, prezzi non in MATIC non funzionano ancora e saranno mostrati come zero
     # NFTS ricevuti non attraverso una transazione vengono esclusi
     with open(os.getcwd() + "\\.json") as creds:
         api_key = json.load(creds)["PolygonScanToken"]
@@ -45,8 +44,8 @@ def get_nfts(address):
     erc721_transactions = pd.concat([erc721_transactions, ERC1155_transactions_in])
 
     if erc721_transactions.shape[0] == 0 and ERC1155_transactions_in.shape[0] == 0:
-        print(f"No NFT found for this MATICereum address - {address}")
-        return None
+        print(f"No NFT found for this polygon address - {address}")
+    # return None
 
     erc721_transactions = pd.merge(
         normal_transactions_in,
@@ -54,25 +53,54 @@ def get_nfts(address):
         on="hash",
         suffixes=("-Trx", "-NFT"),
     )
+    erc721_transactions["Token"] = None
 
-    erc721_transactions["value"] = [
-        -int(erc721_transactions.loc[i, "value"]) / 10**18
-        if erc721_transactions.loc[i, "from-Trx"] == address.lower()
-        else int(erc721_transactions.loc[i, "value"]) / 10**18
-        for i in range(erc721_transactions.shape[0])
-    ]
+    # Get ERC20 tokens
+    url = f"https://api.polygonscan.com/api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={api_key}"
+    response = requests.get(url)
+    erc20_transactions = pd.DataFrame(response.json().get("result"))
+    if erc20_transactions.shape[0] > 0:
+        erc721_transactions = pd.merge(
+            erc721_transactions,
+            erc20_transactions,
+            on="hash",
+            suffixes=("", "-ERC20"),
+            how="left",
+        )
+
+        erc721_transactions.loc[erc721_transactions["value"] != "0", "Token"] = "MATIC"
+        erc721_transactions["Token"] = erc721_transactions["Token"].combine_first(
+            erc721_transactions["tokenSymbol-ERC20"]
+        )
+        erc721_transactions.loc[erc721_transactions["value"] == "0", "value"] = None
+        erc721_transactions["value"] = erc721_transactions["value"].combine_first(
+            erc721_transactions["value-ERC20"]
+        ).apply(lambda x: float(x)) / erc721_transactions["tokenDecimal-ERC20"].apply(
+            lambda x: 10**18 if pd.isna(x) else 10 ** int(x)
+        )
+        erc721_transactions["value"] = [
+            -erc721_transactions.loc[i, "value"]
+            if erc721_transactions.loc[i, "to-NFT"] == address.lower()
+            else erc721_transactions.loc[i, "value"]
+            for i in range(erc721_transactions.shape[0])
+        ]
+    else:
+        erc721_transactions["value"] = [
+            -int(erc721_transactions.loc[i, "value"]) / 10**18
+            if erc721_transactions.loc[i, "to-NFT"] == address.lower()
+            else int(erc721_transactions.loc[i, "value"]) / 10**18
+            for i in range(erc721_transactions.shape[0])
+        ]
 
     nft_transactions = pd.DataFrame()
-    nft_transactions.index = erc721_transactions["timeStamp-Trx"].map(
-        lambda x: dt.datetime.fromtimestamp(int(x))
-    )
     nft_transactions["NFT"] = list(
         erc721_transactions["tokenName"] + " - " + erc721_transactions["tokenID"]
     )
-    nft_transactions["Price buy (MATIC)"] = erc721_transactions["value"].tolist()
-    nft_transactions["Price sold (MATIC)"] = erc721_transactions["value"].tolist()
-    nft_transactions["Price buy (EUR)"] = 0
-    nft_transactions["Price sold (EUR)"] = 0
+    nft_transactions["timeStamp"] = erc721_transactions["timeStamp-Trx"].map(
+        lambda x: dt.datetime.fromtimestamp(int(x))
+    )
+    nft_transactions["Price"] = erc721_transactions["value"].tolist()
+    nft_transactions["Asset"] = erc721_transactions["Token"].tolist()
     nft_transactions["Fee (MATIC)"] = [
         -(
             int(erc721_transactions.loc[i, "gasUsed-Trx"])
@@ -81,14 +109,141 @@ def get_nfts(address):
         / 10**18
         for i in range(erc721_transactions.shape[0])
     ]
-    nft_transactions["Fee (EUR)"] = 0
+
+    nft_transactions1 = pd.merge(
+        nft_transactions[["NFT", "timeStamp"]].drop_duplicates(),
+        nft_transactions[["NFT", "Price"]].fillna(0).groupby("NFT").sum(),
+        on="NFT",
+        how="left",
+    )
+    nft_transactions1 = pd.merge(
+        nft_transactions1,
+        nft_transactions[["NFT", "Asset"]].drop_duplicates(),
+        on="NFT",
+        how="left",
+    )
+    nft_transactions1 = pd.merge(
+        nft_transactions1,
+        nft_transactions[["NFT", "Fee (MATIC)"]].fillna(0).groupby("NFT").mean(),
+        on="NFT",
+        how="left",
+    )
+    nft_transactions = nft_transactions1.copy()
+
+    nft_buys = nft_transactions[nft_transactions["Price"] < 0]
+    nft_sells = nft_transactions[nft_transactions["Price"] > 0]
+    if nft_sells.shape[0] > 0:
+        nft_transactions = pd.merge(nft_buys, nft_sells, on="NFT", how="outer")
+        nft_transactions.columns = [
+            "NFT",
+            "Time Buy",
+            "Price buy (Asset)",
+            "Asset Buy",
+            "Gas Buy (MATIC)",
+            "Time Sell",
+            "Price Sell (Asset)",
+            "Asset Sell",
+            "Gas Sell (MATIC)",
+        ]
+    else:
+        nft_transactions = nft_buys.copy()
+        nft_transactions.columns = [
+            "NFT",
+            "Time Buy",
+            "Price buy (Asset)",
+            "Asset Buy",
+            "Gas Buy (MATIC)",
+        ]
+        nft_transactions["Price Sell (Asset)"] = None
+        nft_transactions["Asset Sell"] = None
+        nft_transactions["Gas Sell (MATIC)"] = None
+        nft_transactions["Time Sell"] = None
+
+    nft_transactions["Price buy (EUR)"] = 0
+    nft_transactions["Price sold (EUR)"] = 0
+
+    nft_transactions["Fee Buy (EUR)"] = 0
+    nft_transactions["Fee Sell (EUR)"] = 0
+
+    assets = nft_transactions["Asset Sell"].tolist()
+    assets.extend(nft_transactions["Asset Buy"])
+    assets.append("MATIC")
+    assets = [k for k in set(assets) if not pd.isna(k)]
 
     nft_prices = Prices()
-    nft_prices.get_prices(["MATIC"])
-    nft_prices.convert_prices(["MATIC"], "EUR")
+    nft_prices.get_prices(assets)
+    nft_prices.convert_prices(assets, "EUR")
 
-    temp_df = nft_transactions.copy()
-    temp_df.index = [k.date() for k in nft_transactions.index]
+    nft_transactions["Date Buy"] = [k.date() for k in nft_transactions["Time Buy"]]
+    nft_transactions["Date Sell"] = [
+        None if pd.isna(k) else k.date() for k in nft_transactions["Time Sell"]
+    ]
+    nft_transactions["Asset Price Buy"] = None
+    nft_transactions["Asset Price Sell"] = None
+
+    for i, asset in enumerate(assets):
+        dates = [
+            k.date()
+            for k in nft_transactions.loc[
+                nft_transactions["Asset Buy"] == asset, "Time Buy"
+            ]
+        ]
+        dates.extend(
+            [
+                k.date()
+                for k in nft_transactions.loc[
+                    nft_transactions["Asset Sell"] == asset, "Time Sell"
+                ]
+            ]
+        )
+        temp_df = pd.DataFrame()
+        temp_df.index = temp_df["Date"] = temp_df["Date Buy"] = temp_df[
+            "Date Sell"
+        ] = dates
+        fiat_prices = pd.merge(
+            nft_prices.prices["Prices"]["EUR"][asset.upper()][
+                ["Open", "Close", "High", "Low"]
+            ],
+            temp_df,
+            how="right",
+            left_index=True,
+            right_index=True,
+        )
+        fiat_prices = list(fiat_prices.iloc[:, 0:4].mean(axis=1))
+        temp_df["Prices"] = fiat_prices
+        temp_df.drop_duplicates(inplace=True)
+        if nft_transactions[nft_transactions["Asset Buy"] == asset].shape[0] > 0:
+            temp_df2 = pd.merge(
+                nft_transactions.loc[
+                    nft_transactions["Asset Buy"] == asset, "Date Buy"
+                ],
+                temp_df[["Date Buy", "Prices"]],
+                on="Date Buy",
+                how="left",
+                suffixes=("", "-BUY"),
+            )
+            nft_transactions.loc[
+                nft_transactions["Asset Buy"] == asset, "Asset Price Buy"
+            ] = temp_df2["Prices"].tolist()
+        if nft_transactions[nft_transactions["Asset Sell"] == asset].shape[0] > 0:
+            temp_df2 = pd.merge(
+                nft_transactions.loc[
+                    nft_transactions["Asset Sell"] == asset, "Date Sell"
+                ],
+                temp_df[["Date Sell", "Prices"]],
+                on="Date Sell",
+                how="outer",
+                suffixes=("", "-SELL"),
+            )
+            nft_transactions.loc[
+                nft_transactions["Asset Sell"] == asset, "Asset Price Sell"
+            ] = temp_df2["Prices"].tolist()
+
+    dates = nft_transactions["Date Buy"].tolist()
+    dates.extend(nft_transactions["Date Sell"].tolist())
+    dates = [k for k in dates if not pd.isna(k)]
+    temp_df = pd.DataFrame()
+    temp_df.index = temp_df["Date Buy"] = temp_df["Date Sell"] = dates
     fiat_prices = pd.merge(
         nft_prices.prices["Prices"]["EUR"]["MATIC"][["Open", "Close", "High", "Low"]],
         temp_df,
@@ -97,99 +252,127 @@ def get_nfts(address):
         right_index=True,
     )
     fiat_prices = list(fiat_prices.iloc[:, 0:4].mean(axis=1))
+    temp_df["Prices"] = fiat_prices
+    temp_df.drop_duplicates(inplace=True)
+    nft_transactions = pd.merge(
+        nft_transactions, temp_df[["Date Buy", "Prices"]], on="Date Buy", how="left"
+    )
+    nft_transactions = pd.merge(
+        nft_transactions, temp_df[["Date Sell", "Prices"]], on="Date Sell", how="left"
+    )
 
-    nft_transactions["MATIC Price"] = fiat_prices
-    nft_transactions.loc[
-        nft_transactions["Price sold (MATIC)"] < 0, "Price sold (MATIC)"
-    ] = 0
-    nft_transactions.loc[
-        nft_transactions["Price buy (MATIC)"] > 0, "Price buy (MATIC)"
-    ] = 0
+    nft_transactions.drop(["Date Sell", "Date Buy"], axis=1, inplace=True)
+
+    nft_transactions.rename(
+        columns={"Prices_x": "Gas Price Buy (EUR)", "Prices_y": "Gas Price Sell (EUR)"},
+        inplace=True,
+    )
 
     nft_transactions["Price buy (EUR)"] = (
-        nft_transactions["Price buy (MATIC)"] * nft_transactions["MATIC Price"]
+        nft_transactions["Asset Price Buy"] * -nft_transactions["Price buy (Asset)"]
     )
     nft_transactions["Price sold (EUR)"] = (
-        nft_transactions["Price sold (MATIC)"] * nft_transactions["MATIC Price"]
+        nft_transactions["Asset Price Sell"] * nft_transactions["Price Sell (Asset)"]
     )
 
-    nft_transactions["Fee (EUR)"] = (
-        nft_transactions["Fee (MATIC)"] * nft_transactions["MATIC Price"]
+    nft_transactions["Fee Buy (EUR)"] = (
+        nft_transactions["Gas Price Buy (EUR)"] * -nft_transactions["Gas Buy (MATIC)"]
     )
 
-    nft_transactions["Total sold (MATIC)"] = [
-        x + y if x != 0 else 0
+    nft_transactions["Fee Sell (EUR)"] = [
+        x * y
         for x, y in zip(
-            nft_transactions["Price sold (MATIC)"], nft_transactions["Fee (MATIC)"]
-        )
-    ]
-    nft_transactions["Total sold (EUR)"] = [
-        x + y if x != 0 else 0
-        for x, y in zip(
-            nft_transactions["Price sold (EUR)"], nft_transactions["Fee (EUR)"]
-        )
-    ]
-    nft_transactions["Total buy (MATIC)"] = [
-        x + y if x != 0 else 0
-        for x, y in zip(
-            nft_transactions["Price buy (MATIC)"], nft_transactions["Fee (MATIC)"]
-        )
-    ]
-    nft_transactions["Total buy (EUR)"] = [
-        x + y if x != 0 else 0
-        for x, y in zip(
-            nft_transactions["Price buy (EUR)"], nft_transactions["Fee (EUR)"]
+            [0 if pd.isna(k) else k for k in nft_transactions["Gas Price Sell (EUR)"]],
+            [0 if pd.isna(k) else -k for k in nft_transactions["Gas Sell (MATIC)"]],
         )
     ]
 
-    nft_transactions = nft_transactions[
-        [
-            "NFT",
-            "Total buy (MATIC)",
-            "Total buy (EUR)",
-            "Total sold (MATIC)",
-            "Total sold (EUR)",
-            "Price buy (MATIC)",
-            "Price buy (EUR)",
-            "Price sold (MATIC)",
-            "Price sold (EUR)",
-            "Fee (MATIC)",
-            "Fee (EUR)",
-            "MATIC Price",
-        ]
+    nft_transactions["Total Buy (EUR)"] = (
+        nft_transactions["Price buy (EUR)"] + nft_transactions["Fee Buy (EUR)"]
+    )
+    nft_transactions["Total Sell (EUR)"] = (
+        nft_transactions["Price sold (EUR)"] - nft_transactions["Fee Sell (EUR)"]
+    )
+
+    nft_transactions["Total PNL (EUR)"] = (
+        nft_transactions["Total Sell (EUR)"] + nft_transactions["Total Buy (EUR)"]
+    )
+
+    nft_transactions.columns = [
+        "NFT",
+        "Time Bought",
+        "Price Bought (Crypto)",
+        "Crypto Buy",
+        "Gas Fee Buy (MATIC)",
+        "Time Sell",
+        "Price Sold (Crypto)",
+        "Crypto Sell",
+        "Gas Fee Sell (MATIC)",
+        "Price Bought (EUR)",
+        "Price Sold (EUR)",
+        "Gas Fee Buy (EUR)",
+        "Gas Fee Sell (EUR)",
+        "Crypto Price Buy (EUR)",
+        "Crypto Price Sell (EUR)",
+        "Gas Price Buy (EUR)",
+        "Gas Price Sell (EUR)",
+        "Total Cost Buy (EUR)",
+        "Total Cost Sell (EUR)",
+        "Final PNL (EUR)",
     ]
+
+    nft_transactions.fillna(0, inplace=True)
+
     nft_transactions[
         [
-            "Total buy (MATIC)",
-            "Total buy (EUR)",
-            "Total sold (MATIC)",
-            "Total sold (EUR)",
-            "Price buy (MATIC)",
-            "Price buy (EUR)",
-            "Price sold (MATIC)",
-            "Price sold (EUR)",
-            "Fee (MATIC)",
-            "Fee (EUR)",
-            "MATIC Price",
+            "Price Bought (Crypto)",
+            "Gas Fee Buy (MATIC)",
+            "Price Sold (Crypto)",
+            "Gas Fee Sell (MATIC)",
         ]
     ] = nft_transactions[
         [
-            "Total buy (MATIC)",
-            "Total buy (EUR)",
-            "Total sold (MATIC)",
-            "Total sold (EUR)",
-            "Price buy (MATIC)",
-            "Price buy (EUR)",
-            "Price sold (MATIC)",
-            "Price sold (EUR)",
-            "Fee (MATIC)",
-            "Fee (EUR)",
-            "MATIC Price",
+            "Price Bought (Crypto)",
+            "Gas Fee Buy (MATIC)",
+            "Price Sold (Crypto)",
+            "Gas Fee Sell (MATIC)",
         ]
-    ].applymap(
+    ].apply(
         lambda x: abs(x)
     )
 
+    nft_transactions[
+        [
+            "Price Bought (EUR)",
+            "Price Sold (EUR)",
+            "Gas Fee Buy (EUR)",
+            "Gas Fee Sell (EUR)",
+            "Crypto Price Buy (EUR)",
+            "Crypto Price Sell (EUR)",
+            "Gas Price Buy (EUR)",
+            "Gas Price Sell (EUR)",
+            "Total Cost Buy (EUR)",
+            "Total Cost Sell (EUR)",
+        ]
+    ] = nft_transactions[
+        [
+            "Price Bought (EUR)",
+            "Price Sold (EUR)",
+            "Gas Fee Buy (EUR)",
+            "Gas Fee Sell (EUR)",
+            "Crypto Price Buy (EUR)",
+            "Crypto Price Sell (EUR)",
+            "Gas Price Buy (EUR)",
+            "Gas Price Sell (EUR)",
+            "Total Cost Buy (EUR)",
+            "Total Cost Sell (EUR)",
+        ]
+    ].applymap(
+        lambda x: round(abs(x), 2)
+    )
+    nft_transactions["Final PNL (EUR)"] = nft_transactions["Final PNL (EUR)"].apply(
+        lambda x: round(x, 2)
+    )
     return nft_transactions
 
 
@@ -347,7 +530,7 @@ def get_transactions_df(address):
 
     all_trx["value-N"] = all_trx["value-N"].combine_first(
         all_trx["value-I"]
-    )  # .combine_first(all_trx['value'])
+    )
 
     all_trx.index = [
         dt.datetime.fromtimestamp(int(x))
