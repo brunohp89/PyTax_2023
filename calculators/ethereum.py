@@ -402,83 +402,97 @@ def get_transactions_df(address):
     url = f"https://api.etherscan.io/api?module=account&action=txlistinternal&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={api_key}"
     response_internal = requests.get(url)
     internal_transactions = pd.DataFrame(response_internal.json().get("result"))
-    internal_transactions = internal_transactions[
-        internal_transactions["isError"] == "0"
-    ]
-    internal_transactions.reset_index(inplace=True, drop=True)
+    if internal_transactions.shape[0] > 0:
+        internal_transactions = internal_transactions[
+            internal_transactions["isError"] == "0"
+        ]
+        internal_transactions.reset_index(inplace=True, drop=True)
 
-    internal_transactions["from"] = internal_transactions["from"].map(
-        lambda x: x.lower()
-    )
-    internal_transactions["to"] = internal_transactions["to"].map(lambda x: x.lower())
-    internal_transactions["value"] = [
-        -int(internal_transactions.loc[i, "value"]) / 10**18
-        if internal_transactions.loc[i, "from"] == address.lower()
-        else int(internal_transactions.loc[i, "value"]) / 10**18
-        for i in range(internal_transactions.shape[0])
-    ]
+        internal_transactions["from"] = internal_transactions["from"].map(
+            lambda x: x.lower()
+        )
+        internal_transactions["to"] = internal_transactions["to"].map(
+            lambda x: x.lower()
+        )
+        internal_transactions["value"] = [
+            -int(internal_transactions.loc[i, "value"]) / 10**18
+            if internal_transactions.loc[i, "from"] == address.lower()
+            else int(internal_transactions.loc[i, "value"]) / 10**18
+            for i in range(internal_transactions.shape[0])
+        ]
 
-    internal_transactions.drop(
-        [
-            "blockNumber",
-            "contractAddress",
-            "input",
-            "type",
-            "gas",
-            "gasUsed",
-        ],
-        axis=1,
-        inplace=True,
-    )
+        internal_transactions.drop(
+            [
+                "blockNumber",
+                "contractAddress",
+                "input",
+                "type",
+                "gas",
+                "gasUsed",
+            ],
+            axis=1,
+            inplace=True,
+        )
+    else:
+        internal_transactions = pd.DataFrame(
+            columns=["timeStamp", "hash", "from", "to", "value", "tokenSymbol", "gas"]
+        )
 
     # CRC20 TRANSACTIONS
     url = f"https://api.etherscan.io/api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={api_key}"
     response = requests.get(url)
     erc20_transactions = pd.DataFrame(response.json().get("result"))
+    if erc20_transactions.shape[0] > 0:
+        erc20_transactions["from"] = erc20_transactions["from"].map(lambda x: x.lower())
+        erc20_transactions["to"] = erc20_transactions["to"].map(lambda x: x.lower())
 
-    erc20_transactions["from"] = erc20_transactions["from"].map(lambda x: x.lower())
-    erc20_transactions["to"] = erc20_transactions["to"].map(lambda x: x.lower())
+        erc20_transactions.reset_index(inplace=True, drop=True)
 
-    erc20_transactions.reset_index(inplace=True, drop=True)
+        erc20_transactions["value"] = [
+            int(s) / 10 ** int(x)
+            for s, x in zip(
+                erc20_transactions["value"], erc20_transactions["tokenDecimal"]
+            )
+        ]
+        erc20_transactions["gas"] = [
+            -(
+                int(erc20_transactions.loc[i, "gasUsed"])
+                * int(erc20_transactions.loc[i, "gasPrice"])
+            )
+            / 10**18
+            for i in range(erc20_transactions.shape[0])
+        ]
 
-    erc20_transactions["value"] = [
-        int(s) / 10 ** int(x)
-        for s, x in zip(erc20_transactions["value"], erc20_transactions["tokenDecimal"])
-    ]
-    erc20_transactions["gas"] = [
-        -(
-            int(erc20_transactions.loc[i, "gasUsed"])
-            * int(erc20_transactions.loc[i, "gasPrice"])
+        erc20_transactions = erc20_transactions[
+            ~erc20_transactions["from"].isin(scam_tokens)
+        ]
+
+        erc20_transactions.drop(
+            [
+                "blockNumber",
+                "tokenDecimal",
+                "nonce",
+                "blockHash",
+                "transactionIndex",
+                "gasPrice",
+                "contractAddress",
+                "cumulativeGasUsed",
+                "gasUsed",
+                "confirmations",
+                "input",
+                "tokenName",
+            ],
+            axis=1,
+            inplace=True,
         )
-        / 10**18
-        for i in range(erc20_transactions.shape[0])
-    ]
 
-    erc20_transactions = erc20_transactions[
-        ~erc20_transactions["from"].isin(scam_tokens)
-    ]
-
-    erc20_transactions.drop(
-        [
-            "blockNumber",
-            "tokenDecimal",
-            "nonce",
-            "blockHash",
-            "transactionIndex",
-            "gasPrice",
-            "contractAddress",
-            "cumulativeGasUsed",
-            "gasUsed",
-            "confirmations",
-            "input",
-            "tokenName",
-        ],
-        axis=1,
-        inplace=True,
-    )
-
-    erc20_transactions.loc[erc20_transactions["from"] == address.lower(), "value"] *= -1
-
+        erc20_transactions.loc[
+            erc20_transactions["from"] == address.lower(), "value"
+        ] *= -1
+    else:
+        erc20_transactions = pd.DataFrame(
+            columns=["timeStamp", "hash", "from", "to", "value", "tokenSymbol", "gas"]
+        )
     # -------------------------------------------------------------------------------------------------------------------
 
     all_trx = pd.merge(
@@ -501,6 +515,13 @@ def get_transactions_df(address):
         ),
         ["value", "tokenSymbol"],
     ] = None
+
+    if "tokenSymbol-C" in all_trx.columns:
+        all_trx["Coin"] = (
+            all_trx["tokenSymbol-C"]
+            .combine_first(all_trx["tokenSymbol"])
+            .combine_first(all_trx["Coin"])
+        )
 
     all_trx["value-N"] = all_trx["value-N"].combine_first(all_trx["value-I"])
 
@@ -591,6 +612,13 @@ def get_transactions_df(address):
     all_trx["Fee Fiat"] = None
     all_trx["Source"] = f"ETH-{address[0:5]}"
 
+    all_trx.loc[
+        np.logical_and(pd.isna(all_trx["To Coin"]), ~pd.isna(all_trx["To Amount"])),
+        "To Coin",
+    ] = all_trx.loc[
+        np.logical_and(pd.isna(all_trx["To Coin"]), ~pd.isna(all_trx["To Amount"])),
+        "From Coin",
+    ]
     all_trx.loc[pd.isna(all_trx["From Amount"]), "From Coin"] = None
 
     outdf = tx.price_transactions_df(all_trx, Prices())
