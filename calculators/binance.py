@@ -13,8 +13,8 @@ bin_prices = Prices()
 
 def get_transactions_df(raw=False, card_transactions=False):
     binance_files = [
-        os.path.join(os.getcwd(), "binance", x)
-        for x in os.listdir(os.path.join(os.getcwd(), "binance"))
+        os.path.join(os.path.abspath('binance'), x)
+        for x in os.listdir(os.path.abspath('binance'))
         if "automatico" not in x
     ]
 

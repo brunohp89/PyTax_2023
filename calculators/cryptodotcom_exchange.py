@@ -9,9 +9,9 @@ from PricesClass import Prices
 
 
 def get_transactions_df(raw=False, update_prices=True):
-    cdc_files = [
-        os.path.join(os.getcwd(), "crypto.com exchange", x)
-        for x in os.listdir(os.path.join(os.getcwd(), "crypto.com exchange"))
+    cdc_files =  [
+        os.path.join(os.path.abspath('crypto.com exchange'), x)
+        for x in os.listdir(os.path.abspath('crypto.com exchange'))
     ]
 
     if len(cdc_files) == 0:

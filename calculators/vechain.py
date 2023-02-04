@@ -7,7 +7,7 @@ from PricesClass import Prices
 
 
 def get_transactions_df(raw=False):
-    vechain_directory = os.path.join(os.getcwd(), "vechain")
+    vechain_directory = os.path.abspath('vechain')
     vechain_files = [
         os.path.join(vechain_directory, x) for x in os.listdir(vechain_directory)
     ]
@@ -113,5 +113,24 @@ def get_transactions_df(raw=False):
         return final_df
 
     final_df = tx.price_transactions_df(final_df, Prices())
+
+    final_df = final_df[
+        [
+            "From",
+            "To",
+            "From Coin",
+            "To Coin",
+            "From Amount",
+            "To Amount",
+            "Fee",
+            "Fee Coin",
+            "Fee Fiat",
+            "Fiat",
+            "Fiat Price",
+            "Tag",
+            "Source",
+            "Notes",
+        ]
+    ]
 
     return final_df

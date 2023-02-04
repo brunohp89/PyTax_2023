@@ -17,7 +17,7 @@ To use the scripts in PyTax, simply follow these steps:
 1. Clone or download the repository.
 2. Install the required packages listed in the requirements.txt file.
 3. Store your API tokens in a .json file in the same directory as the scripts (see example .json file below).
-4. Import the script for the CEX or blockchain you want to track transactions for.
+4. Import the script for the CEX or blockchain you want to track transactions for from the directory calculators.
 5. Call the function ```get_transactions_df``` and pass in either a wallet address or folder containing .csv files as arguments.
 6. For VeChain tracking you will have to download manually the transactions using the link Download transactions using this website https://explore.vechain.org/download?address=YOURADDRESS and put the file in a folder named vechain.
 
@@ -25,15 +25,15 @@ To use the scripts in PyTax, simply follow these steps:
 Here is an example of how you could use the script for Binance:
 
 ``` python
-import binance
+import calculators.binance as binance
 
-df = binance.get_transactions_df('path/to/csv_folder')
+df = binance.get_transactions_df()
 ``` 
 
 And for Ethereum:
 
 ``` python
-import ethereum
+import calculators.ethereum as ethereum
 
 df = ethereum.get_transactions_df(wallet_address, ethscan_token)
 ``` 

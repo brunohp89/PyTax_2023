@@ -4,9 +4,9 @@ import tax_library as tx
 
 
 def get_transactions_df(raw=False):
-    coinbase_files = [
-        os.path.join(os.getcwd(), "coinbase", x)
-        for x in os.listdir(os.path.join(os.getcwd(), "coinbase"))
+    coinbase_files =  [
+        os.path.join(os.path.abspath('coinbase'), x)
+        for x in os.listdir(os.path.abspath('coinbase'))
     ]
 
     if len(coinbase_files) == 0:

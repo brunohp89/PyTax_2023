@@ -7,9 +7,9 @@ from PricesClass import Prices
 
 def get_transactions_df(raw=False, return_fiat=False):
     if return_fiat:
-        fiat_files = [
-            os.path.join(os.getcwd(), "crypto.com", x)
-            for x in os.listdir(os.path.join(os.getcwd(), "crypto.com"))
+        fiat_files =  [
+        os.path.join(os.path.abspath('crypto.com'), x)
+        for x in os.listdir(os.path.abspath('crypto.com'))
             if "fiat" in x
         ]
 
@@ -27,9 +27,9 @@ def get_transactions_df(raw=False, return_fiat=False):
         fiat_df.sort_index(inplace=True)
         return fiat_df
 
-    cdc_files = [
-        os.path.join(os.getcwd(), "crypto.com", x)
-        for x in os.listdir(os.path.join(os.getcwd(), "crypto.com"))
+    cdc_files =  [
+        os.path.join(os.path.abspath('crypto.com'), x)
+        for x in os.listdir(os.path.abspath('crypto.com'))
         if "crypto_transactions_record" in x
     ]
     if len(cdc_files) == 0:
