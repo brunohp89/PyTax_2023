@@ -9,8 +9,7 @@ PyTax is a repository containing a series of python scripts that allow you to do
 - The output of each script is a properly formatted dataframe that can be concatenated with other dataframes produced by different scripts.
 - The repository includes a requirements.txt file for easy installation of required packages.
 - API tokens for Ethereum (etherscan.io), BSC (bscscan.com), Polygon (polygonscan.com), and Cardano (blockfrost.io) are required and should be stored in a .json file in the same directory as the scripts.
-- Importing the Scripts
-- The scripts in PyTax can be imported like any other python package, allowing you to call the functions inside the script in your own projects.
+
 
 ## Usage
 To use the scripts in PyTax, simply follow these steps:
