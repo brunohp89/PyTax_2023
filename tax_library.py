@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 import requests
 from PricesClass import Prices
-
+import matplotlib.pyplot as plt
 
 fiat_list = [
     "AUD",
@@ -515,6 +515,50 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
                 "Fee Fiat",
             ] = fiat_prices
     return df_in
+
+
+def plot_balances(
+    df, columns=None, aggregate=False, colors=None, start_date=None, end_date=None
+):
+    """
+    Plots a pandas dataframe with a date index.
+    :param df: The dataframe to plot
+    :param columns: The columns to plot (default is all columns)
+    :param aggregate: The aggregation method to use (default is no aggregation)
+    :param colors: The colors to use for the plot (default is None)
+    :param start_date: The start date of the date range to filter by (default is None)
+    :param end_date: The end date of the date range to filter by (default is None)
+    """
+    if start_date is not None and end_date is not None:
+        if start_date > end_date:
+            raise ValueError("End date has to be after start date")
+    # Use all columns if none are specified
+    if start_date:
+        df = df[df.index >= start_date]
+    if end_date:
+        df = df[df.index <= end_date]
+
+    if columns is None:
+        columns = df.columns
+    # Aggregate data if specified
+    if aggregate:
+        df = df[columns].sum(axis=1)
+        if colors:
+            ax = df.plot(color=colors)
+
+        else:
+            ax = df.plot()
+
+    # Plot the data
+    else:
+        if colors:
+            ax = df[columns].plot(color=colors)
+        else:
+            ax = df[columns].plot()
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Value")
+    plt.xticks(rotation=45)
+    plt.show()
 
 
 def income(

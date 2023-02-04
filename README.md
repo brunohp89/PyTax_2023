@@ -90,6 +90,26 @@ balances_fiat(
     year_sel=None
 )
 ```
+```plot_balances```: Plots the balances dataframe calculated with ```balances_fiat``` or ```balances```. You can pass a 
+    list of coins to plot. If None, all coins will be plotted. Default is None. If aggregate is set to True the sum of the daily holdings for the subset will be summed. You can pass a list of colors (has to be the same length as columns). start_date and end_date (datetime, optional) allows for date range filtering. If None, no date range filter will be applied. Default is None.
+
+```python
+import tax_library as tx
+import datetime as dt
+
+tx.plot_balances(
+    df, columns=['BTC','ETH'], aggregate=False, colors=['orange','black'], start_date=dt.date(2022,9,1), end_date=dt.date(2022,11,1)
+)
+```
+
+
+```python
+plot_balances(
+    df, columns=['BTC','ETH'], aggregate=True, colors=None, start_date=dt.date(2022,9,1), end_date=dt.date(2022,11,1)
+)
+```
+
+
 Note: This script will later be broken down into two parts as it also contains some utility functions used in other scripts in the PyTax scripts.
 
 ## Contributing
