@@ -17,7 +17,7 @@ To use the scripts in PyTax, simply follow these steps:
 
 1. Clone or download the repository.
 2. Install the required packages listed in the requirements.txt file.
-3. Store your API tokens in a .json file in the same directory as the scripts (see example .json file).
+3. Store your API tokens in a .json file in the same directory as the scripts (see example .json file below).
 4. Import the script for the CEX or blockchain you want to track transactions for.
 5. Call the function ```get_transactions_df``` and pass in either a wallet address or folder containing .csv files as arguments.
 
@@ -36,6 +36,16 @@ And for Ethereum:
 import ethereum
 
 df = ethereum.get_transactions_df(wallet_address, ethscan_token)
+``` 
+
+### JSON example:
+``` json
+{
+    "BSCScanToken": "XXXXXXXXXXXXX",
+    "PolygonScanToken": "XXXXXXXXXXXXX",
+    "ETHScanToken": "XXXXXXXXXXXXX",
+    "BlockfrosToken": "XXXXXXXXXXXXX"
+}
 ``` 
 
 ## Tax Library
