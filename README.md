@@ -3,9 +3,9 @@ PyTax is a repository containing a series of python scripts that allow you to do
 
 ## Features
 - The CEXs currently supported are: Binance, Crypto.com, Crypto.com Exchange, Uphold, Coinbase, and Kucoin.
-- The blockchains supported are Ethereum, Bitcoin, Solana, Cardano, BSC, Cronos Chain, NEAR, Cosmos and Polygon.
+- The blockchains supported are Ethereum, Bitcoin, Solana, Cardano, BSC, Cronos Chain, NEAR, Cosmos, VeChain and Polygon.
 - For Ethereum and Polygon, there's a function to track all your NFT buys and sells.
-- The function ```get_transactions_df``` in each script requires either a wallet address (for blockchains) or a folder containing all .csv files downloaded from the CEX.
+- The function ```get_transactions_df``` in each script requires either a wallet address (for blockchains with the exception of VeChain) or a folder containing all .csv files downloaded from the CEX.
 - The output of each script is a properly formatted dataframe that can be concatenated with other dataframes produced by different scripts.
 - The repository includes a requirements.txt file for easy installation of required packages.
 - API tokens for Ethereum (etherscan.io), BSC (bscscan.com), Polygon (polygonscan.com), and Cardano (blockfrost.io) are required and should be stored in a .json file in the same directory as the scripts.
@@ -19,6 +19,7 @@ To use the scripts in PyTax, simply follow these steps:
 3. Store your API tokens in a .json file in the same directory as the scripts (see example .json file below).
 4. Import the script for the CEX or blockchain you want to track transactions for.
 5. Call the function ```get_transactions_df``` and pass in either a wallet address or folder containing .csv files as arguments.
+6. For VeChain tracking you will have to download manually the transactions using the link Download transactions using this website https://explore.vechain.org/download?address=YOURADDRESS and put the file in a folder named vechain.
 
 ## Example
 Here is an example of how you could use the script for Binance:
