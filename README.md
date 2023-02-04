@@ -102,6 +102,7 @@ tx.plot_balances(
 )
 ```
 
+   ![1](https://user-images.githubusercontent.com/55148471/216779839-38188883-70c1-4541-ba59-f2761e2465ba.png)
 
 ```python
 plot_balances(
@@ -109,6 +110,7 @@ plot_balances(
 )
 ```
 
+   ![2](https://user-images.githubusercontent.com/55148471/216779845-5d85bc67-d6fd-45e6-a2a5-02458cc28bc5.png)
 
 Note: This script will later be broken down into two parts as it also contains some utility functions used in other scripts in the PyTax scripts.
 
