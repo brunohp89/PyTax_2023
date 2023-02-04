@@ -3,7 +3,7 @@ PyTax is a repository containing a series of python scripts that allow you to do
 
 ## Features
 - The CEXs currently supported are: Binance, Crypto.com, Crypto.com Exchange, Uphold, Coinbase, and Kucoin.
-- The blockchains supported are Ethereum, Bitcoin, Solana, Cardano, BSC, Cronos Chain, NEAR, and Polygon.
+- The blockchains supported are Ethereum, Bitcoin, Solana, Cardano, BSC, Cronos Chain, NEAR, Cosmos and Polygon.
 - For Ethereum and Polygon, there's a function to track all your NFT buys and sells.
 - The function ```get_transactions_df``` in each script requires either a wallet address (for blockchains) or a folder containing all .csv files downloaded from the CEX.
 - The output of each script is a properly formatted dataframe that can be concatenated with other dataframes produced by different scripts.
