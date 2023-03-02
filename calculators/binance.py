@@ -4,10 +4,6 @@ import numpy as np
 import pandas as pd
 import tax_library as tx
 
-
-bin_prices = Prices()
-
-
 # ACQUISTI FATTI CON LA CARTA DI CREDITO DEVONO ESSERE INSERITE MANUALMENTE NEL DATAFRAME FIX
 
 
@@ -578,7 +574,6 @@ def get_transactions_df(raw=False, card_transactions=False):
     ]
     vout.loc[vout["Notes"] == "Trade", "Notes"] = ""
 
-    global bin_prices
     bin_prices = Prices()
 
     vout = tx.price_transactions_df(vout, bin_prices)

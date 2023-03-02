@@ -4,6 +4,8 @@ import datetime as dt
 import requests
 from PricesClass import Prices
 import matplotlib.pyplot as plt
+import os
+import sys
 
 fiat_list = [
     "AUD",
@@ -187,11 +189,11 @@ def get_bnb(address):
 
 
 def get_fiat_investment(
-    transactions_df,
-    currency="EUR",
-    cummulative=True,
-    year_sel="all",
-    **credit_card_transactions,
+        transactions_df,
+        currency="EUR",
+        cummulative=True,
+        year_sel="all",
+        **credit_card_transactions,
 ):
     if credit_card_transactions is not None:
         ind_extra = []
@@ -220,8 +222,8 @@ def get_fiat_investment(
     in_fiat.loc[in_fiat["Coin"] != currency, "Amount"] = NewAmount
 
     if (
-        in_fiat[in_fiat["Amount"] > 0].shape[0] > 0
-        and in_fiat[in_fiat["Amount"] < 0].shape[0] > 0
+            in_fiat[in_fiat["Amount"] > 0].shape[0] > 0
+            and in_fiat[in_fiat["Amount"] < 0].shape[0] > 0
     ):
         in_fiat = in_fiat[in_fiat["Amount"] > 0]
         in_fiat["Amount"] *= -1
@@ -272,8 +274,8 @@ def write_excel(file_name, **sheets):
 
 def calcolo_giacenza_media(df):
     return (
-        df.sum(axis=1)[df.sum(axis=1) != 0].sum(axis=0)
-        / df.sum(axis=1)[df.sum(axis=1) != 0].shape[0]
+            df.sum(axis=1)[df.sum(axis=1) != 0].sum(axis=0)
+            / df.sum(axis=1)[df.sum(axis=1) != 0].shape[0]
     )
 
 
@@ -320,7 +322,7 @@ def get_primo_ultimo_giorno(df, tax_year):
 
 
 def balances_fiat(
-    balances: pd.DataFrame, prices: Prices, currency="eur", year_sel=None
+        balances: pd.DataFrame, prices=Prices(), currency="eur", year_sel=None
 ):
     balances_in = balances.copy()
     balances_in.columns = [x.upper() for x in balances_in.columns]
@@ -348,7 +350,7 @@ def balances_fiat(
 
 
 def prepare_df(
-    df_in: pd.DataFrame, year_sel=None, cummulative=True, allow_negative=False
+        df_in: pd.DataFrame, year_sel=None, cummulative=True, allow_negative=False
 ):
     # Il df dev'essere un dataframe con index orario senza NaN
     df = df_in.copy()
@@ -372,13 +374,13 @@ def prepare_df(
         temp_df = temp_df[temp_df.index <= dt.date(year_sel, 12, 31)]
 
     if not allow_negative:
-        temp_df[temp_df < 10**-9] = 0
+        temp_df[temp_df < 10 ** -9] = 0
     temp_df = temp_df.loc[
-        :,
-        ~temp_df.columns.isin(
-            list(temp_df.sum(axis=0)[temp_df.sum(axis=0) == 0].index)
-        ),
-    ]
+              :,
+              ~temp_df.columns.isin(
+                  list(temp_df.sum(axis=0)[temp_df.sum(axis=0) == 0].index)
+              ),
+              ]
 
     return temp_df
 
@@ -518,7 +520,7 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
 
 
 def plot_balances(
-    df, columns=None, aggregate=False, colors=None, start_date=None, end_date=None
+        df, columns=None, aggregate=False, colors=None, start_date=None, end_date=None
 ):
     """
     Plots a pandas dataframe with a date index.
@@ -562,13 +564,13 @@ def plot_balances(
 
 
 def income(
-    transactions: pd.DataFrame,
-    type_out="fiat",
-    cummulative=True,
-    year_sel=None,
-    name=None,
-    include_cashback=True,
-    allow_negative=False,
+        transactions: pd.DataFrame,
+        type_out="fiat",
+        cummulative=True,
+        year_sel=None,
+        name=None,
+        include_cashback=True,
+        allow_negative=True,
 ):
     # Obtain daily income (earn products/supercharge) in cryptocurrency of native fiat
     rendita = transactions[transactions["Tag"].isin(["Reward", "Interest"])].copy()
@@ -619,3 +621,31 @@ def income(
         return prepare_df(temp_df_fiat, year_sel, cummulative, allow_negative)
     else:
         return prepare_df(temp_df_token, year_sel, cummulative, allow_negative)
+
+
+def import_script(script_name):
+    try:
+        with open(os.path.join(os.path.abspath("calculators"), script_name), 'r') as f:
+            code = compile(f.read(), script_name, 'exec')
+            exec(code, globals())
+        print(f"Script '{script_name}' imported successfully")
+    except FileNotFoundError:
+        print(f"Script '{script_name}' not found")
+
+
+def import_function_from_script(module_name, function_name):
+    sys.path.append(os.path.abspath("calculators"))
+    module = __import__(module_name)
+    imported_function = getattr(module, function_name)
+    globals()[function_name] = imported_function
+    return imported_function
+
+
+def generate_xlsx(file_name, sheet_names, data):
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+    for sheet_name, sheet_data in zip(sheet_names, data):
+        # Write each dataframe to a different worksheet.
+        sheet_data.to_excel(writer, sheet_name=sheet_name)
+    # Close the Pandas Excel writer and output the Excel file.
+    writer.close()
