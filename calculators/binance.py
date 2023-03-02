@@ -223,8 +223,16 @@ def get_transactions_df(raw=False, card_transactions=False):
         final_df.loc[
             final_df["Operation"] == "Main and Funding Account Transfer", "Operation"
         ] = "Main and funding account transfer"
+        final_df.loc[
+            final_df["Operation"] == "Binance Convert", "Operation"
+        ] = "Large OTC trading"
+        final_df.loc[
+            final_df["Operation"] == "Crypto Box", "Operation"
+        ] = "BNB Vault Rewards"
 
         operations_col = [
+            "Crypto Box",
+            "Binance Convert",
             "Card Cashback",
             "Rewards Distribution",
             "Simple Earn Locked Rewards",
