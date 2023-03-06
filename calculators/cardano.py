@@ -4,9 +4,17 @@ import datetime as dt
 import tax_library as tx
 from PricesClass import Prices
 from blockfrost import BlockFrostApi
+import os
+import json
 
+def get_transactions_df(address):
 
-def get_transactions_df(address, blockfrost_api):
+    with open(os.getcwd() + "\\.json") as creds:
+        blockfrost_api = json.load(creds)["BlockFrostToken"]
+
+    if blockfrost_api == "":
+        raise PermissionError("No API KEY for BlockFrost Scan found in .json")
+
     api = BlockFrostApi(project_id=blockfrost_api)
     stake_address = api.address(address)
     transactions = []

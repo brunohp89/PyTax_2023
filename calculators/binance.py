@@ -607,30 +607,15 @@ def get_binance_card_spending(total_spending=False, year=None):
     return round(vout, 2)
 
 
-def get_eur_invested(year=None):
+def get_eur_invested(year=None, net=False):
     all_trx = get_transactions_df(raw=True)
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
-        all_trx = all_trx[all_trx["Change"] < 0]
-        return -all_trx.loc[
-            np.logical_and(
-                all_trx["Coin"] == "EUR",
-                ~all_trx["Operation"].isin(
-                    ["Deposit", "Withdraw", "Fiat Deposit", "Binance Card Spending"]
-                ),
-            ),
-            "Change",
-        ].sum()
 
-    all_eur_in = all_trx.loc[
-        np.logical_and(
-            all_trx["Coin"] == "EUR",
-            all_trx["Operation"].isin(["Deposit", "Withdraw", "Fiat Deposit"]),
-        ),
-        "Change",
-    ].sum()
-    card_spending = -all_trx.loc[
-        all_trx["Operation"] == "Binance Card Spending", "Change"
-    ].sum()
-    print(f"€{round(all_eur_in, 2)} in with €{round(card_spending, 2)} card spending")
-    return all_eur_in - card_spending
+    all_in = all_trx.query("Coin == 'EUR' and Operation!='Binance Card Spending'")
+    all_in = all_in.query("Operation not in ['Deposit', 'Fiat Deposit']")
+    if not net:
+        return -round(all_in.query("Change < 0")['Change'].sum(),2)
+    else:
+        print(f'{-round(all_in.query("Change < 0")["Change"].sum(),2)} EUR invested {round(all_in.query("Change > 0")["Change"].sum(),2)} EUR from sales')
+        return -round(all_in.query("Change < 0")["Change"].sum(),2) - round(all_in.query("Change > 0")["Change"].sum(),2)

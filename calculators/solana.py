@@ -1,5 +1,4 @@
-import numpy as np
-
+import json
 from PricesClass import Prices
 import datetime as dt
 import pandas as pd
@@ -12,14 +11,23 @@ import pickle as pk
 def get_transaction_contents(tokens_transactions):
     contents_pd = pd.DataFrame()
     contents, hashes = [], []
+
+    with open(os.getcwd() + "\\.json") as creds:
+        apikey = json.load(creds)["SolScanAPIToken"]
+
+    if apikey == "":
+        raise PermissionError("No API KEY for SolScan found in .json")
+
     for transaction in set(tokens_transactions["Txhash"]):
         resp_loop = requests.get(
-            f"https://public-api.solscan.io/transaction/{transaction}"
+            f"https://public-api.solscan.io/transaction/{transaction}",
+            headers={'accept': 'application/json', 'token': f'{apikey}'}
         )
         i = 0
         while i <= 3 and resp_loop.status_code != 200:
             resp_loop = requests.get(
-                f"https://public-api.solscan.io/transaction/{transaction}"
+                f"https://public-api.solscan.io/transaction/{transaction}",
+                headers={'accept': 'application/json', 'token': f'{apikey}'}
             )
         contents.append(resp_loop.json())
         hashes.append(transaction)
@@ -32,8 +40,15 @@ def get_transaction_contents(tokens_transactions):
 def get_transactions_df(address):
     os.makedirs(f"{os.getcwd()}\\solana", exist_ok=True)
 
+    with open(os.getcwd() + "\\.json") as creds:
+        apikey = json.load(creds)["SolScanAPIToken"]
+
+    if apikey == "":
+        raise PermissionError("No API KEY for SolScan found in .json")
+
     response = requests.get(
-        f"https://public-api.solscan.io/account/exportTransactions?account={address}&type=all&fromTime=1611839871&toTime={int(dt.datetime.now().timestamp())}"
+        f"https://public-api.solscan.io/account/exportTransactions?account={address}&type=all&fromTime=1611839871&toTime={int(dt.datetime.now().timestamp())}",
+        headers={'accept': 'application/json', 'token': f'{apikey}'}
     )
     with open("temp.csv", "wb") as handle:
         handle.write(response.content)
@@ -107,7 +122,7 @@ def get_transactions_df(address):
     if tokens_transactions.shape[0] > 0:
         if f"{address[0:10]}-contents.pickle" in os.listdir(f"{os.getcwd()}\\solana"):
             with open(
-                f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "rb"
+                    f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "rb"
             ) as handle:
                 history_df = pk.load(handle)
             tokens_transactions = pd.merge(
@@ -121,19 +136,19 @@ def get_transactions_df(address):
                     [history_df, get_transaction_contents(new_transactions)]
                 )
                 with open(
-                    f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "wb"
+                        f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "wb"
                 ) as handle:
                     pk.dump(contents_pd, handle)
                 tokens_transactions = response_pd[
                     response_pd["Symbol(off-chain)"] != "SOL"
-                ].copy()
+                    ].copy()
                 tokens_transactions = pd.merge(
                     tokens_transactions, contents_pd, on="Txhash", how="left"
                 )
         else:
             contents_pd = get_transaction_contents(tokens_transactions)
             with open(
-                f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "wb"
+                    f"{os.getcwd()}\\solana\\{address[0:10]}-contents.pickle", "wb"
             ) as handle:
                 pk.dump(contents_pd, handle)
             tokens_transactions = pd.merge(
@@ -149,71 +164,164 @@ def get_transactions_df(address):
         tokens_transactions["To Amount"] = None
         tokens_transactions["To Coin"] = None
 
-        # tokens_transactions.drop_duplicates(subset=['Txhash'], inplace=True)
-        # tokens_transactions['Txcontent'] = [k[0] for k in tokens_transactions['Txcontent']]
+        # STEPN Transactions ONLY are going to be correctly calculated
         for transaction in set(tokens_transactions["Txhash"]):
             trx_content = tokens_transactions.loc[
                 tokens_transactions["Txhash"] == transaction, "Txcontent"
             ].tolist()[0]
-            swaps = [i for i, k in enumerate(trx_content["logMessage"]) if "Swap" in k]
-            transfers = [
-                i for i, k in enumerate(trx_content["logMessage"]) if "Transfer" in k
-            ]
+
             temp_df = tokens_transactions[
-                tokens_transactions["Txhash"] == transaction
-            ].iloc[[0], :]
-            if len(swaps) > 0:
-                amount, coin = [], []
-                for i in range(len(swaps)):
-                    coin.extend(
-                        [
-                            k["extra"]["symbol"]
-                            for k in trx_content["innerInstructions"][i][
-                                "parsedInstructions"
-                            ]
-                            if "mint" not in k["name"]
-                        ]
-                    )
-                    amount.extend(
-                        [
-                            k["params"]["amount"]
-                            for k in trx_content["innerInstructions"][i][
-                                "parsedInstructions"
-                            ]
-                            if "mint" not in k["name"]
-                        ]
-                    )
-                tokens_transactions = tokens_transactions[
-                    tokens_transactions["Txhash"] != transaction
+                          tokens_transactions["Txhash"] == transaction
+                          ].iloc[[0], :]
+            tokens_transactions = tokens_transactions[
+                tokens_transactions["Txhash"] != transaction
                 ]
-                temp_df["From Coin"] = coin[0]
-                temp_df["To Coin"] = coin[-1]
-                temp_df["From Amount"] = -int(amount[0]) / 10**9
-                temp_df["To Amount"] = int(amount[-1]) / 10**9
+            if 'Create' in trx_content['logMessage'][1]:
+                if 'transfer' in trx_content['parsedInstruction'][-1]['name']:
+
+                    from_account = trx_content['parsedInstruction'][-1]['extra']['sourceOwner']
+                    to_account = trx_content['parsedInstruction'][-1]['extra']['destinationOwner']
+                    to_amount, from_amount, to_coin, from_coin = (None, None, None, None)
+                    if from_account == address:
+                        from_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                        fee = -trx_content['fee'] / (10 ** 6)
+                        from_amount = -int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                                10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                    else:
+                        to_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                        to_amount = int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                                10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                        fee = 0
+
+                    temp_df['From'] = from_account
+                    temp_df['To'] = to_account
+                    temp_df["From Coin"] = from_coin
+                    temp_df["To Coin"] = to_coin
+                    temp_df["From Amount"] = from_amount
+                    temp_df["To Amount"] = to_amount
+                    temp_df["Fee"] = fee
+                    if 'STEPN' in from_account:
+                        temp_df["Tag"] = "Reward"
+                    else:
+                        temp_df["Tag"] = "Movement"
+                    temp_df["Notes"] = "STEPN exchange"
+
+                else:
+                    continue
+
+            elif '111111' in trx_content['logMessage'][1]:
+
+                if len(trx_content['innerInstructions']) > 0:
+                    from_amount = int(
+                        trx_content['innerInstructions'][0]['parsedInstructions'][0]['params']['amount']) / (10 **
+                                                                                                             trx_content[
+                                                                                                                 'innerInstructions'][
+                                                                                                                 0][
+                                                                                                                 'parsedInstructions'][
+                                                                                                                 0][
+                                                                                                                 'extra'][
+                                                                                                                 'decimals'])
+                    from_coin = trx_content['innerInstructions'][0]['parsedInstructions'][0]['extra']['symbol']
+                    to_amount = int(
+                        trx_content['innerInstructions'][-1]['parsedInstructions'][-1]['params']['amount']) / (10 **
+                                                                                                               trx_content[
+                                                                                                                   'innerInstructions'][
+                                                                                                                   -1][
+                                                                                                                   'parsedInstructions'][
+                                                                                                                   -1][
+                                                                                                                   'extra'][
+                                                                                                                   'decimals'])
+                    to_coin = trx_content['innerInstructions'][-1]['parsedInstructions'][-1]['extra']['symbol']
+                    fee = trx_content['fee'] / (10 ** 9)
+
+                    temp_df["From Coin"] = from_coin
+                    temp_df["To Coin"] = to_coin
+                    temp_df["From Amount"] = -from_amount
+                    temp_df["To Amount"] = to_amount
+                    temp_df["Fee"] = -fee
+                    temp_df["Tag"] = "Trade"
+                    temp_df["Notes"] = "STEPN exchange"
+                else:
+                    from_account = trx_content['parsedInstruction'][-1]['extra']['sourceOwner']
+                    to_account = trx_content['parsedInstruction'][-1]['extra']['destinationOwner']
+                    to_amount, from_amount, to_coin, from_coin = (None, None, None, None)
+                    if from_account == address:
+                        from_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                        fee = -trx_content['fee'] / (10 ** 6)
+                        from_amount = -int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                                10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                    else:
+                        to_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                        to_amount = int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                                10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                        fee = 0
+
+                    temp_df['From'] = from_account
+                    temp_df['To'] = to_account
+                    temp_df["From Coin"] = from_coin
+                    temp_df["To Coin"] = to_coin
+                    temp_df["From Amount"] = from_amount
+                    temp_df["To Amount"] = to_amount
+                    temp_df["Fee"] = fee
+                    if 'STEPN' in from_account:
+                        temp_df["Tag"] = "Reward"
+                    else:
+                        temp_df["Tag"] = "Movement"
+                    temp_df["Notes"] = "STEPN exchange"
+
+
+            elif 'MintToChecked' in trx_content['logMessage'][1]:
+                continue
+            elif 'Transfer' in trx_content['logMessage'][1]:
+                from_account = trx_content['parsedInstruction'][-1]['extra']['sourceOwner']
+                to_account = trx_content['parsedInstruction'][-1]['extra']['destinationOwner']
+                to_amount, from_amount, to_coin, from_coin = (None, None, None, None)
+                if from_account == address:
+                    from_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                    fee = -trx_content['fee'] / (10 ** 6)
+                    from_amount = -int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                            10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                else:
+                    to_coin = trx_content['parsedInstruction'][-1]['extra']['symbol']
+                    to_amount = int(trx_content['parsedInstruction'][-1]['extra']['amount']) / (
+                            10 ** int(trx_content['parsedInstruction'][-1]['extra']['decimals']))
+                    fee = 0
+
+                temp_df['From'] = from_account
+                temp_df['To'] = to_account
+                temp_df["From Coin"] = from_coin
+                temp_df["To Coin"] = to_coin
+                temp_df["From Amount"] = from_amount
+                temp_df["To Amount"] = to_amount
+                temp_df["Fee"] = fee
+                if 'STEPN' in from_account:
+                    temp_df["Tag"] = "Reward"
+                else:
+                    temp_df["Tag"] = "Movement"
+                temp_df["Notes"] = "STEPN exchange"
+
+            elif 'Approve' in trx_content['logMessage'][1]:
+                from_amount = int(trx_content['innerInstructions'][0]['parsedInstructions'][0]['params']['amount']) / (
+                            10 ** trx_content['innerInstructions'][0]['parsedInstructions'][0]['extra']['decimals'])
+                from_coin = trx_content['innerInstructions'][0]['parsedInstructions'][0]['extra']['symbol']
+                to_amount = int(trx_content['innerInstructions'][-1]['parsedInstructions'][-1]['params']['amount']) / (
+                            10 ** trx_content['innerInstructions'][-1]['parsedInstructions'][-1]['extra']['decimals'])
+                to_coin = trx_content['innerInstructions'][-1]['parsedInstructions'][-1]['extra']['symbol']
+                fee = trx_content['fee'] / (10 ** 9)
+
+                temp_df["From Coin"] = from_coin
+                temp_df["To Coin"] = to_coin
+                temp_df["From Amount"] = -from_amount
+                temp_df["To Amount"] = to_amount
+                temp_df["Fee"] = -fee
                 temp_df["Tag"] = "Trade"
                 temp_df["Notes"] = "STEPN exchange"
-                tokens_transactions = pd.concat([tokens_transactions, temp_df])
-            elif len(transfers) > 0:
-                tokens_transactions = tokens_transactions[
-                    tokens_transactions["Txhash"] != transaction
-                ]
-                temp_df["To"] = trx_content["tokenTransfers"][0]["destination_owner"]
-                temp_df["From"] = trx_content["tokenTransfers"][0]["source_owner"]
-                temp_df["To Amount"] = (
-                    int(trx_content["tokenTransfers"][0]["amount"]) / 10**9
-                )
-                temp_df["To Coin"] = trx_content["tokenTransfers"][0]["token"]["symbol"]
-                temp_df["Tag"] = "Movement"
-                tokens_transactions = pd.concat([tokens_transactions, temp_df])
-            elif temp_df["SPL BalanceChange"].values[0] == 0:
-                continue
             else:
                 print(
                     f"Attention: transaction {transaction} for Solana address {address} is not being correctly calculated"
                 )
-                break
+            tokens_transactions = pd.concat([tokens_transactions, temp_df])
 
-        tokens_transactions["Fee"] = tokens_transactions["Fee (SOL)"]
         tokens_transactions.index = [
             dt.datetime.fromtimestamp(pd.Timestamp(k).timestamp())
             for k in tokens_transactions["BlockTime"]
@@ -249,23 +357,6 @@ def get_transactions_df(address):
             axis=1,
         )
 
-        tokens_transactions.loc[
-            tokens_transactions["From"] == address, "To Amount"
-        ] *= -1
-        tokens_transactions.loc[tokens_transactions["To"] == address, "Fee"] *= 0
-
-        sub1 = tokens_transactions.loc[
-            tokens_transactions["From Amount"] > 0, ["From Amount", "From Coin"]
-        ]
-        sub2 = tokens_transactions.loc[
-            tokens_transactions["From Amount"] > 0, ["To Amount", "To Coin"]
-        ]
-        tokens_transactions.loc[
-            tokens_transactions["From Amount"] > 0, ["To Amount", "To Coin"]
-        ] = sub1.values
-        tokens_transactions.loc[
-            tokens_transactions["From Amount"] > 0, ["From Amount", "From Coin"]
-        ] = sub2.values
         vout = pd.concat([tokens_transactions, normal_transactions])
         vout.sort_index(inplace=True)
 
@@ -277,31 +368,11 @@ def get_transactions_df(address):
 
     vout["Fee"] = vout["Fee"].apply(lambda x: -abs(x))
 
-    stepn = vout[
-        np.logical_or(
-            vout["From"].str.contains("STEPN"), vout["To"].str.contains("STEPN")
-        )
-    ]
-    if stepn.shape[0] > 0:
-        stepn_bal = tx.balances(stepn)
-        vout.loc[
-            np.logical_and(
-                np.logical_or(
-                    vout["From"].str.contains("STEPN"), vout["To"].str.contains("STEPN")
-                ),
-                np.logical_or(
-                    vout["From Coin"].isin(stepn_bal.columns),
-                    vout["To Coin"].isin(stepn_bal.columns),
-                ),
-            ),
-            "Tag",
-        ] = "Reward"
-
     # Means that we have some staking rewards
-    if vout["From Amount"].sum() + vout["To Amount"].sum() + vout["Fee"].sum() < 1:
+    if round(vout["From Amount"].sum() + vout["To Amount"].sum() + vout["Fee"].sum(), 7) > 0:
         temp_df = vout.iloc[[-1], :].copy()
         temp_df["From Amount"] = -(
-            vout["From Amount"].sum() + vout["To Amount"].sum() + vout["Fee"].sum()
+                vout["From Amount"].sum() + vout["To Amount"].sum() + vout["Fee"].sum()
         )
         temp_df["Tag"] = "Reward"
         temp_df["From"] = temp_df["To"] = None

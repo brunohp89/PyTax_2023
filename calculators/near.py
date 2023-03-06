@@ -5,7 +5,6 @@ import datetime as dt
 import pandas as pd
 import psycopg2
 
-
 conn = psycopg2.connect(
     host="104.199.89.51",
     database="mainnet_explorer",
@@ -41,11 +40,11 @@ def get_transactions_df(addresses_list):
     normal_transactions["To"] = normal_transactions["To"].map(lambda x: x.lower())
 
     normal_transactions.index = normal_transactions["timestamp"].map(
-        lambda x: dt.datetime.fromtimestamp(int(x) / 10**9)
+        lambda x: dt.datetime.fromtimestamp(int(x) / 10 ** 9)
     )
 
     normal_transactions["args"] = normal_transactions["args"].map(
-        lambda x: int(x["deposit"]) / 10**24
+        lambda x: int(x["deposit"]) / 10 ** 24
     )
 
     normal_transactions.rename(
@@ -92,15 +91,15 @@ def get_transactions_df(addresses_list):
         nep20_transactions["From"] = nep20_transactions["From"].map(lambda x: x.lower())
         nep20_transactions["To"] = nep20_transactions["To"].map(lambda x: x.lower())
 
-        nep20_transactions.loc[
-            nep20_transactions["To"] == "deposits.grow.sweat".lower(), "amount"
-        ] = 0  # Sweat staking
+        #        nep20_transactions.loc[
+        #           nep20_transactions["To"] == "deposits.grow.sweat".lower(), "amount"
+        #      ] = 0  # Sweat staking
 
         nep20_transactions["amount"] = [
-            int(s) / 10**18 for s in nep20_transactions["amount"]
+            int(s) / 10 ** 18 for s in nep20_transactions["amount"]
         ]
         nep20_transactions["gas"] = [
-            int(s) / 10**18 for s in nep20_transactions["gas"]
+            int(s) / 10 ** 18 for s in nep20_transactions["gas"]
         ]
 
         nep20_transactions.loc[
@@ -124,7 +123,7 @@ def get_transactions_df(addresses_list):
             inplace=True,
         )
         nep20_transactions.index = nep20_transactions["timestamp"].map(
-            lambda x: dt.datetime.fromtimestamp(int(x) / 10**9)
+            lambda x: dt.datetime.fromtimestamp(int(x) / 10 ** 9)
         )
         nep20_transactions.drop(["timestamp"], axis=1, inplace=True)
 
@@ -156,6 +155,24 @@ def get_transactions_df(addresses_list):
         nep20_transactions["Fee Fiat"] = None
         nep20_transactions["Notes"] = None
         nep20_transactions["Source"] = "NEAR"
+
+        grow_jars = nep20_transactions.query("To == 'deposits.grow.sweat' or From == 'distributions.grow.sweat'").copy()
+        grow_jars['date'] = grow_jars.index.date
+
+        nep20_transactions = nep20_transactions.query("To != 'deposits.grow.sweat'").copy()
+        nep20_transactions = nep20_transactions.query("From != 'distributions.grow.sweat'").copy()
+
+        for i in grow_jars.query("To == 'deposits.grow.sweat'").index:
+            unlock_times = [(grow_jars.loc[[i], :].index + pd.Timedelta(days=x)).date[0] for x in [31, 91, 181, 366]]
+            unlock_times.append(i.date())
+            temp_df = grow_jars[grow_jars['date'].isin(unlock_times)].copy()
+            if temp_df.shape[0] > 0:
+                temp_df['From Amount'] = temp_df['From Amount'].sum()
+                temp_df = temp_df.query("From == 'distributions.grow.sweat'").copy()
+                temp_df.drop(['date'], axis=1, inplace=True)
+                temp_df['Tag'] = 'Reward'
+                temp_df['Notes'] = 'Growth Jar SWEAT'
+                nep20_transactions = pd.concat([nep20_transactions, temp_df])
 
         outdf = pd.concat([nep20_transactions, normal_transactions])
     else:

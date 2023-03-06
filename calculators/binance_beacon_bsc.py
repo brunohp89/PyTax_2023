@@ -99,82 +99,85 @@ def get_transactions_df(address, beacon_address=None, burn_meccanism_coins=None)
     url = f"https://api.bscscan.com/api?module=account&action=txlistinternal&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={api_key}"
     response_internal = requests.get(url)
     internal_transactions = pd.DataFrame(response_internal.json().get("result"))
-    internal_transactions = internal_transactions[
-        internal_transactions["isError"] == "0"
-    ]
-    internal_transactions.reset_index(inplace=True, drop=True)
+    if internal_transactions.shape[0] > 0:
+        internal_transactions = internal_transactions[
+            internal_transactions["isError"] == "0"
+        ]
+        internal_transactions.reset_index(inplace=True, drop=True)
 
-    internal_transactions["from"] = internal_transactions["from"].map(
-        lambda x: x.lower()
-    )
-    internal_transactions["to"] = internal_transactions["to"].map(lambda x: x.lower())
-    internal_transactions["value"] = [
-        -int(internal_transactions.loc[i, "value"]) / 10**18
-        if internal_transactions.loc[i, "from"] == address.lower()
-        else int(internal_transactions.loc[i, "value"]) / 10**18
-        for i in range(internal_transactions.shape[0])
-    ]
+        internal_transactions["from"] = internal_transactions["from"].map(
+            lambda x: x.lower()
+        )
+        internal_transactions["to"] = internal_transactions["to"].map(lambda x: x.lower())
+        internal_transactions["value"] = [
+            -int(internal_transactions.loc[i, "value"]) / 10**18
+            if internal_transactions.loc[i, "from"] == address.lower()
+            else int(internal_transactions.loc[i, "value"]) / 10**18
+            for i in range(internal_transactions.shape[0])
+        ]
 
-    internal_transactions.drop(
-        [
-            "blockNumber",
-            "contractAddress",
-            "input",
-            "type",
-            "gas",
-            "gasUsed",
-        ],
-        axis=1,
-        inplace=True,
-    )
-
+        internal_transactions.drop(
+            [
+                "blockNumber",
+                "contractAddress",
+                "input",
+                "type",
+                "gas",
+                "gasUsed",
+            ],
+            axis=1,
+            inplace=True,
+        )
+    else:
+        internal_transactions = pd.DataFrame(None,
+                                             columns=['timeStamp', 'hash', 'from', 'to', 'value', 'gas'])
     # CRC20 TRANSACTIONS
     url = f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={api_key}"
     response = requests.get(url)
     erc20_transactions = pd.DataFrame(response.json().get("result"))
+    if erc20_transactions.shape[0] > 0:
+        erc20_transactions["from"] = erc20_transactions["from"].map(lambda x: x.lower())
+        erc20_transactions["to"] = erc20_transactions["to"].map(lambda x: x.lower())
 
-    erc20_transactions["from"] = erc20_transactions["from"].map(lambda x: x.lower())
-    erc20_transactions["to"] = erc20_transactions["to"].map(lambda x: x.lower())
+        erc20_transactions.reset_index(inplace=True, drop=True)
 
-    erc20_transactions.reset_index(inplace=True, drop=True)
+        erc20_transactions["value"] = [
+            int(s) / 10 ** int(x)
+            for s, x in zip(erc20_transactions["value"], erc20_transactions["tokenDecimal"])
+        ]
+        erc20_transactions["gas"] = [
+            -(
+                int(erc20_transactions.loc[i, "gasUsed"])
+                * int(erc20_transactions.loc[i, "gasPrice"])
+            )
+            / 10**18
+            for i in range(erc20_transactions.shape[0])
+        ]
 
-    erc20_transactions["value"] = [
-        int(s) / 10 ** int(x)
-        for s, x in zip(erc20_transactions["value"], erc20_transactions["tokenDecimal"])
-    ]
-    erc20_transactions["gas"] = [
-        -(
-            int(erc20_transactions.loc[i, "gasUsed"])
-            * int(erc20_transactions.loc[i, "gasPrice"])
+        erc20_transactions = erc20_transactions[
+            ~erc20_transactions["from"].isin(scam_tokens)
+        ]
+
+        erc20_transactions.drop(
+            [
+                "blockNumber",
+                "tokenDecimal",
+                "nonce",
+                "blockHash",
+                "transactionIndex",
+                "gasPrice",
+                "contractAddress",
+                "cumulativeGasUsed",
+                "gasUsed",
+                "confirmations",
+                "input",
+                "tokenName",
+            ],
+            axis=1,
+            inplace=True,
         )
-        / 10**18
-        for i in range(erc20_transactions.shape[0])
-    ]
 
-    erc20_transactions = erc20_transactions[
-        ~erc20_transactions["from"].isin(scam_tokens)
-    ]
-
-    erc20_transactions.drop(
-        [
-            "blockNumber",
-            "tokenDecimal",
-            "nonce",
-            "blockHash",
-            "transactionIndex",
-            "gasPrice",
-            "contractAddress",
-            "cumulativeGasUsed",
-            "gasUsed",
-            "confirmations",
-            "input",
-            "tokenName",
-        ],
-        axis=1,
-        inplace=True,
-    )
-
-    erc20_transactions.loc[erc20_transactions["from"] == address.lower(), "value"] *= -1
+        erc20_transactions.loc[erc20_transactions["from"] == address.lower(), "value"] *= -1
 
     # -------------------------------------------------------------------------------------------------------------------
 
@@ -428,6 +431,14 @@ def get_transactions_df(address, beacon_address=None, burn_meccanism_coins=None)
             temp_df.index = ind
             vout = pd.concat([vout, temp_df])
         vout.sort_index(inplace=True)
+
+    subcoin = vout.loc[vout['To Amount'] < 0, 'To Coin'].tolist()
+    vout.loc[vout['To Amount'] < 0, 'From Coin']=subcoin
+    vout.loc[vout['To Amount'] < 0, 'To Coin']=None
+
+    subamount = vout.loc[vout['To Amount'] < 0, 'To Amount'].tolist()
+    vout.loc[vout['To Amount'] < 0, 'From Amount'] = subamount
+    vout.loc[vout['To Amount'] < 0, 'To Amount'] = None
 
     vout = tx.price_transactions_df(vout, Prices())
     return vout

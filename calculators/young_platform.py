@@ -109,4 +109,5 @@ def get_eur_invested(year=None):
     all_trx = get_transactions_df()
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
-    return -round(all_trx.loc[all_trx["From Coin"] == "EUR", "From Amount"].sum(), 2)
+    rewards = all_trx.loc[all_trx["Tag"] == "Reward", "To Amount"].sum()
+    return -round(all_trx.loc[all_trx["From Coin"] == "EUR", "From Amount"].sum() + rewards, 2)
