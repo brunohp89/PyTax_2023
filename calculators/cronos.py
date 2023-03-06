@@ -12,8 +12,8 @@ scamtokens = ["0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23"]
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
 def get_crypto_dot_org_transactions():
     cronos_files = [
-        os.path.join(os.getcwd(), "../cryptodotorg", x)
-        for x in os.listdir(os.path.join(os.getcwd(), "../cryptodotorg"))
+        os.path.join(os.path.abspath('cryptodotorg'), x)
+        for x in os.listdir(os.path.abspath('cryptodotorg'))
         if "automatico" not in x
     ]
     if len(cronos_files) == 0:

@@ -29,7 +29,7 @@ scam_tokens = [
 ]
 
 
-def get_transactions_df(address, beacon_address=None, burn_meccanism_coins=None):
+def get_transactions_df(address, burn_meccanism_coins=None):
     # FOR A CERTAIN GENERATION OF SHITCOINS ON BNB CHAIN (i.e. SAFEMOON BASED SHITCOINS) IT IS IMPOSSIBLE
     # TO CALCULATE PRECISELY THE AMOUNTS BECAUSE OF SOME CONSTANT INTERNAL BURN MECHANISMS AND CONSTANT REWARDS
     # OF BURNT TOKENS TO HOLDERS. CALCULATE FIRT THE BALANCE WITH burn_meccanism_coins = None, CALCULATE
@@ -43,10 +43,7 @@ def get_transactions_df(address, beacon_address=None, burn_meccanism_coins=None)
 
     address = address.lower()
 
-    if beacon_address is not None:
-        beacon = tx.get_bnb(beacon_address)
-
-    # NORMAL TRANSACTIONS
+   # NORMAL TRANSACTIONS
     url = f"https://api.bscscan.com/api?module=account&action=txlist&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={api_key}"
     response = requests.get(url)
     normal_transactions = pd.DataFrame(response.json().get("result"))
@@ -188,6 +185,10 @@ def get_transactions_df(address, beacon_address=None, burn_meccanism_coins=None)
         on="hash",
         suffixes=("-N", "-I"),
     )
+
+    #Beacon chain transfers
+    all_trx.loc[all_trx['from-I'] == '0x0000000000000000000000000000000000001004', 'Coin'] = 'BNB'
+
     all_trx = pd.merge(
         all_trx, erc20_transactions, how="outer", on="hash", suffixes=("", "-C")
     )

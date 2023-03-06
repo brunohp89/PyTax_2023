@@ -1,6 +1,4 @@
 import os
-
-import numpy
 import numpy as np
 import pandas as pd
 from PricesClass import Prices
@@ -9,6 +7,7 @@ import datetime as dt
 
 
 # Extract only movements history, no need to extract orders as the orders are already included in the orders
+
 
 def get_transactions_df(raw=False):
     transactions_yp = [
@@ -48,15 +47,16 @@ def get_transactions_df(raw=False):
 
         for i in final_df.query("tx_type == 'ORDER_PLACEMENT'")['id']:
             temp_df = final_df[final_df['id'].isin([i, i + 1])].copy()
-            final_df = final_df.query(f"id not in ({i},{i + 1})")
+            if 'ORDER_CANCELLED' in temp_df['tx_type'].tolist():
+                temp_df = final_df[final_df['id'].isin([i, i + 2])].copy()
+                final_df = final_df.query(f"id not in ({i},{i + 2})")
+            else:
+                final_df = final_df.query(f"id not in ({i},{i + 1})")
 
             temp_df.loc[temp_df['debit'] == 0, 'From Coin'] = temp_df.loc[temp_df['debit'] < 0, 'currency'].values[0]
             temp_df.loc[temp_df['debit'] == 0, 'debit'] = temp_df.loc[temp_df['debit'] < 0, 'debit'].values[0]
 
             final_df = pd.concat([final_df, temp_df.loc[~pd.isna(temp_df['From Coin']), :]], axis=0)
-
-        for i in final_df.query("tx_type == 'ORDER_CANCELLED'")['id']:
-            final_df = final_df.query(f"id not in ({i},{i + 1})")
 
         for i in final_df.query("tx_type == 'WITHDRAWAL'")['id']:
             temp_df = final_df[final_df['id'].isin([i, i + 1])].copy()

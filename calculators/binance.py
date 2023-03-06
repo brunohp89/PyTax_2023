@@ -32,7 +32,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         # Acquisti con carta di credito e Rward Center
         fixes = pd.DataFrame(
             {
-                "User_ID": [120963140] * 19,
+                "User_ID": [120963140] * 20,
                 "UTC_Time": [
                     "2022-05-06 15:28:46",
                     "2022-05-06 15:28:46",
@@ -53,8 +53,9 @@ def get_transactions_df(raw=False, card_transactions=False):
                     "2022-08-27 09:06:42",
                     "2022-04-12 03:07:40",
                     "2022-12-02 04:07:40",
+                    "2022-12-02 03:07:40",
                 ],
-                "Account": ["Spot"] * 19,
+                "Account": ["Spot"] * 20,
                 "Operation": [
                     "Buy",
                     "Buy",
@@ -75,6 +76,7 @@ def get_transactions_df(raw=False, card_transactions=False):
                     "Distribution",
                     "Rewards Distribution",
                     "Rewards Distribution",
+                    "Rewards Distribution"
                 ],
                 "Coin": [
                     "EUR",
@@ -96,6 +98,7 @@ def get_transactions_df(raw=False, card_transactions=False):
                     "ATOM",
                     "VTHO",
                     "SOL",
+                    "OP"
                 ],
                 "Change": [
                     -50,
@@ -117,8 +120,9 @@ def get_transactions_df(raw=False, card_transactions=False):
                     0.007535,
                     85.097094,
                     0.001379,
+                    0.1053
                 ],
-                "Remark": [""] * 19,
+                "Remark": [""] * 20,
             }
         )
 

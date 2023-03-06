@@ -18,7 +18,6 @@ def get_transactions_df(raw=False):
             df_loop = pd.read_csv(filename, index_col=None, header=0)
             df_list.append(df_loop)
         final_df = pd.concat(df_list, axis=0, ignore_index=True)
-        final_df = final_df[final_df["Transaction Type"] != "Learning Reward"]
 
         final_df.index = [
             tx.str_to_datetime(j.replace("T", " ").replace("Z", ""))

@@ -14,11 +14,9 @@ scam_tokens = [
     "0x0000000000000000000000000000000000000000",
     "0xaf6b1a3067bb5245114225556e5b7a52cf002752",
     "0xba12222222228d8ba445958a75a0704d566bf2c8",
-    "0x214d52880b1e4e17d020908cd8eaa988ffdd4020",
     "0x794a61358d6845594f94dc1db02a252b5b4814ad",
     "0xe592427a0aece92de3edee1f18e0157c05861564",
     "0xba12222222228d8ba445958a75a0704d566bf2c8",
-    "0x214d52880b1e4e17d020908cd8eaa988ffdd4020",
     "0xfb2d1fa7d0f1c82805d7ea646d00920b87589506"
 ]
 
@@ -593,6 +591,8 @@ def get_transactions_df(address):
         all_trx["functionName"].str.contains("swap|multicall", na=False), "Tag"
     ] = "Trade"
 
+    all_trx = all_trx[all_trx['tokenSymbol'] != 'THESANDBOX.PRO']
+
     multicall_df = all_trx.loc[all_trx["functionName"] == "multicall"]
     for hash in set(multicall_df["hash"]):
         if multicall_df[multicall_df["hash"] == hash].shape[0] > 1:
@@ -635,6 +635,8 @@ def get_transactions_df(address):
         lambda x: None if pd.isna(x) else x.upper()
     )
     vout["To Coin"] = vout["To Coin"].apply(lambda x: None if pd.isna(x) else x.upper())
+
+    vout = vout[vout['To Coin'] != 'THESANDBOX.PRO']
 
     vout = tx.price_transactions_df(vout, Prices())
     vout = vout[

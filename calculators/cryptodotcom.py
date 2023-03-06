@@ -6,6 +6,9 @@ from PricesClass import Prices
 
 
 def get_transactions_df(raw=False, return_fiat=False):
+    # Because SUPERCHARGER is paid in multiple transactions with the same timestamp, if
+    # we have more than one file with duplicated transactions in the crypto.com folder
+    # the amount of supercharger will be wrong
     if return_fiat:
         fiat_files =  [
         os.path.join(os.path.abspath('crypto.com'), x)
@@ -45,10 +48,15 @@ def get_transactions_df(raw=False, return_fiat=False):
         final_df.loc[final_df["Currency"] == "LUNA2", "Currency"] = "LUNA"
         final_df.loc[final_df["To Currency"] == "LUNA2", "Currency"] = "LUNA"
 
+        super_charger = final_df[final_df['Transaction Description'] == 'Supercharger Reward']
+        final_df = final_df[final_df['Transaction Description'] != 'Supercharger Reward']
+
         final_df.drop_duplicates(
             inplace=True,
             subset=["Timestamp (UTC)", "Amount", "Transaction Description", "Currency"],
         )
+
+        final_df = pd.concat([final_df,super_charger])
 
         fix = final_df[
             final_df["Transaction Kind"]
