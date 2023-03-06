@@ -1,4 +1,7 @@
 import os
+
+import numpy
+import numpy as np
 import pandas as pd
 from PricesClass import Prices
 import tax_library as tx
@@ -109,5 +112,6 @@ def get_eur_invested(year=None):
     all_trx = get_transactions_df()
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
-    rewards = all_trx.loc[all_trx["Tag"] == "Reward", "To Amount"].sum()
-    return -round(all_trx.loc[all_trx["From Coin"] == "EUR", "From Amount"].sum() + rewards, 2)
+    all_trx = all_trx[np.logical_and(all_trx['To Coin'] == 'EUR', pd.isna(all_trx['From Coin']))]
+    all_trx = all_trx[all_trx['Tag'] == 'Movement']
+    return all_trx['To Amount'].sum()
