@@ -354,8 +354,12 @@ def prepare_df(
 ):
     # Il df dev'essere un dataframe con index orario senza NaN
     df = df_in.copy()
-    df.index = [k.date() for k in df.index]
-    temp_df = df.groupby(df.index).sum()
+
+    if isinstance(df_in.index[0], dt.datetime):
+        df.index = [k.date() for k in df.index]
+        temp_df = df.groupby(df.index).sum()
+    else:
+        temp_df = df_in.copy()
 
     fill_na_index = pd.date_range(
         dt.date(min(df.index).year, 1, 1), dt.date.today() - dt.timedelta(days=1)
@@ -385,7 +389,7 @@ def prepare_df(
     return temp_df
 
 
-def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None):
+def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None, allow_negative=False):
     # Obtain daily balances in native cryptocurrency
     from_df = transactions[["From Coin", "From Amount"]].copy()
     to_df = transactions[["To Coin", "To Amount"]].copy()
@@ -398,31 +402,35 @@ def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None):
     balance_df = balance_df[balance_df["Coin"] != "EUR"]
 
     balance_df = balance_df[~pd.isna(balance_df["Coin"])]
+    balance_df['date'] = [k.date() for k in balance_df.index]
 
     currencies = list(np.unique(balance_df["Coin"]))
+    if currencies[0] == '':
+        currencies.pop(0)
+
     temp_df = pd.DataFrame()
     for index, currency in enumerate(currencies):
-        if index == "":
-            continue
         if index == 0:
             temp_df = pd.DataFrame(
-                balance_df.loc[balance_df["Coin"] == currency, "Amount"]
+                balance_df.loc[balance_df["Coin"] == currency, ["Amount", 'date']]
             )
-            temp_df.index = [t + dt.timedelta(milliseconds=100) for t in temp_df.index]
             temp_df.sort_index(inplace=True)
+            temp_df = temp_df.groupby('date').sum()
             temp_df.columns = [currency]
         else:
             colnames = list(temp_df.columns)
             colnames.append(currency)
-            temp_df.index = [t + dt.timedelta(milliseconds=100) for t in temp_df.index]
+            new_df = pd.DataFrame(balance_df.loc[balance_df["Coin"] == currency, ["Amount", 'date']]).groupby(
+                'date').sum()
             temp_df = temp_df.join(
-                pd.DataFrame(balance_df.loc[balance_df["Coin"] == currency, "Amount"]),
+                new_df,
                 how="outer",
             )
+            temp_df.sort_index(inplace=True)
             temp_df.columns = colnames
 
     temp_df.fillna(0, inplace=True)
-    return prepare_df(temp_df, year_sel, cummulative)
+    return prepare_df(temp_df, year_sel, cummulative, allow_negative)
 
 
 def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False):

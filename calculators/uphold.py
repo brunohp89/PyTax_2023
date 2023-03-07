@@ -133,8 +133,8 @@ def get_transactions_df(raw=False):
             np.logical_and(final_df["From"] == "", final_df["From Amount"] < 0), "From"
         ] = "Uphold"
 
-        final_df["Fee"] = [-float(k) if k != "" else None for k in final_df["Fee"]]
-
+       # final_df["Fee"] = [-float(k) if k != "" else None for k in final_df["Fee"]]
+        final_df["Fee"] = [0 if k != "" else None for k in final_df["Fee"]]
         return final_df
 
 

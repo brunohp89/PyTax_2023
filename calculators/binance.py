@@ -120,7 +120,7 @@ def get_transactions_df(raw=False, card_transactions=False):
                     0.007535,
                     85.097094,
                     0.001379,
-                    0.1053
+                    0.1073
                 ],
                 "Remark": [""] * 20,
             }

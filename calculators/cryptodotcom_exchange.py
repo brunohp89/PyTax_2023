@@ -139,6 +139,8 @@ def get_transactions_df(raw=False):
 
         vout.sort_index(inplace=True)
 
+        vout.loc[vout['From Coin'] == vout['To Coin'], 'From Coin'] = None
+
         exch_prices = Prices()
         vout = tx.price_transactions_df(vout, exch_prices)
 
