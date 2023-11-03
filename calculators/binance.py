@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import tax_library as tx
 
-# ACQUISTI FATTI CON LA CARTA DI CREDITO DEVONO ESSERE INSERITE MANUALMENTE NEL DATAFRAME FIX
 
+# ACQUISTI FATTI CON LA CARTA DI CREDITO DEVONO ESSERE INSERITE MANUALMENTE NEL DATAFRAME FIX
 
 def get_transactions_df(raw=False, card_transactions=False):
     binance_files = [
-        os.path.join(os.path.abspath('binance'), x)
-        for x in os.listdir(os.path.abspath('binance'))
+        os.path.join(os.path.abspath("binance"), x)
+        for x in os.listdir(os.path.abspath("binance"))
         if "automatico" not in x
     ]
 
@@ -29,115 +29,21 @@ def get_transactions_df(raw=False, card_transactions=False):
             inplace=True,
         )
 
-        # Acquisti con carta di credito e Rward Center
-        fixes = pd.DataFrame(
-            {
-                "User_ID": [120963140] * 20,
-                "UTC_Time": [
-                    "2022-05-06 15:28:46",
-                    "2022-05-06 15:28:46",
-                    "2022-05-06 15:28:46",
-                    "2022-11-02 12:42:08",
-                    "2022-11-02 12:42:05",
-                    "2022-07-14 07:10:03",
-                    "2022-08-10 11:57:16",
-                    "2022-10-26 17:01:38",
-                    "2022-07-22 23:58:37",
-                    "2022-05-09 23:27:53",
-                    "2022-07-14 06:31:07",
-                    "2022-10-23 13:01:11",
-                    "2022-08-27 08:51:41",
-                    "2022-10-11 12:20:41",
-                    "2021-08-16 10:58:52",
-                    "2023-01-19 10:58:52",
-                    "2022-08-27 09:06:42",
-                    "2022-04-12 03:07:40",
-                    "2022-12-02 04:07:40",
-                    "2022-12-02 03:07:40",
-                ],
-                "Account": ["Spot"] * 20,
-                "Operation": [
-                    "Buy",
-                    "Buy",
-                    "Fee",
-                    "Distribution",
-                    "Distribution",
-                    "Distribution",
-                    "Distribution",
-                    "Distribution",
-                    "Distribution",
-                    "Withdraw",
-                    "Withdraw",
-                    "Distribution",
-                    "Fee",
-                    "Withdraw",
-                    "Withdraw",
-                    "Card Cashback",
-                    "Distribution",
-                    "Rewards Distribution",
-                    "Rewards Distribution",
-                    "Rewards Distribution"
-                ],
-                "Coin": [
-                    "EUR",
-                    "BTC",
-                    "BTC",
-                    "BURGER",
-                    "LDO",
-                    "BUSD",
-                    "BUSD",
-                    "BUSD",
-                    "SHIB",
-                    "UST",
-                    "SHIB",
-                    "BUSD",
-                    "LUNA",
-                    "MATIC",
-                    "NEAR",
-                    "BNB",
-                    "ATOM",
-                    "VTHO",
-                    "SOL",
-                    "OP"
-                ],
-                "Change": [
-                    -50,
-                    0.00143669,
-                    0.00006532,
-                    0.5,
-                    0.3,
-                    -1.18583,
-                    0,
-                    0,
-                    38000,
-                    -0.858864,
-                    -95762.11,
-                    0,
-                    -0.03509615,
-                    -1.912608,
-                    -0.413002,
-                    0.0010721899999999174,
-                    0.007535,
-                    85.097094,
-                    0.001379,
-                    0.1073
-                ],
-                "Remark": [""] * 20,
-            }
-        )
-
         busd_rewards = final_df[
             np.logical_and(
                 final_df["Operation"].isin(
                     [
                         "Main and funding account transfer",
                         "Main and Funding Account Transfer",
+                        "Transfer Between Main and Funding Account",
                     ]
                 ),
                 final_df["Coin"] == "BUSD",
             )
         ].copy()
         busd_rewards["Operation"] = "Distribution"
+
+        fixes = pd.read_csv('manual_binance.csv')
         final_df = pd.concat([final_df, fixes, busd_rewards])
 
         to_exclude = [
@@ -151,11 +57,17 @@ def get_transactions_df(raw=False, card_transactions=False):
             "Simple Earn Locked Subscription",
             "Simple Earn Locked Redemption",
             "Main and funding account transfer",
+            "Transfer Between Main and Funding Account",
             "Staking Purchase",
             "Staking Redemption",
             "Main and Funding Account Transfer",
+            "Launchpool Subscription / Redemption",
+            "Launchpool Subscription/Redemption",
+            "Buy Crypto With Fiat",
+            "Merchant Acquiring"
         ]
 
+        final_df["Account"] = final_df["Account"].apply(lambda x: x.title())
         final_df = final_df[~final_df["Operation"].isin(to_exclude)].copy()
         final_df = final_df[final_df["Account"] != "Savings"].copy()
 
@@ -193,7 +105,19 @@ def get_transactions_df(raw=False, card_transactions=False):
         final_df.loc[
             final_df["UTC_Time"] == "2022-01-21 10:13:16", "UTC_Time"
         ] = "2022-01-21 10:13:15"
+        final_df.loc[
+            final_df["UTC_Time"] == "2023-04-14 07:17:12", "UTC_Time"
+        ] = "2023-04-14 07:17:13"
+        final_df.loc[
+            final_df["UTC_Time"] == "2023-09-01 10:26:50", "UTC_Time"
+        ] = "2023-09-01 10:26:49"
 
+        final_df.loc[
+            final_df["UTC_Time"] == "2023-04-16 11:22:23", "UTC_Time"
+        ] = "2023-04-16 11:22:22"
+        final_df.loc[
+            final_df["UTC_Time"] == "2023-05-03 17:48:23", "UTC_Time"
+        ] = "2023-05-03 17:48:22"
         final_df.index = [tx.str_to_datetime(j) for j in final_df["UTC_Time"]]
 
         final_df.loc[
@@ -207,13 +131,24 @@ def get_transactions_df(raw=False, card_transactions=False):
         ] = "LUNA"
 
         for asset in set(final_df["Coin"]):
-            final_df.loc[final_df["Coin"] == asset, :] = final_df.loc[
-                final_df["Coin"] == asset, :
-            ].drop_duplicates(subset=["UTC_Time", "Change"])
+            temp_coin = final_df.loc[final_df["Coin"] == asset, :].drop_duplicates(
+                subset=["UTC_Time", "Change"]
+            )
+            final_df = final_df.loc[final_df["Coin"] != asset, :]
+            final_df = pd.concat([final_df, temp_coin])
 
+        final_df.loc[
+            final_df["Operation"] == "Transaction Fee", "Operation"
+        ] = "Fee"
         final_df.loc[
             final_df["Operation"] == "Small Assets Exchange BNB", "Operation"
         ] = "Small assets exchange BNB"
+
+        final_df.loc[
+            final_df["Operation"].isin(
+                ["Small Assets Exchange BNB (Spot)", "Small assets exchange BNB (Spot)"]), "Operation"
+        ] = "Small assets exchange BNB"
+
         final_df.loc[
             final_df["Operation"] == "Large OTC Trading", "Operation"
         ] = "Large OTC trading"
@@ -224,13 +159,35 @@ def get_transactions_df(raw=False, card_transactions=False):
             final_df["Operation"] == "Main and Funding Account Transfer", "Operation"
         ] = "Main and funding account transfer"
         final_df.loc[
+            final_df["Operation"] == "Transfer Between Main and Funding Wallet",
+            "Operation",
+        ] = "Main and funding account transfer"
+        final_df.loc[
             final_df["Operation"] == "Binance Convert", "Operation"
         ] = "Large OTC trading"
         final_df.loc[
             final_df["Operation"] == "Crypto Box", "Operation"
         ] = "BNB Vault Rewards"
+        final_df.loc[final_df["Operation"] == "Transaction Buy", "Operation"] = "Buy"
+        final_df.loc[final_df["Operation"] == "Transaction Spend", "Operation"] = "Sell"
+        final_df.loc[
+            final_df["Operation"] == "Transaction Revenue", "Operation"
+        ] = "Buy"
+        final_df.loc[
+            final_df["Operation"] == "Airdrop Assets", "Operation"
+        ] = "Rewards Distribution"
+
+        final_df.loc[
+            final_df["Operation"] == "Launchpool Earnings Withdrawal", "Operation"
+        ] = "Rewards Distribution"
+
+        final_df.loc[final_df["Operation"] == "Transaction Sold", "Operation"] = "Sell"
 
         operations_col = [
+            "Transaction Buy",
+            "Transaction Spend",
+            "Transaction Sold",
+            "Transaction Revenue",
             "Crypto Box",
             "Binance Convert",
             "Card Cashback",
@@ -271,6 +228,8 @@ def get_transactions_df(raw=False, card_transactions=False):
             "Main and funding account transfer",
             "Staking Purchase",
             "Staking Redemption",
+            "Binance Card Cashback",
+            "Launchpool Subscription / Redemption"
         ]
 
         not_considered = [
@@ -320,9 +279,16 @@ def get_transactions_df(raw=False, card_transactions=False):
                 fee.append(None)
                 fee_coin.append(None)
                 to_coin.append("BNB")
+                #  if group_df.shape[0] == 1:
+                # to_val = group_df['Change'].tolist()[0]
+                # from_amount.append(None)
+                #  from_coin.append(None)
+                # else:
                 to_val = group_df.loc["BNB", "Change"] / (group_df.shape[0] - 1)
                 to_amount.append(to_val)
                 group_df = group_df[group_df.index != "BNB"]
+                #  if group_df.shape[0] == 0:
+                #   continue
                 from_amount.append(-abs(group_df.iloc[0, 0]))
                 from_coin.append(group_df.index[0])
                 group_df = group_df[group_df.index != group_df.index[0]]
@@ -375,8 +341,8 @@ def get_transactions_df(raw=False, card_transactions=False):
                 elif final_df.loc[trade_time, :].shape[0] > 3:
                     group_trx = (
                         temp_df[["Change", "Operation", "Coin"]]
-                        .groupby(by=["Operation", "Coin"])
-                        .sum()
+                            .groupby(by=["Operation", "Coin"])
+                            .sum()
                     )
                     operations = [operation for operation, coin in group_trx.index]
                     if "Fee" not in operations:
@@ -434,10 +400,13 @@ def get_transactions_df(raw=False, card_transactions=False):
         for i, rec in enumerate(rec_trx):
             if rec == auto_df.shape[0]:
                 break
-            temp_df = auto_df.iloc[rec : rec_trx[i + 1], :]
-            in_val = -temp_df.loc[temp_df["Change"] < 0, "Change"].values[0] / (
-                temp_df.shape[0] - 1
-            )
+            temp_df = auto_df.iloc[rec: rec_trx[i + 1], :]
+            if temp_df.shape[0] - 1 == 0:
+                in_val = -temp_df.loc[temp_df["Change"] < 0, "Change"].values[0]
+            else:
+                in_val = -temp_df.loc[temp_df["Change"] < 0, "Change"].values[0] / (
+                        temp_df.shape[0] - 1
+                )
             in_coin = temp_df.loc[temp_df["Change"] < 0, "Coin"].values[0]
             for k in range(temp_df.loc[temp_df["Change"] > 0].shape[0]):
                 tag.append("Recurring")
@@ -529,6 +498,7 @@ def get_transactions_df(raw=False, card_transactions=False):
     cashback = final_df.loc[
         final_df["Operation"].isin(
             [
+                "Binance Card Cashback",
                 "Card Cashback",
                 "Rewards Distribution",
                 "Simple Earn Locked Rewards",
@@ -548,7 +518,9 @@ def get_transactions_df(raw=False, card_transactions=False):
     ].copy()
     cashback["Notes"] = ""
 
-    cashback.loc[cashback["Operation"] == "Card Cashback", "Notes"] = "Cashback"
+    cashback.loc[
+        cashback["Operation"].isin(["Binance Card Cashback", "Card Cashback"]), "Notes"
+    ] = "Cashback"
 
     cashback["From"] = None
     cashback["To"] = None
@@ -578,6 +550,12 @@ def get_transactions_df(raw=False, card_transactions=False):
     ]
     vout.loc[vout["Notes"] == "Trade", "Notes"] = ""
 
+    # !!!!!!!!!!!!!!!!!!
+    vout = vout[vout['To Coin'] != 'SEI']
+    vout = vout[vout['From Coin'] != 'SEI']
+    print('ATTENTION: EXCLUDING SEI FOR NOW DUE TO PROBLEMS WITH PRICING IN YAHOO FINANCE')
+    # !!!!!!!!!
+
     bin_prices = Prices()
 
     vout = tx.price_transactions_df(vout, bin_prices)
@@ -599,6 +577,17 @@ def get_transactions_df(raw=False, card_transactions=False):
             "Notes",
         ]
     ]
+
+    toswitch = vout[vout['To Amount'] < 0]
+    if toswitch.shape[0] > 0:
+        toswitch = toswitch.rename(
+            columns={'To Amount': 'From Amount', 'To Coin': 'From Coin', 'From Amount': 'To Amount',
+                     'From Coin': 'To Coin'})
+
+        vout = pd.concat([vout[np.logical_or(vout['To Amount'] > 0, pd.isna(vout['To Amount']))], toswitch])
+
+    vout['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fiat Price']]
+
     return vout
 
 
@@ -619,7 +608,11 @@ def get_eur_invested(year=None, net=False):
     all_in = all_trx.query("Coin == 'EUR' and Operation!='Binance Card Spending'")
     all_in = all_in.query("Operation not in ['Deposit', 'Fiat Deposit']")
     if not net:
-        return -round(all_in.query("Change < 0")['Change'].sum(),2)
+        return -round(all_in.query("Change < 0")["Change"].sum(), 2)
     else:
-        print(f'{-round(all_in.query("Change < 0")["Change"].sum(),2)} EUR invested {round(all_in.query("Change > 0")["Change"].sum(),2)} EUR from sales')
-        return -round(all_in.query("Change < 0")["Change"].sum(),2) - round(all_in.query("Change > 0")["Change"].sum(),2)
+        print(
+            f'{-round(all_in.query("Change < 0")["Change"].sum(), 2)} EUR invested {round(all_in.query("Change > 0")["Change"].sum(), 2)} EUR from sales'
+        )
+        return -round(all_in.query("Change < 0")["Change"].sum(), 2) - round(
+            all_in.query("Change > 0")["Change"].sum(), 2
+        )
