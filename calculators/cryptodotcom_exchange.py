@@ -10,8 +10,8 @@ from PricesClass import Prices
 
 def get_transactions_df(raw=False):
     cdc_files = [
-        os.path.join(os.path.abspath('crypto.com exchange'), x)
-        for x in os.listdir(os.path.abspath('crypto.com exchange'))
+        os.path.join(os.path.abspath("crypto.com exchange"), x)
+        for x in os.listdir(os.path.abspath("crypto.com exchange"))
     ]
 
     if len(cdc_files) == 0:
@@ -29,8 +29,8 @@ def get_transactions_df(raw=False):
 
         final_df = final_df[final_df["Status"] != "CANCELED"].copy()
 
-        final_df["Tag"] = ''
-        final_df["Notes"] = ''
+        final_df["Tag"] = ""
+        final_df["Notes"] = ""
         final_df["Withdrawal Amount"] *= -1
 
         final_df.loc[~pd.isna(final_df["Amount"]), "Tag"] = "Interest"
@@ -38,22 +38,51 @@ def get_transactions_df(raw=False):
         # Deposits and withdrawals
 
         dep_with = final_df[
-            np.logical_or(~pd.isna(final_df['Deposit Address']), ~pd.isna(final_df['Withdrawal Address']))].copy()
-        dep_with['From Coin'] = dep_with['Coin']
+            np.logical_or(
+                ~pd.isna(final_df["Deposit Address"]),
+                ~pd.isna(final_df["Withdrawal Address"]),
+            )
+        ].copy()
+        dep_with["From Coin"] = dep_with["Coin"]
         dep_with = dep_with.rename(
-            columns={'Coin': 'To Coin', 'Deposit Amount': 'To Amount', 'Withdrawal Amount': 'From Amount',
-                     'Withdrawal Address': 'To', 'Deposit Address': 'From', 'Fee Currency': 'Fee Coin'})
-        dep_with.loc[pd.isna(dep_with['To Amount']), 'From Coin'] = dep_with.loc[
-            pd.isna(dep_with['To Amount']), 'To Coin']
-        dep_with.loc[pd.isna(dep_with['To Amount']), 'To Coin'] = None
+            columns={
+                "Coin": "To Coin",
+                "Deposit Amount": "To Amount",
+                "Withdrawal Amount": "From Amount",
+                "Withdrawal Address": "To",
+                "Deposit Address": "From",
+                "Fee Currency": "Fee Coin",
+            }
+        )
+        dep_with.loc[pd.isna(dep_with["To Amount"]), "From Coin"] = dep_with.loc[
+            pd.isna(dep_with["To Amount"]), "To Coin"
+        ]
+        dep_with.loc[pd.isna(dep_with["To Amount"]), "To Coin"] = None
 
-        dep_with.drop(['Status', 'TxId',
-                       'Order ID', 'Trade ID', 'Symbol', 'Side', 'Trade Price', 'Trade Amount',
-                       'Volume of Business', 'Amount',
-                       'Txid'], inplace=True, axis=1)
+        dep_with.drop(
+            [
+                "Status",
+                "TxId",
+                "Order ID",
+                "Trade ID",
+                "Symbol",
+                "Side",
+                "Trade Price",
+                "Trade Amount",
+                "Volume of Business",
+                "Amount",
+                "Txid",
+            ],
+            inplace=True,
+            axis=1,
+        )
 
         trades = final_df[
-            np.logical_and(pd.isna(final_df['Deposit Address']), pd.isna(final_df['Withdrawal Address']))].copy()
+            np.logical_and(
+                pd.isna(final_df["Deposit Address"]),
+                pd.isna(final_df["Withdrawal Address"]),
+            )
+        ].copy()
         trades.loc[~pd.isna(trades["Symbol"]), "Coin"] = trades.loc[
             ~pd.isna(trades["Symbol"]), "Symbol"
         ].map(lambda x: x.split("_")[0])
@@ -75,9 +104,9 @@ def get_transactions_df(raw=False):
         trades.loc[~pd.isna(trades["Trade Amount"]), "Amount"] = trades.loc[
             ~pd.isna(trades["Trade Amount"]), "Trade Amount"
         ]
-        trades.loc[
-            ~pd.isna(trades["Volume of Business"]), "To Amount"
-        ] = trades.loc[~pd.isna(trades["Volume of Business"]), "Volume of Business"]
+        trades.loc[~pd.isna(trades["Volume of Business"]), "To Amount"] = trades.loc[
+            ~pd.isna(trades["Volume of Business"]), "Volume of Business"
+        ]
 
         trades.drop(
             [
@@ -100,19 +129,25 @@ def get_transactions_df(raw=False):
             inplace=True,
         )
 
-        trades = trades.rename(columns={'Coin': 'From Coin', 'Amount': 'From Amount', 'Fee Currency': 'Fee Coin'})
+        trades = trades.rename(
+            columns={
+                "Coin": "From Coin",
+                "Amount": "From Amount",
+                "Fee Currency": "Fee Coin",
+            }
+        )
 
-        to_coin = trades.loc[trades['To Amount'] < 0, ['From Amount', 'From Coin']]
-        to_coin.columns = ['To Amount', 'To Coin']
-        from_coin = trades.loc[trades['To Amount'] < 0, ['To Amount', 'To Coin']]
-        from_coin.columns = ['From Amount', 'From Coin']
+        to_coin = trades.loc[trades["To Amount"] < 0, ["From Amount", "From Coin"]]
+        to_coin.columns = ["To Amount", "To Coin"]
+        from_coin = trades.loc[trades["To Amount"] < 0, ["To Amount", "To Coin"]]
+        from_coin.columns = ["From Amount", "From Coin"]
 
-        trades.loc[trades['To Amount'] < 0, 'Notes'] = 'Fixed'
+        trades.loc[trades["To Amount"] < 0, "Notes"] = "Fixed"
 
-        trades.loc[trades['Notes'] == 'Fixed', ['To Amount', 'To Coin']] = to_coin
-        trades.loc[trades['Notes'] == 'Fixed', ['From Amount', 'From Coin']] = from_coin
-        trades.loc[trades['Notes'] == 'Fixed', 'Notes'] = ''
-        trades['From'], trades['To'] = (None, None)
+        trades.loc[trades["Notes"] == "Fixed", ["To Amount", "To Coin"]] = to_coin
+        trades.loc[trades["Notes"] == "Fixed", ["From Amount", "From Coin"]] = from_coin
+        trades.loc[trades["Notes"] == "Fixed", "Notes"] = ""
+        trades["From"], trades["To"] = (None, None)
 
         trades.drop_duplicates(
             inplace=True,
@@ -139,7 +174,7 @@ def get_transactions_df(raw=False):
 
         vout.sort_index(inplace=True)
 
-        vout.loc[vout['From Coin'] == vout['To Coin'], 'From Coin'] = None
+        vout.loc[vout["From Coin"] == vout["To Coin"], "From Coin"] = None
 
         exch_prices = Prices()
         vout = tx.price_transactions_df(vout, exch_prices)
@@ -164,8 +199,27 @@ def get_transactions_df(raw=False):
             ]
         ]
 
-        vout['Fee'] *= -1
+        vout["Fee"] *= -1
 
+        vout['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fiat Price']]
+        vout['Fee'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fee']]
+
+        toswitch = vout[vout['To Amount'] < 0]
+        if toswitch.shape[0] > 0:
+            toswitch = toswitch.rename(
+                columns={'To Amount': 'From Amount', 'To Coin': 'From Coin', 'From Amount': 'To Amount',
+                         'From Coin': 'To Coin'})
+
+            vout = pd.concat([vout[np.logical_or(vout['To Amount'] > 0, pd.isna(vout['To Amount']))], toswitch])
+
+        toswitch = vout[vout['From Amount'] > 0]
+        if toswitch.shape[0] > 0:
+            toswitch = toswitch.rename(
+                columns={'From Amount': 'To Amount', 'From Coin': 'To Coin', 'To Amount': 'From Amount',
+                         'To Coin': 'From Coin'})
+
+            vout = pd.concat([vout[np.logical_or(vout['From Amount'] < 0, pd.isna(vout['From Amount']))], toswitch])
+        vout = vout.sort_index()
         return vout
 
 

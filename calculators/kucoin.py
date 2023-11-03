@@ -4,15 +4,19 @@ import pandas as pd
 import tax_library as tx
 from PricesClass import Prices
 import datetime as dt
+import warnings
+
+warnings.simplefilter("ignore")
 
 
 def get_transactions_df():
     orders = [
-        os.path.join(os.path.abspath('kucoin'), x)
-        for x in os.listdir(os.path.abspath('kucoin'))
+        os.path.join(os.path.abspath("kucoin"), x)
+        for x in os.listdir(os.path.abspath("kucoin"))
         if "Ordini" in x
     ]
 
+    withdraw_df, convert_df, orders_df, deposits_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     if len(orders) == 0:
         print("No orders for kucoin found")
     else:
@@ -35,7 +39,7 @@ def get_transactions_df():
         orders_df["From Coin"] = [k.split("-")[1] for k in orders_df["Symbol"]]
         orders_df["To Coin"] = [k.split("-")[0] for k in orders_df["Symbol"]]
         orders_df["Fiat Price"] = (
-            orders_df["Avg. Filled Price"] * orders_df["Filled Amount"]
+                orders_df["Avg. Filled Price"] * orders_df["Filled Amount"]
         )
         orders_df["Fiat"] = "EUR"
         orders_df["Notes"] = ""
@@ -78,8 +82,8 @@ def get_transactions_df():
         )
 
     deposits = [
-        os.path.join(os.path.abspath('kucoin'), x)
-        for x in os.listdir(os.path.abspath('kucoin'))
+        os.path.join(os.path.abspath("kucoin"), x)
+        for x in os.listdir(os.path.abspath("kucoin"))
         if "deposit" in x
     ]
 
@@ -119,8 +123,8 @@ def get_transactions_df():
         )
 
     withdraws = [
-        os.path.join(os.path.abspath('kucoin'), x)
-        for x in os.listdir(os.path.abspath('kucoin'))
+        os.path.join(os.path.abspath("kucoin"), x)
+        for x in os.listdir(os.path.abspath("kucoin"))
         if "withdrawal" in x
     ]
 
@@ -166,8 +170,8 @@ def get_transactions_df():
         )
 
     convert = [
-        os.path.join(os.path.abspath('kucoin'), x)
-        for x in os.listdir(os.path.abspath('kucoin'))
+        os.path.join(os.path.abspath("kucoin"), x)
+        for x in os.listdir(os.path.abspath("kucoin"))
         if "convert" in x
     ]
 
@@ -242,6 +246,10 @@ def get_transactions_df():
                 "Notes",
             ]
         ]
+
+        final_df['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fiat Price']]
+        final_df['Fee'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee']]
+
         return final_df
 
 

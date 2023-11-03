@@ -588,6 +588,8 @@ def get_transactions_df(raw=False, card_transactions=False):
 
     vout['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fiat Price']]
 
+    vout = vout.sort_index()
+
     return vout
 
 
