@@ -22,7 +22,7 @@ def get_transactions_df(raw=False):
         final_df.drop_duplicates(
             subset=["Date", "Destination Amount", "Destination Currency"], inplace=True
         )
-        final_df.reset_index(inplace=True)
+        final_df.reset_index(inplace=True, drop=True)
         if raw:
             return final_df
         for i in range(final_df.shape[0]):
@@ -30,11 +30,11 @@ def get_transactions_df(raw=False):
                 final_df.loc[i, "Destination Amount"] *= -1
                 if not pd.isna(final_df.loc[i, "Fee Amount"]):
                     final_df.loc[i, "Destination Amount"] += (
-                        final_df.loc[i, "Fee Amount"] * -1
+                            final_df.loc[i, "Fee Amount"] * -1
                     )
             if (
-                final_df.loc[i, "Origin Currency"]
-                == final_df.loc[i, "Destination Currency"]
+                    final_df.loc[i, "Origin Currency"]
+                    == final_df.loc[i, "Destination Currency"]
             ):
                 final_df.loc[i, "Origin Amount"] = 0
             else:
@@ -46,8 +46,8 @@ def get_transactions_df(raw=False):
         ]
 
         final_df.sort_index(inplace=True)
-        final_df["From"] = ""
-        final_df["To"] = ""
+        final_df["From"] = None
+        final_df["To"] = None
         final_df["Fiat Price"] = None
         final_df["Fiat"] = "EUR"
 
@@ -67,8 +67,8 @@ def get_transactions_df(raw=False):
         final_df.loc[final_df["Tag"] == "out", "From Amount"] = final_df.loc[
             final_df["Tag"] == "out", "To Amount"
         ]
-        final_df.loc[final_df["Tag"] == "out", "To Amount"] = ""
-        final_df.loc[final_df["Tag"] == "out", "To Coin"] = ""
+        final_df.loc[final_df["Tag"] == "out", "To Amount"] = None
+        final_df.loc[final_df["Tag"] == "out", "To Coin"] = None
 
         final_df.drop(
             ["Date", "Destination", "Id", "Origin", "Status"], axis=1, inplace=True
@@ -93,6 +93,10 @@ def get_transactions_df(raw=False):
         ]
 
         final_df.loc[final_df["Fiat Price"] == 0, "Fiat Price"] = None
+
+        final_df.loc[final_df['From Coin'] == 0, 'From Coin'] = None
+        final_df.loc[final_df['To Coin'] == 0, 'To Coin'] = None
+
         final_df = tx.price_transactions_df(final_df, Prices())
 
         final_df = final_df[
@@ -130,11 +134,19 @@ def get_transactions_df(raw=False):
             "From Coin",
         ] = None
         final_df.loc[
-            np.logical_and(final_df["From"] == "", final_df["From Amount"] < 0), "From"
+            np.logical_and(pd.isna(final_df["From"]), final_df["From Amount"] < 0), "From"
         ] = "Uphold"
 
-       # final_df["Fee"] = [-float(k) if k != "" else None for k in final_df["Fee"]]
-        final_df["Fee"] = [0 if k != "" else None for k in final_df["Fee"]]
+        final_df["Fee"] = [0 if k is not None else None for k in final_df["Fee"]]
+
+        final_df.loc[final_df['Fee'] == "", 'Fee'] = None
+        final_df.loc[final_df['From Coin'] == "", 'From Coin'] = None
+        final_df.loc[final_df['From Amount'] == "", 'From Amount'] = None
+        final_df.loc[final_df['To Coin'] == "", 'To Coin'] = None
+        final_df.loc[final_df['To Amount'] == "", 'To Amount'] = None
+
+        final_df['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fiat Price']]
+
         return final_df
 
 
