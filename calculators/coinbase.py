@@ -1,12 +1,13 @@
 import os
+import numpy as np
 import pandas as pd
 import tax_library as tx
 
 
 def get_transactions_df(raw=False):
-    coinbase_files =  [
-        os.path.join(os.path.abspath('coinbase'), x)
-        for x in os.listdir(os.path.abspath('coinbase'))
+    coinbase_files = [
+        os.path.join(os.path.abspath("coinbase"), x) for x in os.listdir(os.path.abspath("coinbase")) if
+        '.DS_Store' not in x
     ]
 
     if len(coinbase_files) == 0:
@@ -18,6 +19,7 @@ def get_transactions_df(raw=False):
             df_loop = pd.read_csv(filename, index_col=None, header=0)
             df_list.append(df_loop)
         final_df = pd.concat(df_list, axis=0, ignore_index=True)
+        final_df['Notes'] = [k.replace('.', '').replace(',', '.').replace(' €', '') for k in final_df['Notes']]
 
         final_df.index = [
             tx.str_to_datetime(j.replace("T", " ").replace("Z", ""))
@@ -59,7 +61,7 @@ def get_transactions_df(raw=False):
         ]
 
         final_df.loc[final_df["Tag"] == "Convert", "To Amount"] = [
-            float(i.split(" ")[-2].replace(".", "").replace(",", "."))
+            float(i.split(" ")[-2].replace(",", ""))
             for i in list(final_df.loc[final_df["Tag"] == "Convert", "Notes"])
         ]
 
@@ -97,7 +99,7 @@ def get_transactions_df(raw=False):
         ]
 
         final_df.loc[final_df["Tag"] == "Buy", "From Amount"] = [
-            -float(i.split(" ")[4].replace(",", "."))
+            -float(i.split(" ")[4].replace(",", "").replace("€", ""))
             for i in list(final_df.loc[final_df["Tag"] == "Buy", "Notes"])
         ]
 
@@ -111,7 +113,7 @@ def get_transactions_df(raw=False):
         ]
 
         final_df.loc[final_df["Tag"] == "Sell", "To Amount"] = [
-            float(i.split(" ")[4].replace(",", "."))
+            float(i.split(" ")[4].replace(",", ".").replace("€", ""))
             for i in list(final_df.loc[final_df["Tag"] == "Sell", "Notes"])
         ]
 
@@ -185,6 +187,34 @@ def get_transactions_df(raw=False):
                 "Notes",
             ]
         ]
+
+        final_df.loc[final_df['Tag'] == 'Learning Reward', 'Tag'] = 'Reward'
+
+        final_df['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fiat Price']]
+        final_df['Fee'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee']]
+        final_df['Fee Fiat'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee Fiat']]
+
+        final_df.loc[final_df['To Amount'] == "", 'To Amount'] = None
+        final_df.loc[final_df['From Amount'] == "", 'From Amount'] = None
+
+        toswitch = final_df[final_df['To Amount'] < 0]
+        if toswitch.shape[0] > 0:
+            toswitch = toswitch.rename(
+                columns={'To Amount': 'From Amount', 'To Coin': 'From Coin', 'From Amount': 'To Amount',
+                         'From Coin': 'To Coin'})
+
+            final_df = pd.concat(
+                [final_df[np.logical_or(final_df['To Amount'] > 0, pd.isna(final_df['To Amount']))], toswitch])
+
+        toswitch = final_df[final_df['From Amount'] > 0]
+        if toswitch.shape[0] > 0:
+            toswitch = toswitch.rename(
+                columns={'From Amount': 'To Amount', 'From Coin': 'To Coin', 'To Amount': 'From Amount',
+                         'To Coin': 'From Coin'})
+
+            final_df = pd.concat(
+                [final_df[np.logical_or(final_df['From Amount'] < 0, pd.isna(final_df['From Amount']))], toswitch])
+        final_df = final_df.sort_index()
 
         return final_df
 

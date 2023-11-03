@@ -146,6 +146,7 @@ def get_transactions_df(raw=False):
         final_df.loc[final_df['To Amount'] == "", 'To Amount'] = None
 
         final_df['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fiat Price']]
+        final_df['Fee Fiat'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee Fiat']]
 
         return final_df
 

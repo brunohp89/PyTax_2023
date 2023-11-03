@@ -249,6 +249,7 @@ def get_transactions_df():
 
         final_df['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fiat Price']]
         final_df['Fee'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee']]
+        final_df['Fee Fiat'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in final_df['Fee Fiat']]
 
         return final_df
 

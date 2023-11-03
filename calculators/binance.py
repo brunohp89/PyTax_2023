@@ -587,6 +587,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         vout = pd.concat([vout[np.logical_or(vout['To Amount'] > 0, pd.isna(vout['To Amount']))], toswitch])
 
     vout['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fiat Price']]
+    vout['Fee Fiat'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in  vout['Fee Fiat']]
 
     vout = vout.sort_index()
 

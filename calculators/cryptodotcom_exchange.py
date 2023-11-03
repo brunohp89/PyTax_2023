@@ -203,6 +203,7 @@ def get_transactions_df(raw=False):
 
         vout['Fiat Price'] = [abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fiat Price']]
         vout['Fee'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fee']]
+        vout['Fee Fiat'] = [-abs(k) if (~pd.isna(k) and k is not None) else k for k in vout['Fee Fiat']]
 
         toswitch = vout[vout['To Amount'] < 0]
         if toswitch.shape[0] > 0:
