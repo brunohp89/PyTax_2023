@@ -5,9 +5,11 @@ import pandas as pd
 import tax_library as tx
 from PricesClass import Prices
 
+# Download your transactions from https://explore.vechain.org/
+
 
 def get_transactions_df(raw=False):
-    vechain_directory = os.path.abspath('vechain')
+    vechain_directory = os.path.abspath("vechain")
     vechain_files = [
         os.path.join(vechain_directory, x) for x in os.listdir(vechain_directory)
     ]
