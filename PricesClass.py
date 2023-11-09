@@ -34,8 +34,18 @@ class Prices:
             exc_rate = yf.Ticker("HFT22461-USD")
         elif symbol.upper() == 'GMT':
             exc_rate = yf.Ticker("GMT18069-USD")
+        elif symbol.upper() == 'SUI':
+            exc_rate = yf.Ticker("SUI20947-USD")
         elif symbol.upper() == 'GST':
             exc_rate = yf.Ticker("GST16352-USD")
+        elif symbol.upper() == 'LOVE':
+            exc_rate = yf.Ticker("LOVE26337-USD")
+        elif symbol.upper() == 'ARGO' or symbol.upper() == 'XARGO':
+            exc_rate = yf.Ticker("ARGO19900-USD")
+        elif symbol.upper() == 'GENE':
+            exc_rate = yf.Ticker("GENE13632-USD")
+        elif symbol.upper() == 'LOVE':
+            exc_rate = yf.Ticker("LOVE26337-USD")
         else:
             exc_rate = yf.Ticker(f"{symbol.upper()}-USD")
         exc_rate_history = exc_rate.history(period="max")
