@@ -377,8 +377,6 @@ def prepare_df(
         temp_df = temp_df[temp_df.index >= dt.date(year_sel, 1, 1)]
         temp_df = temp_df[temp_df.index <= dt.date(year_sel, 12, 31)]
 
-    if not allow_negative:
-        temp_df[temp_df < 10 ** -9] = 0
     temp_df = temp_df.loc[
               :,
               ~temp_df.columns.isin(
@@ -386,6 +384,8 @@ def prepare_df(
               ),
               ]
 
+    if not allow_negative:
+        temp_df[temp_df < 10 ** -9] = 0
     return temp_df
 
 
@@ -441,6 +441,9 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
     tokens = [
         x.upper() for x in list(set(tokens)) if x not in fiat_list and not pd.isna(x)
     ]
+
+    df_in["To Coin"] = [c.upper() if ~pd.isna(c) and c is not None else None for c in df_in["To Coin"] ]
+    df_in["From Coin"] = [c.upper() if ~pd.isna(c) and c is not None else None for c in df_in["From Coin"]]
 
     prices_in.get_prices(tokens)
     prices_in.convert_prices(tokens, "EUR")
