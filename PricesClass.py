@@ -49,7 +49,7 @@ class Prices:
         else:
             exc_rate = yf.Ticker(f"{symbol.upper()}-USD")
         exc_rate_history = exc_rate.history(period="max")
-        exc_rate_history = exc_rate_history[["Open", "Close", "High", "Low"]]
+        exc_rate_history = exc_rate_history[["Open", "Close", "High", "Low"]].copy()
         exc_rate_history.ffill(inplace=True)
         if "+" in str(exc_rate_history.index[0]):
             exc_rate_history.index = [
