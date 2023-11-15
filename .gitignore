@@ -17,6 +17,8 @@ vechain
 manual_binance.csv
 manual_cdc.csv
 Bybit.txt
-evm.py
 log.txt
 pdf_producer.py
+bkp
+tax_calculator.py
+AccountClass.py

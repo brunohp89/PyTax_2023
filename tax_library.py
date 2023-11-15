@@ -433,17 +433,20 @@ def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None, allow_
     return prepare_df(temp_df, year_sel, cummulative, allow_negative)
 
 
-def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False):
+def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, nfts=None, only_fee=False):
+    if nfts is None:
+        nfts = []
     tokens = df_in["Fee Coin"].tolist()
     if not only_fee:
         tokens.extend(df_in["To Coin"].tolist())
         tokens.extend(df_in["From Coin"].tolist())
     tokens = [
-        x.upper() for x in list(set(tokens)) if x not in fiat_list and not pd.isna(x)
+        x.upper() for x in list(set(tokens)) if
+        x not in fiat_list and not pd.isna(x) and x not in nfts and x is not None
     ]
 
-    df_in["To Coin"] = [c.upper() if ~pd.isna(c) and c is not None else None for c in df_in["To Coin"] ]
-    df_in["From Coin"] = [c.upper() if ~pd.isna(c) and c is not None else None for c in df_in["From Coin"]]
+    df_in["To Coin"] = [c.upper() if c in tokens else None for c in df_in["To Coin"]]
+    df_in["From Coin"] = [c.upper() if c in tokens else None for c in df_in["From Coin"]]
 
     prices_in.get_prices(tokens)
     prices_in.convert_prices(tokens, "EUR")
