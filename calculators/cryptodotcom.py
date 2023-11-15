@@ -26,9 +26,9 @@ def get_transactions_df(raw=False, return_fiat=False):
             fiat_df = pd.concat(df_list, axis=0, ignore_index=True)
             fiat_df.index = [tx.str_to_datetime(j) for j in fiat_df["Timestamp (UTC)"]]
 
-        fiat_df.drop_duplicates(inplace=True)
-        fiat_df.sort_index(inplace=True)
-        return fiat_df
+            fiat_df.drop_duplicates(inplace=True)
+            fiat_df.sort_index(inplace=True)
+            return fiat_df
 
     cdc_files =  [
         os.path.join(os.path.abspath('crypto.com'), x)
@@ -117,9 +117,13 @@ def get_transactions_df(raw=False, return_fiat=False):
                     "Crypto Earn Withdrawal",
                     "CRO Stake",
                     "CRO Unstake",
+                    "CRO Lockup",
+                    "CRO Unlock",
+                    "Supercharger Lockup (via app)",
                     "Supercharger Deposit (via app)",
                     "Supercharger Stake (via app)",
-                    "Supercharger Withdrawal (via app)",
+                    "Supercharger Withdrawal (via app)"
+
                 ]
             )
         ]
