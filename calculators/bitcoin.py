@@ -1,3 +1,4 @@
+import numpy as np
 from PricesClass import Prices
 import pandas as pd
 import requests
@@ -70,5 +71,9 @@ def get_transactions_df(address_list):
     ]
 
     vout = tx.price_transactions_df(vout, Prices())
+
+    vout.loc[vout['From Amount'] > 0, 'To Amount'] = vout.loc[vout['From Amount'] > 0, 'From Amount']
+    vout.loc[vout['From Amount'] > 0, 'To Coin'] = vout.loc[vout['From Amount'] > 0, 'From Coin']
+    vout.loc[vout['From Amount'] > 0, ['From Amount', 'From Coin']] = None
 
     return vout

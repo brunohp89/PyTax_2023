@@ -485,6 +485,10 @@ def get_transactions_df(address, scan_key, chain):
         for i in set(temp_df['Timestamp']):
             temp_df.loc[temp_df['Timestamp'] == i, 'Gasused'] /= temp_df[temp_df['Timestamp'] == i].shape[0]
 
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Amount'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Amount']
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Coin'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Coin']
+        temp_df.loc[temp_df['From Amount'] > 0, ['From Amount', 'From Coin']] = None
+
         final_df = pd.concat([final_df, temp_df])
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////

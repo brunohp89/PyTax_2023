@@ -89,16 +89,16 @@ def get_transactions_df(raw=False):
 
     vtho_df = pd.DataFrame(
         {
-            "From Amount": [
+            "To Amount": [
                 v * 0.000432 for v in vet_bal.loc[vtho_date, "VET"] if v >= 1
             ],
             "Fee": None,
             "To": None,
             "From": None,
             "Fee Coin": "VTHO",
-            "From Coin": "VTHO",
-            "To Coin": None,
-            "To Amount": None,
+            "To Coin": "VTHO",
+            "From Coin": None,
+            "From Amount": None,
             "Fiat": "EUR",
             "Fiat Price": 0,
             "Tag": "Reward",
@@ -134,5 +134,9 @@ def get_transactions_df(raw=False):
             "Notes",
         ]
     ]
+
+    final_df.loc[final_df['From Amount'] > 0, 'To Amount'] = final_df.loc[final_df['From Amount'] > 0, 'From Amount']
+    final_df.loc[final_df['From Amount'] > 0, 'To Coin'] = final_df.loc[final_df['From Amount'] > 0, 'From Coin']
+    final_df.loc[final_df['From Amount'] > 0, ['From Amount', 'From Coin']] = None
 
     return final_df

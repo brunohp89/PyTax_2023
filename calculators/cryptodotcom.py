@@ -203,6 +203,10 @@ def get_transactions_df(raw=False, return_fiat=False):
                 "Notes",
             ]
         ]
+
+        final_df.loc[final_df["Tag"] == 'Trade', 'From Amount'] = [-abs(c) for c in
+                                                               final_df.loc[final_df["Tag"] == 'Trade', 'From Amount']]
+
         return final_df
 
 
