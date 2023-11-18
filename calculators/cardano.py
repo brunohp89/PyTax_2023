@@ -4,16 +4,8 @@ import datetime as dt
 import tax_library as tx
 from PricesClass import Prices
 from blockfrost import BlockFrostApi
-import os
-import json
 
-def get_transactions_df(address):
-
-    with open(os.getcwd() + "\\.json") as creds:
-        blockfrost_api = json.load(creds)["BlockFrostToken"]
-
-    if blockfrost_api == "":
-        raise PermissionError("No API KEY for BlockFrost Scan found in .json")
+def get_transactions_df(address, blockfrost_api):
 
     api = BlockFrostApi(project_id=blockfrost_api)
     stake_address = api.address(address)
@@ -47,11 +39,11 @@ def get_transactions_df(address):
     )
     fees = pd.DataFrame([(k.hash, int(k.fees)) for k in trx_content])
 
-    vout = pd.merge(timestamp, fees, on=0)
+    vout = pd.merge(timestamp, fees, on=0, suffixes=('1_','2_'))
     vout.drop_duplicates(inplace=True)
-    vout = pd.merge(vout, inputs, on=0)
+    vout = pd.merge(vout, inputs, on=0, suffixes=('3_','4_'))
     vout.drop_duplicates(inplace=True)
-    vout = pd.merge(vout, output, on=0)
+    vout = pd.merge(vout, output, on=0, suffixes=('5_','6_'))
     vout.drop_duplicates(inplace=True)
 
     vout.columns = [
@@ -75,25 +67,7 @@ def get_transactions_df(address):
     vout["OAmount"] = vout["OAmount"].apply(lambda x: int(x))
     vout["Fees"] = vout["Fees"].apply(lambda x: -int(x))
 
-    vout.loc[
-        np.logical_and(
-            vout["OAddress"].isin(addresses), vout["IAddress"].isin(addresses)
-        ),
-        "OAmount",
-    ] = (
-        vout.loc[
-            np.logical_and(
-                vout["OAddress"].isin(addresses), vout["IAddress"].isin(addresses)
-            ),
-            "OAmount",
-        ]
-        - vout.loc[
-            np.logical_and(
-                vout["OAddress"].isin(addresses), vout["IAddress"].isin(addresses)
-            ),
-            "IAmount",
-        ]
-    )
+    vout=pd.concat([vout,vout.loc[np.logical_and(vout['IAddress'].isin(addresses), vout['OAddress'].isin(addresses))]]).drop_duplicates(keep=False)
 
     vout.drop_duplicates(
         subset=["Timestamp", "OAddress", "OAsset", "OAmount"], inplace=True
@@ -117,6 +91,12 @@ def get_transactions_df(address):
         for k in rewards
     ]
     rewards = pd.DataFrame(rewards)
+    if rewards.shape[0] > 0:
+        delegate_transaction = ada.iloc[[-1],:].copy()
+        delegate_transaction['OAmount'] = -2176149
+        delegate_transaction['Fees'] = None
+        delegate_transaction['Timestamp'] += dt.timedelta(seconds=1)
+        ada=pd.concat([delegate_transaction,ada])
     rewards.columns = ["Timestamp", "OAmount"]
     ada = pd.concat([ada, rewards])
     ada.index = ada["Timestamp"]
