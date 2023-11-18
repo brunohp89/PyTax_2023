@@ -71,7 +71,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         final_df = final_df[~final_df["Operation"].isin(to_exclude)].copy()
         final_df = final_df[final_df["Account"] != "Savings"].copy()
 
-        # DATA FIXES '2022-09-16 15:38:40'
+        # DATA FIXES
         final_df.loc[
             final_df["UTC_Time"] == "2022-10-11 12:11:43", "UTC_Time"
         ] = "2022-10-11 12:11:42"
@@ -84,6 +84,9 @@ def get_transactions_df(raw=False, card_transactions=False):
         final_df.loc[
             final_df["UTC_Time"] == "2022-10-20 19:53:06", "UTC_Time"
         ] = "2022-10-20 19:53:05"
+        final_df.loc[
+            final_df["UTC_Time"] == "2023-11-03 08:25:38", "UTC_Time"
+        ] = "2023-11-03 08:25:39"
         final_df.loc[
             final_df["UTC_Time"] == "2022-10-22 23:40:18", "UTC_Time"
         ] = "2022-10-22 23:40:17"

@@ -62,7 +62,7 @@ scam = [
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
 def get_crypto_dot_org_transactions(address):
     address = address.lower()
-    if address not in os.listdir('../cryptodotorg'):
+    if address not in os.listdir('cryptodotorg'):
         print("No files for crypto.org found")
         return pd.DataFrame(columns=['From', 'To', 'From Coin', 'To Coin', 'From Amount', 'To Amount', 'Fee',
                                      'Fee Coin', 'Fee Fiat', 'Fiat', 'Fiat Price', 'Tag', 'Source', 'Notes'])
@@ -128,7 +128,7 @@ def get_crypto_dot_org_transactions(address):
     return final_df
 
 
-def get_transactions_df(address, scan_key, chain, return_nfts=True):
+def get_transactions_df(address, scan_key, chain):
     address = address.lower()
 
     if chain == 'eth-mainnet':
@@ -262,9 +262,9 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
     final_df.loc[final_df['To Amount'] < 0, 'To Coin'] = None
     final_df.loc[final_df['To Amount'] < 0, 'To Amount'] = None
 
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    #===========================================STARGATE================================================================
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # ===========================================STARGATE================================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     stargate_contracts = ['0x3052A0F6ab15b4AE1df39962d5DdEFacA86DaB47'.lower(),  # Stargate Staking BSC
                           '0x4a364f8c717cAAD9A442737Eb7b8A55cc6cf18D8'.lower(),  # Stargate Router BSC
                           '0xD4888870C8686c748232719051b677791dBDa26D'.lower(),  # Stargate veSTG BSC
@@ -487,9 +487,9 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
 
         final_df = pd.concat([final_df, temp_df])
 
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    #===========================================SOFI SWAP===============================================================
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # ===========================================SOFI SWAP===============================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     sofi_contracts = ['0xd55a4d54f39baf26da2f3ee7be9a6388c15f9831'.lower()]
 
     sofi_df = trx_df[trx_df['to_normal'].isin(sofi_contracts)].copy()
@@ -539,7 +539,7 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
         final_df = pd.concat([final_df, temp_df])
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    # =========================================PANCACKE SWAP=============================================================
+    # =========================================PANCAKE SWAP=============================================================
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if chain == 'bsc-mainnet':
         pancake = trx_df[~pd.isna(trx_df['functionName'])].copy()
@@ -746,7 +746,7 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # For now only ETH <-> ERC20
     one_inch = ['0x1111111254eeb25477b68fb85ed929f73a960582'.lower(),  # ARB Router
-                '0x1111111254760f7ab3f16433eea9304126dcd199'.lower()]
+                '0x1111111254760f7ab3f16433eea9304126dcd199'.lower()]  # Not one inch, wrapping ETH
     one_inch_df = trx_df[trx_df['from'].isin(one_inch)]
     if one_inch_df.shape[0] > 0:
         trx_df = pd.concat([trx_df, one_inch_df]).drop_duplicates(keep=False)
@@ -1687,6 +1687,43 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
     if zerox_df.shape[0] > 0:
         print("ATTENTION: 0x TRADES NOT BEING CONSIDERED")
 
+    # WSTEH wrapping
+    wseth_hash = trx_df.loc[trx_df['tokenSymbol'] == 'wstETH', 'hash'].tolist()
+    weth = trx_df[trx_df['hash'].isin(wseth_hash)].copy()
+    if weth.shape[0] > 0:
+        trx_df = pd.concat([trx_df, weth]).drop_duplicates(keep=False)
+        weth['value'] = [int(x) / 10 ** 18 for x in weth['value']]
+
+        weth.loc[weth['to'] != address, 'value'] *= -1
+
+        weth = weth[
+            ['timeStamp', 'from_normal', 'to_normal', 'value', 'gasUsed', 'gasPrice_erc20', 'tokenSymbol']]
+
+        weth.loc[weth['value'] < 0, 'From Amount'] = weth.loc[weth['value'] < 0, 'value']
+        weth.loc[weth['value'] > 0, 'To Amount'] = weth.loc[weth['value'] > 0, 'value']
+
+        weth.loc[weth['value'] < 0, 'From Coin'] = weth.loc[weth['value'] < 0, 'tokenSymbol']
+        weth.loc[weth['value'] > 0, 'To Coin'] = weth.loc[weth['value'] > 0, 'tokenSymbol']
+
+        for timestamp in weth.timeStamp.unique():
+            weth.loc[
+                weth['timeStamp'] == timestamp, ['timeStamp', 'from_normal', 'to_normal', 'gasUsed', 'gasPrice_erc20',
+                                                 'To Amount', 'To Coin', 'From Coin', 'From Amount']] = weth.loc[
+                weth['timeStamp'] == timestamp, ['timeStamp', 'from_normal', 'to_normal', 'gasUsed', 'gasPrice_erc20',
+                                                 'To Amount', 'To Coin', 'From Coin', 'From Amount']].ffill().bfill()
+
+        weth = weth[
+            ['timeStamp', 'from_normal', 'to_normal', 'gasUsed', 'gasPrice_erc20', 'To Amount', 'To Coin', 'From Coin',
+             'From Amount']]
+
+        weth['kind'] = f'wstETH contract'
+        weth = weth.drop_duplicates()
+
+        weth.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'To Amount', 'To Coin', 'From Coin',
+                        'From Amount', 'Kind']
+
+        final_df = pd.concat([final_df, weth])
+        del weth
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ///////////////////////////////////END SPECIFIC SMART CONTRACTS////////////////////////////////////////////////////
@@ -2193,11 +2230,10 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
     final_df['From Coin'] = final_df['From Coin'].fillna('')
     final_df.loc[pd.isna(final_df['From Coin']), 'From Coin'] = ''
 
-    if not return_nfts:
-        final_df.loc[final_df['To Coin'].isin(nfts), 'To Amount'] = None
-        final_df.loc[final_df['To Coin'].isin(nfts), 'To Coin'] = None
-        final_df.loc[final_df['From Coin'].isin(nfts), 'From Amount'] = None
-        final_df.loc[final_df['From Coin'].isin(nfts), 'From Coin'] = None
+    final_df.loc[final_df['To Coin'].isin(nfts), 'To Amount'] = None
+    final_df.loc[final_df['To Coin'].isin(nfts), 'To Coin'] = None
+    final_df.loc[final_df['From Coin'].isin(nfts), 'From Amount'] = None
+    final_df.loc[final_df['From Coin'].isin(nfts), 'From Coin'] = None
 
     final_df.loc[final_df['To Coin'].str.contains('Uniswap', na=False), 'To Amount'] = None
     final_df.loc[final_df['To Coin'].str.contains('Uniswap', na=False), 'To Coin'] = None
@@ -2260,7 +2296,7 @@ def get_transactions_df(address, scan_key, chain, return_nfts=True):
         final_df = pd.concat([final_df, cro_org]).sort_index()
 
     eth_prices = Prices()
-    final_df = tx.price_transactions_df(final_df, eth_prices, nfts)
+    final_df = tx.price_transactions_df(final_df, eth_prices)
 
     final_df['Fee'] = [-(abs(x)) if ~pd.isna(x) and x is not None else None for x in final_df['Fee']]
     final_df['Fee Fiat'] = [-(abs(x)) if ~pd.isna(x) and x is not None else None for x in final_df['Fee Fiat']]

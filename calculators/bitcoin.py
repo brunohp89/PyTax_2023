@@ -5,6 +5,10 @@ import tax_library as tx
 
 
 def get_transactions_df(address_list):
+    print('REMINDER: If the total value of your UTXOs is greater than the amount you want to send, the excess is sent '
+          'back to a new address in your own wallet. This new address is known as the change address. Include any '
+          'change wallet to the address_list')
+
     vout = pd.DataFrame()
     for address in address_list:
         url = f"https://api.blockchair.com/bitcoin/dashboards/address/{address}?transaction_details=true"
