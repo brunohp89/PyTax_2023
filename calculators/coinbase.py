@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import tax_library as tx
-
+import datetime as dt
 
 def get_transactions_df(raw=False):
     coinbase_files = [
@@ -25,6 +25,8 @@ def get_transactions_df(raw=False):
             tx.str_to_datetime(j.replace("T", " ").replace("Z", ""))
             for j in final_df["Timestamp"]
         ]
+
+        final_df.index = [k + dt.timedelta(hours=1) for k in final_df.index]
 
         final_df.sort_index(inplace=True)
         final_df = final_df.drop_duplicates()

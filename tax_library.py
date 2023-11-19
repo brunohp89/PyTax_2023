@@ -27,6 +27,15 @@ fiat_list = [
     "",
 ]
 
+stable_list = [
+    "BUSD",
+    "FUSD",
+    "USDT",
+    "USDC",
+    "DAI",
+    "LUSD"
+]
+
 
 def str_to_datetime(date: str):
     try:
