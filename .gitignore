@@ -21,7 +21,6 @@ log.txt
 pdf_producer.py
 bkp
 tax_calculator.py
-AccountClass.py
 manual_transactions.txt
 calculators/solana_calc.py
 *_tokens.pickle
