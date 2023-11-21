@@ -26,3 +26,5 @@ calculators/solana_calc.py
 *_tokens.pickle
 manual_transactions.csv
 calculators/cosmos.py
+.DS_Store
+venv
