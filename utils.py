@@ -24,6 +24,11 @@ def calculate_pmc(coin, transactions):
     coin_df.loc[coin_df['To Coin'] == '', 'To Coin'] = None
     coin_df.loc[coin_df['From Coin'] == '', 'From Coin'] = None
 
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721')), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721')), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155')), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155')), 'From Coin'] = 'NFT Exchange'
+
     coin_df2 = coin_df[np.logical_and(~pd.isna(coin_df['To Coin']), ~pd.isna(coin_df['From Coin']))]
     coin_df3 = coin_df[coin_df['Tag'].isin(['Interest', 'Reward', 'Cashback'])]
 
