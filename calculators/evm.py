@@ -128,8 +128,10 @@ def get_crypto_dot_org_transactions(address):
     return final_df
 
 
-def get_transactions_df(address, scan_key, chain):
+def get_transactions_df(address, chain, scan_key=None):
     address = address.lower()
+    if chain != 'zksync-mainnet' and scan_key is None:
+        raise ValueError(f'API key for chain {chain} is missing')
 
     if chain == 'eth-mainnet':
         main_url = 'https://api.etherscan.io/'
@@ -152,38 +154,53 @@ def get_transactions_df(address, scan_key, chain):
     elif chain == 'base-mainnet':
         main_url = 'https://api.basescan.org/'
         gas_coin = 'ETH'
+    elif chain == 'zksync-mainnet':
+        main_url = 'https://block-explorer-api.mainnet.zksync.io/'
+        gas_coin = 'ETH'
     else:
-        raise AttributeError("chain not recognized")
+        raise AttributeError(f"{chain} chain not recognized")
 
-    url = f"{main_url}api?module=account&action=txlist&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={scan_key}"
+    if chain == 'zksync-mainnet':
+        end_block = 9007199254740991
+        additional_piece = '&offset=1000'
+    else:
+        end_block = 9999999999999999999
+        additional_piece = ''
+
+    url = f"{main_url}api?module=account&action=txlist&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
     response = requests.get(url)
     normal = pd.DataFrame(response.json().get("result"))
     if normal.shape[0] == 0:
         print("No transactions found")
         return pd.DataFrame(columns=['From', 'To', 'From Coin', 'To Coin', 'From Amount', 'To Amount', 'Fee',
                                      'Fee Coin', 'Fee Fiat', 'Fiat', 'Fiat Price', 'Tag', 'Source', 'Notes'])
+    if normal.shape[0] == 1000 or normal.shape[0] >= 10000: #API limits
+        print('WARNING, API limit reached. Transactions are probably missing.')
 
-    url = f"{main_url}api?module=account&action=tokennfttx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={scan_key}"
+    url = f"{main_url}api?module=account&action=tokennfttx&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
     response = requests.get(url)
     erc721 = pd.DataFrame(response.json().get("result"))
     if erc721.shape[0] > 0:
-        erc721['erc721_complete_name'] = erc721['tokenName'] + ' - ' + erc721['tokenID']
+        if 'tokenName' not in erc721.columns:
+            erc721['erc721_complete_name'] = 'ZKSYNC_NFT - ' + erc721['tokenID']
+        else:
+            erc721['erc721_complete_name'] = erc721['tokenName'] + ' - ' + erc721['tokenID']
 
     erc1155 = pd.DataFrame()
-    if chain != 'arb-mainnet':
-        url = f"{main_url}api?module=account&action=token1155tx&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={scan_key}"
+    if chain not in ['arb-mainnet', 'zksync-mainnet']:
+        url = f"{main_url}api?module=account&action=token1155tx&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
         response = requests.get(url)
         erc1155 = pd.DataFrame(response.json().get("result"))
         if erc1155.shape[0] > 0:
             erc1155['erc1155_complete_name'] = erc1155['tokenName'] + ' - ' + erc1155['tokenID']
-    if chain == 'arb-mainnet':
+    if chain in ['arb-mainnet', 'zksync-mainnet']:
         erc1155 = pd.DataFrame()
 
-    url = f"{main_url}api?module=account&action=txlistinternal&address={address}&startblock=0&endblock=9999999999999999999&sort=asc&apikey={scan_key}"
+    url = f"{main_url}api?module=account&action=txlistinternal&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
     response_internal = requests.get(url)
     internal = pd.DataFrame(response_internal.json().get("result"))
 
-    url = f"{main_url}api?module=account&action=tokentx&address={address}&startblock=0&endblock=999999999999&sort=asc&apikey={scan_key}"
+    url = f"{main_url}api?module=account&action=tokentx&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
     response = requests.get(url)
     erc20 = pd.DataFrame(response.json().get("result"))
     if erc20.shape[0] > 0:
@@ -197,11 +214,15 @@ def get_transactions_df(address, scan_key, chain):
                     int(list(erc20.loc[erc20['timeStamp'] == timestamp, 'value'])[0]) * len(
                         list(erc20.loc[erc20['timeStamp'] == timestamp, 'value'])))
         erc20 = erc20.drop_duplicates()
+    if erc20.shape[0] == 1000 or erc20.shape[0] >= 10000: #API limits
+        print('WARNING, API limit reached. Transactions are probably missing.')
 
     if internal.shape[0] == 0:
         internal = pd.DataFrame(data=None, columns=['blockNumber', 'timeStamp', 'hash', 'from', 'to', 'value',
                                                     'contractAddress', 'input', 'type', 'gas', 'gasUsed', 'traceId',
                                                     'isError', 'errCode'])
+    if internal.shape[0] == 1000 or internal.shape[0] >= 10000: #API limits
+        print('WARNING, API limit reached. Transactions are probably missing.')
 
     if erc721.shape[0] == 0:
         erc721 = pd.DataFrame(data=None, columns=['blockNumber', 'timeStamp', 'hash', 'nonce', 'blockHash', 'from',
@@ -1222,6 +1243,212 @@ def get_transactions_df(address, scan_key, chain):
             print("UNISWAP TRANSACTIONS ARE NOT BEING CONSIDERED")
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # =================================================SPACEFI===========================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    spacefi_contracts = ['0xbE7D1FD1f6748bbDefC4fbaCafBb11C6Fc506d1d']
+
+    spacefi_df = trx_df[
+        np.logical_or(trx_df['from_normal'].isin(spacefi_contracts), trx_df['to_normal'].isin(spacefi_contracts))]
+
+    if spacefi_df.shape[0] > 0:
+
+        trx_df = pd.concat([trx_df, spacefi_df]).drop_duplicates(keep=False)
+
+        # Swap with ETH
+        temp_df = spacefi_df[spacefi_df['methodId'] == '0xfb3bdb41']
+        spacefi_df = spacefi_df[spacefi_df['methodId'] != '0xfb3bdb41']
+
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+
+        temp_df.loc[temp_df['value'] < 0, 'From Amount'] = temp_df.loc[temp_df['value'] < 0, 'value']
+        temp_df.loc[temp_df['value'] > 0, 'To Amount'] = temp_df.loc[temp_df['value'] > 0, 'value']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Amount'] = temp_df.loc[
+            temp_df['value_normal'] < 0, 'value_normal']
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Amount'] = temp_df.loc[
+            temp_df['value_normal'] > 0, 'value_normal']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Coin'] = temp_df.loc[temp_df['value'] < 0, 'tokenSymbol']
+        temp_df.loc[temp_df['value'] > 0, 'To Coin'] = temp_df.loc[temp_df['value'] > 0, 'tokenSymbol']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Coin'] = gas_coin
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Coin'] = gas_coin
+
+        temp_df = temp_df[
+            ['timeStamp_normal', 'from_normal', 'to_normal', 'From Amount', 'To Amount', 'From Coin', 'To Coin',
+             'gasUsed_normal', 'gasPrice']].copy()
+        temp_df['Kind'] = 'Spacefi Swap'
+        temp_df.columns = ['Timestamp', 'From', 'To', 'From Amount', 'To Amount', 'From Coin', 'To Coin', 'Gasused',
+                           'Gasprice', 'Kind']
+        temp_df['Gasused'] = [int(x) for x in temp_df['Gasused']]
+        for i in set(temp_df['Timestamp']):
+            temp_df.loc[temp_df['Timestamp'] == i, 'Gasused'] /= temp_df[temp_df['Timestamp'] == i].shape[0]
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Liquidity with ETH
+        temp_df = spacefi_df[spacefi_df['methodId'].isin(['0xf305d719', '0x02751cec'])]
+        spacefi_df = spacefi_df[~spacefi_df['methodId'].isin(['0xf305d719', '0x02751cec'])]
+
+        temp_df = temp_df[temp_df['tokenSymbol'] != 'SLP']
+
+        temp_df.loc[temp_df['isError_normal'] == '1', ['value_normal','value_internal', 'value', 'tokenDecimal']] = 0
+        temp_df.loc[temp_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
+        temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
+
+        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
+        temp_df['value_internal'] = temp_df['value_internal'].astype(int)
+        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(x) / 10 ** 18 for x in temp_df['value_internal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df['value_normal'] += temp_df['value_internal']
+
+        temp_df1 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value_normal']]
+        temp_df1.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount']
+
+        temp_df2 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value', 'tokenSymbol']]
+        temp_df2.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount', 'From Coin']
+
+        temp_df = pd.concat([temp_df1, temp_df2])
+        temp_df['From Coin'] = temp_df['From Coin'].fillna(gas_coin)
+        temp_df = temp_df.sort_values('Timestamp')
+
+        for coin in temp_df['From Coin'].unique():
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = temp_df.loc[
+                temp_df['From Coin'] == coin, 'From Amount'].cumsum()
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = \
+                list(temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'])[-1]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'From Amount'] = None
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'Spacefi Liquidity'
+
+            temp_df['Gasused'] = [str(int(int(x) / 2)) for x in temp_df['Gasused']]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'Spacefi Liquidity'
+
+        temp_df['To Coin'] = None
+        temp_df['To Amount'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Amount'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Amount']
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Coin'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Coin']
+
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Coin'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Amount'] = None
+
+        temp_df.loc[pd.isna(temp_df['From Amount']), 'From Coin'] = None
+        if temp_df.shape[0] > 0:
+            temp_df.loc[pd.isna(temp_df['Kind']), 'Kind'] = 'Reward'
+        temp_df.loc[temp_df['From Coin'] == 'Error', 'From Coin'] = gas_coin
+
+        final_df = pd.concat([final_df, temp_df])
+
+        if spacefi_df.shape[0] > 0:
+            print("SPACEFI TRANSACTIONS ARE NOT BEING CONSIDERED")
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # =================================================MUTE.IO===========================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    mute_contracts = ['0x8B791913eB07C32779a16750e3868aA8495F5964', '0xDFAaB828f5F515E104BaaBa4d8D554DA9096f0e4']
+
+    mute_df = trx_df[
+        np.logical_or(trx_df['from_normal'].isin(mute_contracts), trx_df['to_normal'].isin(mute_contracts))].copy()
+
+    if mute_df.shape[0] > 0:
+
+        trx_df = pd.concat([trx_df, mute_df]).drop_duplicates(keep=False)
+        mute_df.loc[mute_df['methodId'] == '0x095ea7b3', 'functionName'] = 'approve'
+        trx_df = pd.concat([trx_df, mute_df.loc[mute_df['methodId'] == '0x', 'functionName']])
+
+        mute_df = mute_df[mute_df['functionName'] != 'approve']
+
+        # Claim Fees
+        temp_df = mute_df[mute_df['methodId'] == '0x']
+        mute_df = mute_df[mute_df['methodId'] != '0x']
+
+        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
+        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value', 'tokenSymbol']]
+        temp_df.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'To Amount', 'To Coin']
+        temp_df[['From Amount', 'From Coin']] = None
+        temp_df['Kind'] = 'Reward'
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Liquidity with ETH
+        temp_df = mute_df[mute_df['methodId'].isin(['0x3a8e53ff','0xaac57b19'])]
+        mute_df = mute_df[~mute_df['methodId'].isin(['0x3a8e53ff','0xaac57b19'])]
+
+        temp_df = temp_df[~temp_df['tokenSymbol'].str.contains('vMLP')]
+
+        temp_df.loc[temp_df['isError_normal'] == '1', ['value_normal','value_internal', 'value', 'tokenDecimal']] = 0
+        temp_df.loc[temp_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
+        temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
+
+        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
+        temp_df['value_internal'] = temp_df['value_internal'].astype(int)
+        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(x) / 10 ** 18 for x in temp_df['value_internal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df['value_normal'] += temp_df['value_internal']
+
+        temp_df1 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value_normal']]
+        temp_df1.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount']
+
+        temp_df2 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value', 'tokenSymbol']]
+        temp_df2.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount', 'From Coin']
+
+        temp_df = pd.concat([temp_df1, temp_df2])
+        temp_df['From Coin'] = temp_df['From Coin'].fillna(gas_coin)
+        temp_df = temp_df.sort_values('Timestamp')
+
+        for coin in temp_df['From Coin'].unique():
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = temp_df.loc[
+                temp_df['From Coin'] == coin, 'From Amount'].cumsum()
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = \
+                list(temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'])[-1]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'From Amount'] = None
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'Mute.io Liquidity'
+
+            temp_df['Gasused'] = [str(int(int(x) / 2)) for x in temp_df['Gasused']]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'Mute.io Liquidity'
+
+        temp_df['To Coin'] = None
+        temp_df['To Amount'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Amount'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Amount']
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Coin'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Coin']
+
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Coin'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Amount'] = None
+
+        temp_df.loc[pd.isna(temp_df['From Amount']), 'From Coin'] = None
+        if temp_df.shape[0] > 0:
+            temp_df.loc[pd.isna(temp_df['Kind']), 'Kind'] = 'Reward'
+        temp_df.loc[temp_df['From Coin'] == 'Error', 'From Coin'] = gas_coin
+
+        final_df = pd.concat([final_df, temp_df])
+
+        if mute_df.shape[0] > 0:
+            print("MUTE.IO TRANSACTIONS ARE NOT BEING CONSIDERED")
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ===============================================SANDBOX=============================================================
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     sandbox_addresses = ['0x4AB071C42C28c4858C4BAc171F06b13586b20F30'.lower(),  # Polygon Staking contract
@@ -1863,7 +2090,8 @@ def get_transactions_df(address, scan_key, chain):
     # WETH wrapping
     weth_contracts = ['0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'.lower(),
                       '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'.lower(),
-                      '0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23'.lower()]
+                      '0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23'.lower(),
+                      '0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91']
     weth = trx_df[trx_df['to_normal'].isin(weth_contracts)].copy()
     if weth.shape[0] > 0:
         trx_df = pd.concat([trx_df, weth]).drop_duplicates(keep=False)
@@ -1874,6 +2102,11 @@ def get_transactions_df(address, scan_key, chain):
         weth['tokenName'] = gas_coin
         weth['kind'] = f'W{gas_coin} contract'
         weth.columns = ['Timestamp', 'From', 'To', 'To Amount', 'Gasused', 'Gasprice', 'To Coin', 'Kind']
+
+        if chain == 'zksync-mainnet':
+            weth['To Amount']=weth['To Amount'].fillna(0)
+            weth.loc[weth['To Amount'] == 0, 'Kind'] = 'Approve WETH'
+
         weth['To Amount'] = [int(h) for h in weth['To Amount']]
 
         weth.loc[weth['To'].isin(weth_contracts), 'To Coin'] = f'W{gas_coin}'
@@ -1886,6 +2119,9 @@ def get_transactions_df(address, scan_key, chain):
 
         weth['To Amount'] = [int(x) / 10 ** 18 for x in weth['To Amount']]
         weth['From Amount'] = [int(x) / 10 ** 18 for x in weth['From Amount']]
+
+        if chain == 'zksync-mainnet':
+            weth.loc[weth['Kind'] == 'Approve WETH', ['From Coin', 'To Coin', 'From Amount', 'To Amount']] = None
 
         final_df = pd.concat([final_df, weth])
 
@@ -2257,7 +2493,7 @@ def get_transactions_df(address, scan_key, chain):
     final_df.loc[final_df['From Amount'] == 0, 'From Amount'] = None
 
     final_df["Tag"] = final_df["Kind"]
-    final_df["Source"] = f'{gas_coin}-{address[0:10]}'
+    final_df["Source"] = f'{chain}-{address[0:10]}'
     final_df["Notes"] = ''
 
     final_df.loc[final_df['To Coin'] == 'LOVE', 'To Amount'] = None
@@ -2298,6 +2534,8 @@ def get_transactions_df(address, scan_key, chain):
     if chain == 'cro-mainnet':
         cro_org = get_crypto_dot_org_transactions(address)
         final_df = pd.concat([final_df, cro_org]).sort_index()
+
+    final_df.loc[np.logical_and(final_df['From Coin'] == 'anyETH', final_df['To Coin'] == 'anyETH'), ['From Coin', 'To Coin', 'From Amount', 'Tag']] = [None, 'ETH', None, 'AnySwap Bridge']
 
     eth_prices = Prices()
     final_df = tx.price_transactions_df(final_df, eth_prices)
