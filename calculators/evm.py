@@ -256,6 +256,14 @@ def get_transactions_df(address, chain, scan_key=None):
         suffixes=("", "_erc721"))
         , erc1155, how="outer", on="hash", suffixes=("", "_erc1155")).drop_duplicates()
 
+    trx_df['from_normal'] = [k.lower() if not isinstance(k, float) else None for k in trx_df['from_normal']]
+    trx_df['to_normal'] = [k.lower() if not isinstance(k, float) else None  for k in trx_df['to_normal']]
+    trx_df['from_internal'] = [k.lower() if not isinstance(k, float) else None  for k in trx_df['from_internal']]
+    trx_df['to_internal'] = [k.lower() if not isinstance(k, float) else None  for k in trx_df['to_internal']]
+    trx_df['to'] = [k.lower() if not isinstance(k, float) else None  for k in trx_df['to']]
+    trx_df['from'] = [k.lower() if not isinstance(k, float) else None  for k in trx_df['from']]
+
+
     trx_df.loc[trx_df['isError_normal'] == '1', ['value_normal', 'value']] = '0'
 
     nfts = erc721['erc721_complete_name'].tolist()
@@ -1245,17 +1253,20 @@ def get_transactions_df(address, chain, scan_key=None):
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # =================================================SPACEFI===========================================================
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    spacefi_contracts = ['0xbE7D1FD1f6748bbDefC4fbaCafBb11C6Fc506d1d']
+    spacefi_contracts = ['0xbE7D1FD1f6748bbDefC4fbaCafBb11C6Fc506d1d'.lower()]
 
     spacefi_df = trx_df[
-        np.logical_or(trx_df['from_normal'].isin(spacefi_contracts), trx_df['to_normal'].isin(spacefi_contracts))]
+        np.logical_or(trx_df['from_normal'].isin(spacefi_contracts), trx_df['to_normal'].isin(spacefi_contracts))].copy()
+
+    spacefi_df.loc[spacefi_df['isError_normal'] == '1', ['value_normal', 'value_internal', 'value', 'tokenDecimal']] = 0
+    spacefi_df.loc[spacefi_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
 
     if spacefi_df.shape[0] > 0:
 
         trx_df = pd.concat([trx_df, spacefi_df]).drop_duplicates(keep=False)
 
         # Swap with ETH
-        temp_df = spacefi_df[spacefi_df['methodId'] == '0xfb3bdb41']
+        temp_df = spacefi_df[spacefi_df['methodId'] == '0xfb3bdb41'].copy()
         spacefi_df = spacefi_df[spacefi_df['methodId'] != '0xfb3bdb41']
 
         temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
@@ -1291,18 +1302,16 @@ def get_transactions_df(address, chain, scan_key=None):
         final_df = pd.concat([final_df, temp_df])
 
         # Liquidity with ETH
-        temp_df = spacefi_df[spacefi_df['methodId'].isin(['0xf305d719', '0x02751cec'])]
+        temp_df = spacefi_df[spacefi_df['methodId'].isin(['0xf305d719', '0x02751cec'])].copy()
         spacefi_df = spacefi_df[~spacefi_df['methodId'].isin(['0xf305d719', '0x02751cec'])]
 
         temp_df = temp_df[temp_df['tokenSymbol'] != 'SLP']
 
-        temp_df.loc[temp_df['isError_normal'] == '1', ['value_normal','value_internal', 'value', 'tokenDecimal']] = 0
-        temp_df.loc[temp_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
         temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
 
-        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
-        temp_df['value_internal'] = temp_df['value_internal'].astype(int)
-        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df['value_normal'] = [int(k) for k in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(k) for k in temp_df['value_internal']]
+        temp_df['value'] = [int(k) for k in temp_df['value']]
         temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
         temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
         temp_df.loc[temp_df['to'] != address, 'value'] *= -1
@@ -1353,6 +1362,169 @@ def get_transactions_df(address, chain, scan_key=None):
 
         if spacefi_df.shape[0] > 0:
             print("SPACEFI TRANSACTIONS ARE NOT BEING CONSIDERED")
+
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # =================================================SyncSwap==========================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    syncswap_contracts = ['0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295'.lower()]
+
+    sync_df = trx_df[
+        np.logical_or(trx_df['from_normal'].isin(syncswap_contracts), trx_df['to_normal'].isin(syncswap_contracts))].copy()
+
+    sync_df.loc[sync_df['isError_normal'] == '1', ['value_normal', 'value_internal', 'value', 'tokenDecimal']] = 0
+    sync_df.loc[sync_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
+
+    if sync_df.shape[0] > 0:
+
+        trx_df = pd.concat([trx_df, sync_df]).drop_duplicates(keep=False)
+
+        # Liquidity with ETH
+        temp_df = sync_df[sync_df['methodId'].isin(['0x94ec6d78', '0x53c43f15', '0x7d10c9d6'])].copy()
+        mute_df = sync_df[~sync_df['methodId'].isin(['0x94ec6d78', '0x53c43f15',  '0x7d10c9d6'])]
+
+        temp_df = temp_df[~temp_df['tokenSymbol'].str.contains('cSLP')]
+
+        temp_df.loc[temp_df['isError_normal'] == '1', ['value_normal', 'value_internal', 'value', 'tokenDecimal']] = 0
+        temp_df.loc[temp_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
+        temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
+
+        temp_df['value_internal'] = [int(k) for k in temp_df['value_internal']]
+        temp_df['value'] = [int(k) for k in temp_df['value']]
+        temp_df['value_normal'] = [int(k) for k in temp_df['value_normal']]
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(x) / 10 ** 18 for x in temp_df['value_internal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df['value_normal'] += temp_df['value_internal']
+
+        temp_df1 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value_normal']]
+        temp_df1.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount']
+
+        temp_df2 = temp_df[['timeStamp_normal', 'from', 'to', 'gasUsed_normal', 'gasPrice', 'value', 'tokenSymbol']]
+        temp_df2.columns = ['Timestamp', 'From', 'To', 'Gasused', 'Gasprice', 'From Amount', 'From Coin']
+
+        temp_df = pd.concat([temp_df1, temp_df2])
+        temp_df['From Coin'] = temp_df['From Coin'].fillna(gas_coin)
+        temp_df = temp_df.sort_values('Timestamp')
+
+        for coin in temp_df['From Coin'].unique():
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = temp_df.loc[
+                temp_df['From Coin'] == coin, 'From Amount'].cumsum()
+            temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'] = \
+                list(temp_df.loc[temp_df['From Coin'] == coin, 'From Amount'])[-1]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'From Amount'] = None
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'Mute.io Liquidity'
+
+            temp_df['Gasused'] = [str(int(int(x) / 2)) for x in temp_df['Gasused']]
+            temp_df.loc[np.logical_and(temp_df['From Coin'] == coin, temp_df['Timestamp'] != max(
+                temp_df.loc[temp_df['From Coin'] == coin, 'Timestamp'])), 'Kind'] = 'SyncSwap Liquidity'
+
+        temp_df['To Coin'] = None
+        temp_df['To Amount'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Amount'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Amount']
+        temp_df.loc[temp_df['From Amount'] > 0, 'To Coin'] = temp_df.loc[temp_df['From Amount'] > 0, 'From Coin']
+
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Coin'] = None
+        temp_df.loc[temp_df['From Amount'] > 0, 'From Amount'] = None
+
+        temp_df.loc[pd.isna(temp_df['From Amount']), 'From Coin'] = None
+        if temp_df.shape[0] > 0:
+            temp_df.loc[pd.isna(temp_df['Kind']), 'Kind'] = 'Reward'
+        temp_df.loc[temp_df['From Coin'] == 'Error', 'From Coin'] = gas_coin
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Swap with ETH
+        temp_df = mute_df[mute_df['methodId'] == '0x2cc4081e'].copy()
+        sync_df = mute_df[mute_df['methodId'] != '0x2cc4081e']
+
+        temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(x) / 10 ** 18 for x in temp_df['value_internal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
+
+        temp_df = temp_df[temp_df['tokenSymbol'] != 'ySYNC']
+
+        temp_df['value_normal'] += temp_df['value_internal']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Amount'] = temp_df.loc[temp_df['value'] < 0, 'value']
+        temp_df.loc[temp_df['value'] > 0, 'To Amount'] = temp_df.loc[temp_df['value'] > 0, 'value']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Amount'] = temp_df.loc[
+            temp_df['value_normal'] < 0, 'value_normal']
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Amount'] = temp_df.loc[
+            temp_df['value_normal'] > 0, 'value_normal']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Coin'] = temp_df.loc[temp_df['value'] < 0, 'tokenSymbol']
+        temp_df.loc[temp_df['value'] > 0, 'To Coin'] = temp_df.loc[temp_df['value'] > 0, 'tokenSymbol']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Coin'] = gas_coin
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Coin'] = gas_coin
+
+        temp_df = temp_df[
+            ['timeStamp_normal', 'from_normal', 'to_normal', 'From Amount', 'To Amount', 'From Coin', 'To Coin',
+             'gasUsed_normal', 'gasPrice']].copy()
+        temp_df['Kind'] = 'SyncSwap Swap'
+        temp_df.columns = ['Timestamp', 'From', 'To', 'From Amount', 'To Amount', 'From Coin', 'To Coin', 'Gasused',
+                           'Gasprice', 'Kind']
+        temp_df['Gasused'] = [int(x) for x in temp_df['Gasused']]
+        for i in set(temp_df['Timestamp']):
+            temp_df.loc[temp_df['Timestamp'] == i, 'Gasused'] /= temp_df[temp_df['Timestamp'] == i].shape[0]
+            if temp_df.loc[temp_df['Timestamp'] == i, 'From Amount'].sum() ==  temp_df.loc[temp_df['Timestamp'] == i, 'From Amount'].tolist()[0]*temp_df[temp_df['Timestamp'] == i].shape[0]:
+                temp_df.loc[temp_df['Timestamp'] == i, 'To Amount'] = temp_df.loc[temp_df['Timestamp'] == i, 'To Amount'].sum()
+
+        temp_df=temp_df.drop_duplicates()
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Swap Tokens
+
+        temp_df = sync_df[sync_df['methodId'] == '0xe84d494b'].copy()
+        sync_df = sync_df[sync_df['methodId'] != '0xe84d494b']
+
+        temp_df = temp_df[temp_df['tokenSymbol'] != 'ySYNC']
+        temp_df['value'] = [int(k) for k in temp_df['value']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+
+        temp_df = temp_df[
+            ['timeStamp_normal', 'from_normal', 'to_normal', 'value', 'gasUsed_normal', 'gasPrice',
+             'tokenSymbol']].drop_duplicates()
+
+        temp_df.loc[temp_df['value'] < 0, 'From Amount'] = temp_df.loc[temp_df['value'] < 0, 'value']
+        temp_df.loc[temp_df['value'] > 0, 'To Amount'] = temp_df.loc[temp_df['value'] > 0, 'value']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Coin'] = temp_df.loc[temp_df['value'] < 0, 'tokenSymbol']
+        temp_df.loc[temp_df['value'] > 0, 'To Coin'] = temp_df.loc[temp_df['value'] > 0, 'tokenSymbol']
+        temp_df = temp_df[
+            ['timeStamp_normal', 'from_normal', 'to_normal', 'From Amount', 'To Amount', 'From Coin', 'To Coin',
+             'gasUsed_normal', 'gasPrice']].copy()
+        temp_df['Kind'] = 'SyncSwap Swap Erc20'
+        temp_df.columns = ['Timestamp', 'From', 'To', 'From Amount', 'To Amount', 'From Coin', 'To Coin',
+                            'Gasused',
+                            'Gasprice', 'Kind']
+
+        for timestamp in temp_df['Timestamp'].unique():
+            if temp_df.loc[temp_df['Timestamp'] == str(timestamp)].shape[0] > 1:
+                temp_df.loc[temp_df['Timestamp'] == str(timestamp), ['From', 'To']] = None
+                temp_df.loc[temp_df['Timestamp'] == str(timestamp)] = temp_df.loc[
+                    temp_df['Timestamp'] == str(timestamp)].ffill().bfill()
+        temp_df = temp_df.drop_duplicates()
+
+        final_df = pd.concat([final_df, temp_df])
+
+        if sync_df.shape[0] > 0:
+            print("SyncSwap TRANSACTIONS ARE NOT BEING CONSIDERED")
+
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # =================================================MUTE.IO===========================================================
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1365,7 +1537,7 @@ def get_transactions_df(address, chain, scan_key=None):
 
         trx_df = pd.concat([trx_df, mute_df]).drop_duplicates(keep=False)
         mute_df.loc[mute_df['methodId'] == '0x095ea7b3', 'functionName'] = 'approve'
-        trx_df = pd.concat([trx_df, mute_df.loc[mute_df['methodId'] == '0x', 'functionName']])
+        trx_df = pd.concat([trx_df, mute_df.loc[mute_df['methodId'] == '0x095ea7b3', 'functionName']])
 
         mute_df = mute_df[mute_df['functionName'] != 'approve']
 
@@ -1373,8 +1545,8 @@ def get_transactions_df(address, chain, scan_key=None):
         temp_df = mute_df[mute_df['methodId'] == '0x']
         mute_df = mute_df[mute_df['methodId'] != '0x']
 
-        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
-        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df['value_normal'] = [int(k) for k in temp_df['value_normal']]
+        temp_df['value'] = [int(k) for k in temp_df['value']]
         temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
         temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
 
@@ -1395,9 +1567,9 @@ def get_transactions_df(address, chain, scan_key=None):
         temp_df.loc[temp_df['isError_normal'] == '1', 'tokenSymbol'] = 'Error'
         temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
 
-        temp_df['value_normal'] = temp_df['value_normal'].astype(int)
-        temp_df['value_internal'] = temp_df['value_internal'].astype(int)
-        temp_df['value'] = temp_df['value'].astype(int)
+        temp_df['value_internal'] = [int(k) for k in temp_df['value_internal']]
+        temp_df['value'] = [int(k) for k in temp_df['value']]
+        temp_df['value_normal'] = [int(k) for k in temp_df['value_normal']]
         temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
         temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
         temp_df.loc[temp_df['to'] != address, 'value'] *= -1
@@ -1443,6 +1615,46 @@ def get_transactions_df(address, chain, scan_key=None):
         if temp_df.shape[0] > 0:
             temp_df.loc[pd.isna(temp_df['Kind']), 'Kind'] = 'Reward'
         temp_df.loc[temp_df['From Coin'] == 'Error', 'From Coin'] = gas_coin
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Swap with ETH
+        temp_df = mute_df[mute_df['methodId'] == '0x51cbf10f'].copy()
+        mute_df = mute_df[mute_df['methodId'] != '0x51cbf10f']
+
+        temp_df['value_internal'] = temp_df['value_internal'].fillna(0)
+        temp_df['value_normal'] = [int(x) / 10 ** 18 for x in temp_df['value_normal']]
+        temp_df['value_internal'] = [int(x) / 10 ** 18 for x in temp_df['value_internal']]
+        temp_df['value'] = [int(x) / 10 ** int(y) for x, y in zip(temp_df['value'], temp_df['tokenDecimal'])]
+
+        temp_df.loc[temp_df['to'] != address, 'value'] *= -1
+        temp_df.loc[temp_df['to_normal'] != address, 'value_normal'] *= -1
+        temp_df.loc[temp_df['to_internal'] != address, 'value_internal'] *= -1
+        temp_df['value_normal'] += temp_df['value_internal']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Amount'] = temp_df.loc[temp_df['value'] < 0, 'value']
+        temp_df.loc[temp_df['value'] > 0, 'To Amount'] = temp_df.loc[temp_df['value'] > 0, 'value']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Amount'] = temp_df.loc[
+            temp_df['value_normal'] < 0, 'value_normal']
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Amount'] = temp_df.loc[
+            temp_df['value_normal'] > 0, 'value_normal']
+
+        temp_df.loc[temp_df['value'] < 0, 'From Coin'] = temp_df.loc[temp_df['value'] < 0, 'tokenSymbol']
+        temp_df.loc[temp_df['value'] > 0, 'To Coin'] = temp_df.loc[temp_df['value'] > 0, 'tokenSymbol']
+
+        temp_df.loc[temp_df['value_normal'] < 0, 'From Coin'] = gas_coin
+        temp_df.loc[temp_df['value_normal'] > 0, 'To Coin'] = gas_coin
+
+        temp_df = temp_df[
+            ['timeStamp_normal', 'from_normal', 'to_normal', 'From Amount', 'To Amount', 'From Coin', 'To Coin',
+             'gasUsed_normal', 'gasPrice']].copy()
+        temp_df['Kind'] = 'Mute.io Swap'
+        temp_df.columns = ['Timestamp', 'From', 'To', 'From Amount', 'To Amount', 'From Coin', 'To Coin', 'Gasused',
+                           'Gasprice', 'Kind']
+        temp_df['Gasused'] = [int(x) for x in temp_df['Gasused']]
+        for i in set(temp_df['Timestamp']):
+            temp_df.loc[temp_df['Timestamp'] == i, 'Gasused'] /= temp_df[temp_df['Timestamp'] == i].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
