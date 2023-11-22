@@ -443,6 +443,7 @@ def balances(transactions: pd.DataFrame, cummulative=True, year_sel=None, allow_
 
 
 def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False):
+    df_in = df_in.sort_index()
     nfts = []
     tokens = df_in["Fee Coin"].tolist()
     if not only_fee:
