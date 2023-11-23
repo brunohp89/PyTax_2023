@@ -6673,5 +6673,5 @@ def get_transactions_df(address, chain, scan_key=None):
         final_df["From"] == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18",
         ["Tag", "Notes"],
     ] = ["Reward", "Coin"]
-    final_df = final_df.drop_duplicates()
+
     return final_df
