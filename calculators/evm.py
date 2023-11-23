@@ -3769,8 +3769,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
         final_df = pd.concat([final_df, temp_df])
 
-        if izumi_df.shape[0] > 0:
-            print("IZUMI TRANSACTIONS ARE NOT BEING CONSIDERED")
+        if cake_df.shape[0] > 0:
+            print("Cake TRANSACTIONS ARE NOT BEING CONSIDERED")
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # =================================================MUTE.IO===========================================================
