@@ -1757,7 +1757,7 @@ def get_transactions_df(address, chain, scan_key=None):
             lambda x: x.split("(")[0]
         )
 
-        # Add/Remove Liquidity tokens MISSIN WITH ETH (CRO)
+        # Add/Remove Liquidity tokens MISSING WITH ETH (CRO)
         temp_df = ferro_df[ferro_df["functionName"].str.contains("Liquidity")]
         ferro_df = ferro_df[~ferro_df["functionName"].str.contains("Liquidity")]
 
@@ -1812,7 +1812,7 @@ def get_transactions_df(address, chain, scan_key=None):
                     != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
                 ),
                 "Kind",
-            ] = "Uniswap/Quickswap Liquidity"
+            ] = "Ferro Liquidity"
 
             temp_df["Gasused"] = [str(int(int(x) / 2)) for x in temp_df["Gasused"]]
             temp_df.loc[
@@ -1822,7 +1822,7 @@ def get_transactions_df(address, chain, scan_key=None):
                     != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
                 ),
                 "Kind",
-            ] = "Uniswap/Quickswap Liquidity"
+            ] = "Ferro Liquidity"
 
         temp_df["To Coin"] = None
         temp_df["To Amount"] = None
@@ -1905,6 +1905,7 @@ def get_transactions_df(address, chain, scan_key=None):
             "Kind",
         ]
 
+
         for timestamp in temp_df["Timestamp"].unique():
             if temp_df.loc[temp_df["Timestamp"] == str(timestamp)].shape[0] > 1:
                 temp_df.loc[
@@ -1914,7 +1915,6 @@ def get_transactions_df(address, chain, scan_key=None):
                     temp_df.loc[temp_df["Timestamp"] == str(timestamp)].ffill().bfill()
                 )
         temp_df = temp_df.drop_duplicates()
-
         final_df = pd.concat([final_df, temp_df])
 
         # Deposit / Withdraw LP
@@ -3302,7 +3302,7 @@ def get_transactions_df(address, chain, scan_key=None):
         final_df = pd.concat([final_df, temp_df])
 
         if maverick_df.shape[0] > 0:
-            print("IZUMI TRANSACTIONS ARE NOT BEING CONSIDERED")
+            print("MAVERICK TRANSACTIONS ARE NOT BEING CONSIDERED")
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ===================================================IZUMI===========================================================
@@ -4278,6 +4278,7 @@ def get_transactions_df(address, chain, scan_key=None):
 
         if onchain_df.shape[0] > 0:
             print("ONCHAIN TRANSACTIONS ARE NOT BEING CONSIDERED")
+
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ===============================================SANDBOX=============================================================
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4715,7 +4716,6 @@ def get_transactions_df(address, chain, scan_key=None):
                 temp_df["Timestamp"] == i
             ].shape[0]
 
-        temp_df.loc[temp_df.duplicated(), "Gasused"] *= 2
         temp_df = temp_df.drop_duplicates()
 
         final_df = pd.concat([final_df, temp_df])
@@ -5102,7 +5102,7 @@ def get_transactions_df(address, chain, scan_key=None):
                     != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
                 ),
                 "Kind",
-            ] = "MMFinance Liquidity"
+            ] = "VVS Finance Liquidity"
 
             temp_df["Gasused"] = [str(int(int(x) / 2)) for x in temp_df["Gasused"]]
             temp_df.loc[
