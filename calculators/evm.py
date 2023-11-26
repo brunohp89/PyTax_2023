@@ -1973,6 +1973,7 @@ def get_transactions_df(address, chain, scan_key=None):
         "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff".lower(),
         "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45".lower(),
         "0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5".lower(),
+        "0xec8b0f7ffe3ae75d7ffab09429e3675bb63503e4".lower()
     ]
     uniswap_df = trx_df[
         np.logical_or(
