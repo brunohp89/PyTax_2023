@@ -42,10 +42,10 @@ def calculate_pmc(coin, transactions):
                 coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT'), 'Fiat Price'] = \
                     to_price['Fiat Price']
 
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721')), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721')), 'From Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155')), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155')), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'From Coin'] = 'NFT Exchange'
 
     coin_df2 = coin_df[np.logical_and(~pd.isna(coin_df['To Coin']), ~pd.isna(coin_df['From Coin']))]
     coin_df3 = coin_df[coin_df['Tag'].isin(['Interest', 'Reward', 'Cashback'])]
