@@ -603,6 +603,10 @@ def income(
         if type_out == "fiat":
             print(f"No income for {name}")
         return pd.DataFrame()
+
+    rendita['From Amount'] = rendita['From Amount'].fillna(0)
+    rendita['Fiat Price'] = [-x if y < 0 else x for x,y in zip(rendita['Fiat Price'], rendita['From Amount'])]
+
     temp_df_fiat = pd.DataFrame()
     temp_df_token = pd.DataFrame()
     tokens = rendita["To Coin"].tolist()
@@ -616,7 +620,7 @@ def income(
             temp_df = rendita[rendita[col] == tok]
             if temp_df.shape[0] == 0:
                 continue
-            if index == 0:
+            if index == 0 and col != 'To Coin':
                 temp_df_token = pd.DataFrame(temp_df[f'{col.split(" ")[0]} Amount'])
                 temp_df_fiat = pd.DataFrame(temp_df["Fiat Price"])
                 temp_df_fiat.columns = temp_df_token.columns = [tok]
