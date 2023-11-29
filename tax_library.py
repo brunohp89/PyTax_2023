@@ -676,3 +676,7 @@ def generate_xlsx(file_name, sheet_names, data):
         sheet_data.to_excel(writer, sheet_name=sheet_name)
     # Close the Pandas Excel writer and output the Excel file.
     writer.close()
+
+
+def all_fiat_invested(final_df):
+    return -(final_df.loc[final_df['From Coin'] == 'EUR', 'From Amount'].sum() + final_df.loc[np.logical_and(final_df['To Coin'] == 'EUR',final_df['Tag'] != 'Deposit'), 'To Amount'].sum())
