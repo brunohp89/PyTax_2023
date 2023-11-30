@@ -6070,7 +6070,70 @@ def get_transactions_df(address, chain, scan_key=None):
             ~pd.isna(trx_df["blockNumber_normal"]),
             ~pd.isna(trx_df["blockNumber_erc721"]),
         )
-    ].reset_index(drop=True)
+    ].reset_index(drop=True).copy()
+
+    # Otherside special functions
+    otherside_df = erc_swap[np.logical_or(erc_swap['functionName'].str.contains('claimVessels',na=False),erc_swap['functionName'].str.contains('claimMaras',na=False))]
+    if otherside_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, otherside_df]).drop_duplicates(keep=False)
+        erc_swap = erc_swap[~erc_swap['hash'].isin(otherside_df.hash.unique())].copy()
+        for hash in otherside_df.hash.unique():
+            if 'claimVessels' in otherside_df[otherside_df.hash == hash].functionName.values[0]:
+                vessels = otherside_df[otherside_df.hash == hash].copy()
+                vessels['From Coin'] = vessels.loc[vessels.to_erc721 == '0x000000000000000000000000000000000000dead', 'erc721_complete_name']
+                vessels.loc[vessels.to_erc721 == '0x000000000000000000000000000000000000dead', 'From Amount'] = -0.5
+                vessels['To Coin'] = vessels.loc[vessels.to_erc721 == address, 'erc721_complete_name']
+                vessels.loc[vessels.to_erc721 == address, 'To Amount'] = 0.5
+                vessels[['From Amount','From Coin']] = vessels[['From Amount','From Coin']].ffill().bfill()
+                vessels = vessels[~pd.isna(vessels['To Coin'])]
+                vessels['Kind'] = 'Otherside - Vessel Claim'
+                vessels['From'] = vessels['To'] = None
+                vessels = vessels[
+                    [
+                        "timeStamp_normal",
+                        "From",
+                        "To",
+                        "From Amount",
+                        "To Amount",
+                        "From Coin",
+                        "To Coin",
+                        "gasUsed_normal",
+                        "gasPrice",
+                        "Kind"
+                    ]
+                ].copy()
+                vessels['gasUsed_normal'] = [int(x) for x in vessels['gasUsed_normal']]
+                vessels = vessels.rename(columns={'gasUsed_normal':'Gasused', 'gasPrice':'Gasprice', 'timeStamp_normal':'Timestamp'})
+                final_df = pd.concat([final_df, vessels]).drop_duplicates(keep=False)
+            elif 'claimMaras' in otherside_df[otherside_df.hash == hash].functionName.values[0]:
+                mara = otherside_df[otherside_df.hash == hash].copy()
+                mara['From Coin'] = mara.loc[mara.to_erc721 == '0x0000000000000000000000000000000000000000', 'erc721_complete_name']
+                mara['To Coin'] = mara.loc[mara.to_erc721 == address, 'erc721_complete_name']
+                mara.loc[mara.to_erc721 == address, 'To Amount'] = 1
+                mara['From Coin'] = mara['From Coin'].ffill().bfill()
+                mara = mara[~pd.isna(mara['To Coin'])]
+                mara['Kind'] = 'Otherside - Mara Claim'
+                mara['From'] = mara['To'] = None
+                mara['From Amount'] = -1
+                mara = mara[
+                    [
+                        "timeStamp_normal",
+                        "From",
+                        "To",
+                        "From Amount",
+                        "To Amount",
+                        "From Coin",
+                        "To Coin",
+                        "gasUsed_normal",
+                        "gasPrice",
+                        "Kind"
+                    ]
+                ].copy()
+                mara['gasUsed_normal'] = [int(x) for x in mara['gasUsed_normal']]
+                mara = mara.rename(
+                    columns={'gasUsed_normal': 'Gasused', 'gasPrice': 'Gasprice', 'timeStamp_normal': 'Timestamp'})
+                final_df = pd.concat([final_df, mara]).drop_duplicates(keep=False)
+
     erc_swap = erc_swap[pd.isna(erc_swap["tokenSymbol"])].reset_index(drop=True)
     trx_df = pd.concat([trx_df, erc_swap]).drop_duplicates(keep=False)
 
@@ -6529,7 +6592,6 @@ def get_transactions_df(address, chain, scan_key=None):
     rest_df.loc[rest_df["To Amount"] < 0, "To Amount"] = None
 
     final_df = pd.concat([final_df, rest_df])
-    #  final_df = final_df[final_df['Kind'] != 'nan - nan']
     ######################
 
     final_df["Gasprice"] = final_df["Gasprice"].fillna(0)
@@ -6562,6 +6624,8 @@ def get_transactions_df(address, chain, scan_key=None):
     final_df.loc[pd.isna(final_df["To Coin"]), "To Coin"] = ""
     final_df["From Coin"] = final_df["From Coin"].fillna("")
     final_df.loc[pd.isna(final_df["From Coin"]), "From Coin"] = ""
+
+    nft_transactions = final_df[np.logical_or(final_df["To Coin"].isin(nfts),final_df["From Coin"].isin(nfts))]
 
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
     final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"] = None
@@ -6674,5 +6738,44 @@ def get_transactions_df(address, chain, scan_key=None):
         final_df["From"] == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18",
         ["Tag", "Notes"],
     ] = ["Reward", "Coin"]
+
+    nft_transactions = pd.merge(nft_transactions.drop(['Fiat Price','Fee Fiat'], axis=1),final_df[['Fee Fiat','Fiat Price']],left_index=True,right_index=True).drop_duplicates(subset=['From', 'To', 'To Amount', 'To Coin', 'Kind', 'From Amount',
+       'From Coin', 'Fee', 'Fee Coin', 'Fiat'])
+    nft_transactions = nft_transactions[np.logical_or(nft_transactions["To Coin"].isin(nfts), nft_transactions["From Coin"].isin(nfts))]
+    nft_transactions['index'] = nft_transactions.index
+    if 'Otherside - Vessel Claim' in nft_transactions['Kind'].unique():
+        temp_df = pd.merge(nft_transactions, nft_transactions.loc[nft_transactions['Kind'] !='Otherside - Vessel Claim' ,['To Coin','Fiat Price']], left_on='From Coin',right_on='To Coin')
+        nft_transactions = nft_transactions[nft_transactions['Kind'] != 'Otherside - Vessel Claim']
+        temp_df = temp_df[temp_df['Kind'] == 'Otherside - Vessel Claim']
+        temp_df=temp_df.rename(columns={'Fiat Price_y':'Fiat Price','To Coin_x':'To Coin'})
+        temp_df = temp_df.drop(['Fiat Price_x','To Coin_y'],axis=1)
+        temp_df.index = temp_df['index']
+        temp_df['Fiat Price'] *= temp_df['From Amount']
+        nft_transactions = pd.concat([nft_transactions,temp_df])
+    if 'Otherside - Mara Claim' in nft_transactions['Kind'].unique():
+        temp_df = pd.merge(nft_transactions, nft_transactions.loc[nft_transactions['Kind'] !='Otherside - Mara Claim' ,['To Coin','Fiat Price']], left_on='From Coin',right_on='To Coin')
+        nft_transactions = nft_transactions[nft_transactions['Kind'] != 'Otherside - Mara Claim']
+        temp_df = temp_df[temp_df['Kind'] == 'Otherside - Mara Claim']
+        temp_df=temp_df.rename(columns={'Fiat Price_y':'Fiat Price','To Coin_x':'To Coin'})
+        temp_df = temp_df.drop(['Fiat Price_x','To Coin_y'],axis=1)
+        temp_df.index = temp_df['index']
+        temp_df=temp_df.drop_duplicates()
+        temp_df['Fiat Price'] *= temp_df['From Amount']
+        nft_transactions = pd.concat([nft_transactions,temp_df])
+
+    blur = nft_transactions[np.logical_or(nft_transactions['From Coin']=='Blur Pool',nft_transactions['To Coin']=='Blur Pool')]
+    nft_transactions=pd.concat([nft_transactions,blur]).drop_duplicates(keep=False)
+    if blur.shape[0] > 0:
+        blur.loc[blur['From Coin']=='Blur Pool','From Coin']='ETH'
+        blur.loc[blur['To Coin'] == 'Blur Pool', 'To Coin'] = 'ETH'
+        fromcoin = blur['From Coin'].tolist()
+        tocoin = blur['To Coin'].tolist()
+        fromamount = blur['From Amount'].tolist()
+        toamount = blur['To Amount'].tolist()
+        blur.loc[blur['From Coin'].isin(nfts), ['From Amount', 'From Coin']] = None
+        blur.loc[blur['To Coin'].isin(nfts), ['To Amount', 'To Coin']] = None
+        blur = tx.price_transactions_df(blur, Prices())
+        nft_transactions=pd.concat([nft_transactions,blur])
+    nft_transactions = nft_transactions.sort_index()
 
     return final_df
