@@ -24,10 +24,28 @@ def calculate_pmc(coin, transactions):
     coin_df.loc[coin_df['To Coin'] == '', 'To Coin'] = None
     coin_df.loc[coin_df['From Coin'] == '', 'From Coin'] = None
 
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721')), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721')), 'From Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155')), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155')), 'From Coin'] = 'NFT Exchange'
+    if any(pd.isna(coin_df['Fiat Price'])):
+        print(f'Calculating {coin}')
+        with open('log.txt', 'w') as f:
+            with contextlib.redirect_stdout(f):
+                coin_df = tx.price_transactions_df(coin_df, Prices())
+
+    if 'PIT' in coin_df['To Coin'].tolist() or 'PIT' in coin_df['From Coin'].tolist():
+        print('Just a little longer')
+        with open('log.txt', 'w') as f:
+            with contextlib.redirect_stdout(f):
+                to_price = coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT')].copy()
+                to_price.loc[to_price['To Coin'] == 'PIT', 'To Coin'] = None
+                to_price.loc[to_price['From Coin'] == 'PIT', 'From Coin'] = None
+                to_price['Fiat Price'] = None
+                to_price = tx.price_transactions_df(to_price, Prices())
+                coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT'), 'Fiat Price'] = \
+                    to_price['Fiat Price']
+
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'From Coin'] = 'NFT Exchange'
 
     coin_df2 = coin_df[np.logical_and(~pd.isna(coin_df['To Coin']), ~pd.isna(coin_df['From Coin']))]
     coin_df3 = coin_df[coin_df['Tag'].isin(['Interest', 'Reward', 'Cashback'])]
@@ -52,29 +70,12 @@ def calculate_pmc(coin, transactions):
     coin_df.loc[coin_df['From Coin'] == coin, 'Amount'] = coin_df.loc[coin_df['From Coin'] == coin, 'From Amount']
     coin_df.loc[coin_df['To Coin'] == coin, 'Amount'] = coin_df.loc[coin_df['To Coin'] == coin, 'To Amount']
 
-    if any(pd.isna(coin_df['Fiat Price'])):
-        print(f'Calculating {coin}')
-        with open('log.txt', 'w') as f:
-            with contextlib.redirect_stdout(f):
-                coin_df = tx.price_transactions_df(coin_df, Prices())
-
     coin_df['Fee Fiat'] = coin_df['Fee Fiat'].fillna(0)
     coin_df.loc[np.logical_and(coin_df['Fee Coin'] != coin, coin_df['From Coin'] == coin), 'Fiat Price'] += coin_df.loc[
         np.logical_and(coin_df['Fee Coin'] != coin, coin_df['From Coin'] == coin), 'Fee Fiat']
     coin_df.loc[np.logical_and(coin_df['Fee Coin'] != coin, coin_df['To Coin'] == coin), 'Fiat Price'] += coin_df.loc[
         np.logical_and(coin_df['Fee Coin'] != coin, coin_df['To Coin'] == coin), 'Fee Fiat']
 
-    if 'PIT' in coin_df['To Coin'].tolist() or 'PIT' in coin_df['From Coin'].tolist():
-        print('Just a little longer')
-        with open('log.txt', 'w') as f:
-            with contextlib.redirect_stdout(f):
-                to_price = coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT')].copy()
-                to_price.loc[to_price['To Coin'] == 'PIT', 'To Coin'] = None
-                to_price.loc[to_price['From Coin'] == 'PIT', 'From Coin'] = None
-                to_price['Fiat Price'] = None
-                to_price = tx.price_transactions_df(to_price, Prices())
-                coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT'), 'Fiat Price'] = \
-                to_price['Fiat Price']
 
     coin_df = pd.concat([coin_df[['Amount', 'Fiat Price']], fee_df[['Amount', 'Fiat Price']]])
     coin_df['Amount'] = coin_df['Amount'].fillna(0)

@@ -4,6 +4,7 @@ import pandas as pd
 import tax_library as tx
 import datetime as dt
 
+
 def get_transactions_df(raw=False):
     coinbase_files = [
         os.path.join(os.path.abspath("coinbase"), x) for x in os.listdir(os.path.abspath("coinbase")) if
@@ -217,6 +218,9 @@ def get_transactions_df(raw=False):
             final_df = pd.concat(
                 [final_df[np.logical_or(final_df['From Amount'] < 0, pd.isna(final_df['From Amount']))], toswitch])
         final_df = final_df.sort_index()
+
+        final_df.loc[final_df['To Coin'] == '', 'To Coin'] = None
+        final_df.loc[final_df['From Coin'] == '', 'From Coin'] = None
 
         return final_df
 
