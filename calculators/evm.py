@@ -6103,7 +6103,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                         "Kind"
                     ]
                 ].copy()
-                vessels['gasUsed_normal'] = [int(x) for x in vessels['gasUsed_normal']]
+                vessels['gasUsed_normal'] = [int(x) / 2 for x in vessels['gasUsed_normal']]
                 vessels = vessels.rename(
                     columns={'gasUsed_normal': 'Gasused', 'gasPrice': 'Gasprice', 'timeStamp_normal': 'Timestamp'})
                 final_df = pd.concat([final_df, vessels]).drop_duplicates(keep=False)
@@ -6133,6 +6133,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                     ]
                 ].copy()
                 mara['gasUsed_normal'] = [int(x) for x in mara['gasUsed_normal']]
+                mara['gasUsed_normal'] = mara['gasUsed_normal'] / len(mara['gasUsed_normal'].values)
                 mara = mara.rename(
                     columns={'gasUsed_normal': 'Gasused', 'gasPrice': 'Gasprice', 'timeStamp_normal': 'Timestamp'})
                 final_df = pd.concat([final_df, mara]).drop_duplicates(keep=False)
@@ -6801,9 +6802,42 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         blur['To Amount'] = toamount
         nft_transactions = pd.concat([nft_transactions, blur])
     nft_transactions = nft_transactions.sort_index()
-    nft_transactions = nft_transactions.drop('index', axis=1)
+
+    nfts_df = pd.DataFrame()
+    for nft in nfts:
+        temp_df = pd.merge(nft_transactions[nft_transactions['To Coin'] == nft],
+                           nft_transactions[nft_transactions['From Coin'] == nft], left_on='To Coin',
+                           right_on='From Coin', how='outer', suffixes=('_buy', '_sell'))
+        nfts_df = pd.concat([nfts_df, temp_df[
+            ['To Coin_buy', 'From Amount_buy', 'From Coin_buy', 'Fee_buy', 'Fee Coin_buy', 'Fee Fiat_buy',
+             'Fiat Price_buy', 'index_buy',
+             'To Amount_sell', 'To Coin_sell', 'Fee_sell', 'Fee Coin_sell', 'Fee Fiat_buy', 'Fiat Price_sell',
+             'index_sell']].fillna(0)])
+
+    nfts_df.columns = ['Asset', 'Amount Paid (Native)', 'Coin Paid', 'Fee Buy', 'Fee Coin Buy', 'Fee EUR Buy',
+                       'Price Paid EUR', 'Time Buy', 'Amount Received (Native)',
+                       'Coin Sold', 'Fee Sold', 'Fee Coin Sold', 'Fee EUR Sold', 'Price Received EUR', 'Time Sold']
+
+    nfts_df['Total EUR Paid'] = nfts_df['Fee EUR Buy'].abs() + nfts_df['Price Paid EUR'].abs()
+    nfts_df['Total EUR Received'] = nfts_df['Fee EUR Sold'].abs() - nfts_df['Price Received EUR'].abs()
+    nfts_df.loc[nfts_df['Total EUR Received'] == nfts_df['Fee EUR Sold'].abs(), 'Total EUR Received'] = 0
+    nfts_df['PNL'] = nfts_df['Total EUR Received'].abs() - nfts_df['Total EUR Paid'].abs()
+    nfts_df.loc[np.logical_and(nfts_df['Coin Paid'].isin(nfts), nfts_df['Coin Sold'].isin(nfts)), 'PNL'] = 0
+    nfts_df.loc[np.logical_and(nfts_df['Asset'].isin(nfts), nfts_df['Coin Sold'].isin(nfts)), 'PNL'] = 0
+    nfts_df.loc[nfts_df['Time Sold'] == 0, 'PNL'] = 0
+    nfts_df = nfts_df.sort_values('Time Buy')
+
+    nfts_df[['Amount Paid (Native)', 'Fee Buy',
+             'Fee EUR Buy', 'Price Paid EUR', 'Amount Received (Native)',
+             'Fee Sold', 'Fee EUR Sold', 'Price Received EUR', 'Total EUR Paid',
+             'Total EUR Received']] = nfts_df[['Amount Paid (Native)', 'Fee Buy',
+                                               'Fee EUR Buy', 'Price Paid EUR', 'Amount Received (Native)',
+                                               'Fee Sold', 'Fee EUR Sold', 'Price Received EUR', 'Total EUR Paid',
+                                               'Total EUR Received']].abs()
+
+    nfts_df.groupby(['Asset', 'Time Buy', 'Coin Sold']).agg({'Amount Paid (Native)'})
 
     if return_nfts:
-        return {'transactions': final_df, 'NFT': nft_transactions}
+        return {'transactions': final_df, 'NFT': nfts_df}
     else:
         return final_df
