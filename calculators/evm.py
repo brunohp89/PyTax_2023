@@ -6835,7 +6835,6 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                                                'Fee Sold', 'Fee EUR Sold', 'Price Received EUR', 'Total EUR Paid',
                                                'Total EUR Received']].abs()
 
-    nfts_df.groupby(['Asset', 'Time Buy', 'Coin Sold']).agg({'Amount Paid (Native)'})
 
     if return_nfts:
         return {'transactions': final_df, 'NFT': nfts_df}
