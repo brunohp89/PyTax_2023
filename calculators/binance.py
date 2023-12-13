@@ -8,6 +8,7 @@ import tax_library as tx
 # ACQUISTI FATTI CON LA CARTA DI CREDITO DEVONO ESSERE INSERITE MANUALMENTE NEL DATAFRAME FIX
 
 def get_transactions_df(raw=False, card_transactions=False):
+    print("Reminder: For Binance purchases made with credit card or made with bank transfers with automatic conversion must be manually entered in the file manual_binance.csv")
     binance_files = [
         os.path.join(os.path.abspath("binance"), x)
         for x in os.listdir(os.path.abspath("binance"))
