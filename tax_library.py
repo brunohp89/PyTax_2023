@@ -322,6 +322,7 @@ def concat_dfs(**df_to_concat):
 
 
 def get_primo_ultimo_giorno(df, tax_year):
+    df = df.loc[[k for k in df.index if k.year == tax_year]]
     if dt.datetime.today().date() <= dt.date(tax_year, 12, 31):
         ultimo_giorno = "Non disponibile"
     else:
@@ -678,5 +679,7 @@ def generate_xlsx(file_name, sheet_names, data):
     writer.close()
 
 
-def all_fiat_invested(final_df):
+def all_fiat_invested(final_df,year_sel = 'all'):
+    if year_sel != 'all':
+        final_df = final_df.loc[[k for k in final_df.index if k.year == year_sel]]
     return -(final_df.loc[final_df['From Coin'] == 'EUR', 'From Amount'].sum() + final_df.loc[np.logical_and(final_df['To Coin'] == 'EUR',final_df['Tag'] != 'Deposit'), 'To Amount'].sum())
