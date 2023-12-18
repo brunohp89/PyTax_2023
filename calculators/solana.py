@@ -128,7 +128,25 @@ def get_transactions_df(address):
                 [final_df, response_pd[response_pd["data"] == transaction]]
             )
             response_pd = response_pd[response_pd["data"] != transaction]
+        elif 'RegisterSagePlayerProfile' in str(transaction):
+            response_pd.loc[response_pd["data"] == transaction, "From"] = address
+            response_pd.loc[response_pd["data"] == transaction, "To"] = transaction[
+                "transaction"
+            ]["message"]["accountKeys"][-1]["pubkey"]
+            response_pd.loc[response_pd["data"] == transaction, "From Amount"] = -transaction["meta"]["postBalances"][4]/ 10 ** 9
+            response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
+            response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
+                    -transaction["meta"]["fee"] / 10 ** 9
+            )
+            response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
+            response_pd.loc[
+                response_pd["data"] == transaction, "Notes"
+            ] = "Star Atlas Registration"
 
+            final_df = pd.concat(
+                [final_df, response_pd[response_pd["data"] == transaction]]
+            )
+            response_pd = response_pd[response_pd["data"] != transaction]
         elif "WithdrawKi" in ",".join(transaction["meta"]["logMessages"]):
             tokens = calculate_tokens_balances(transaction, address)
 
