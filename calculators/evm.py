@@ -6695,6 +6695,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         np.logical_or(final_df["To Coin"].isin(nfts), final_df["From Coin"].isin(nfts))
     ]
 
+    final_df.loc[final_df["To Coin"].isin(nfts), "Kind"] = final_df.loc[final_df["To Coin"].isin(nfts), "Kind"]+'_'+final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"]
+    final_df.loc[final_df["From Coin"].isin(nfts), "Kind"] = final_df.loc[final_df["From Coin"].isin(nfts), "Kind"]+'_'+final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"]
+
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
     final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"] = None
     final_df.loc[final_df["From Coin"].isin(nfts), "From Amount"] = None
