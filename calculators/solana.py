@@ -7,6 +7,7 @@ import os
 import numpy as np
 import json
 import math
+from utils import date_from_timestamp
 
 scam = [
     "6GnNtx93PwLwxQJtdW3g1kUpbqFvxRWqNmyqdxHG5yTV",
@@ -96,7 +97,7 @@ def get_transactions_df(address):
     response_pd["Notes"] = ""
     response_pd["Fiat Price"] = None
     response_pd.index = response_pd["data"].apply(
-        lambda x: dt.datetime.fromtimestamp(int(x["blockTime"]))
+        lambda x: date_from_timestamp(int(x["blockTime"]))
     )
     response_pd = response_pd.sort_index()
     response_pd["filt"] = response_pd["data"].apply(lambda x: str(x))
@@ -128,15 +129,17 @@ def get_transactions_df(address):
                 [final_df, response_pd[response_pd["data"] == transaction]]
             )
             response_pd = response_pd[response_pd["data"] != transaction]
-        elif 'RegisterSagePlayerProfile' in str(transaction):
+        elif "RegisterSagePlayerProfile" in str(transaction):
             response_pd.loc[response_pd["data"] == transaction, "From"] = address
             response_pd.loc[response_pd["data"] == transaction, "To"] = transaction[
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
-            response_pd.loc[response_pd["data"] == transaction, "From Amount"] = -transaction["meta"]["postBalances"][4]/ 10 ** 9
+            response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
+                -transaction["meta"]["postBalances"][4] / 10**9
+            )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10 ** 9
+                -transaction["meta"]["fee"] / 10**9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -1056,6 +1059,7 @@ def get_transactions_df(address):
         manual = pd.read_csv(f"{address}.csv", parse_dates=True, index_col="Timestamp")
         final_df = pd.concat([manual, final_df])
     final_df = final_df.sort_index()
+    final_df["Fee Coin"] = "SOL"
 
     sol_prices = Prices()
     final_df = tx.price_transactions_df(final_df, sol_prices)

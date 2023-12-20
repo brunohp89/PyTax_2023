@@ -4,6 +4,8 @@ import datetime as dt
 import tax_library as tx
 from PricesClass import Prices
 from blockfrost import BlockFrostApi
+from utils import date_from_timestamp
+
 
 def get_transactions_df(address, blockfrost_api):
 
@@ -35,15 +37,15 @@ def get_transactions_df(address, blockfrost_api):
     output = pd.DataFrame(output)
     inputs = pd.DataFrame(inputs)
     timestamp = pd.DataFrame(
-        [(k.hash, dt.datetime.fromtimestamp(k.block_time)) for k in trx_content]
+        [(k.hash, date_from_timestamp(k.block_time)) for k in trx_content]
     )
     fees = pd.DataFrame([(k.hash, int(k.fees)) for k in trx_content])
 
-    vout = pd.merge(timestamp, fees, on=0, suffixes=('1_','2_'))
+    vout = pd.merge(timestamp, fees, on=0, suffixes=("1_", "2_"))
     vout.drop_duplicates(inplace=True)
-    vout = pd.merge(vout, inputs, on=0, suffixes=('3_','4_'))
+    vout = pd.merge(vout, inputs, on=0, suffixes=("3_", "4_"))
     vout.drop_duplicates(inplace=True)
-    vout = pd.merge(vout, output, on=0, suffixes=('5_','6_'))
+    vout = pd.merge(vout, output, on=0, suffixes=("5_", "6_"))
     vout.drop_duplicates(inplace=True)
 
     vout.columns = [
@@ -67,7 +69,16 @@ def get_transactions_df(address, blockfrost_api):
     vout["OAmount"] = vout["OAmount"].apply(lambda x: int(x))
     vout["Fees"] = vout["Fees"].apply(lambda x: -int(x))
 
-    vout=pd.concat([vout,vout.loc[np.logical_and(vout['IAddress'].isin(addresses), vout['OAddress'].isin(addresses))]]).drop_duplicates(keep=False)
+    vout = pd.concat(
+        [
+            vout,
+            vout.loc[
+                np.logical_and(
+                    vout["IAddress"].isin(addresses), vout["OAddress"].isin(addresses)
+                )
+            ],
+        ]
+    ).drop_duplicates(keep=False)
 
     vout.drop_duplicates(
         subset=["Timestamp", "OAddress", "OAsset", "OAmount"], inplace=True
@@ -87,16 +98,16 @@ def get_transactions_df(address, blockfrost_api):
 
     rewards = api.account_rewards(stake_address.stake_address)
     rewards = [
-        (dt.datetime.fromtimestamp(api.epoch(k.epoch).end_time), int(k.amount))
+        (date_from_timestamp(api.epoch(k.epoch).end_time), int(k.amount))
         for k in rewards
     ]
     rewards = pd.DataFrame(rewards)
     if rewards.shape[0] > 0:
-        delegate_transaction = ada.iloc[[-1],:].copy()
-        delegate_transaction['OAmount'] = -2176149
-        delegate_transaction['Fees'] = None
-        delegate_transaction['Timestamp'] += dt.timedelta(seconds=1)
-        ada=pd.concat([delegate_transaction,ada])
+        delegate_transaction = ada.iloc[[-1], :].copy()
+        delegate_transaction["OAmount"] = -2176149
+        delegate_transaction["Fees"] = None
+        delegate_transaction["Timestamp"] += dt.timedelta(seconds=1)
+        ada = pd.concat([delegate_transaction, ada])
     rewards.columns = ["Timestamp", "OAmount"]
     ada = pd.concat([ada, rewards])
     ada.index = ada["Timestamp"]

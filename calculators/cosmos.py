@@ -1,9 +1,9 @@
 import numpy as np
 from PricesClass import Prices
 import tax_library as tx
-import datetime as dt
 import pandas as pd
 import requests
+from utils import date_from_timestamp
 
 
 def get_transactions_df(address: str):
@@ -35,7 +35,7 @@ def get_transactions_df(address: str):
                         [
                             [
                                 # convert timestamp to datetime
-                                dt.datetime.fromtimestamp(int(trx["created_at"])),
+                                date_from_timestamp(int(trx["created_at"])),
                                 trx["messages"]["body"]["delegator_address"],
                                 trx["messages"]["body"]["validator_address"],
                                 int(trx["messages"]["body"]["amount"]["amount"])
@@ -59,7 +59,7 @@ def get_transactions_df(address: str):
                         [
                             [
                                 # convert timestamp to datetime
-                                dt.datetime.fromtimestamp(int(trx["created_at"])),
+                                date_from_timestamp(int(trx["created_at"])),
                                 trx["messages"]["body"]["delegator_address"],
                                 trx["messages"]["body"]["validator_address"],
                                 0,
@@ -82,7 +82,7 @@ def get_transactions_df(address: str):
                     [
                         [
                             # convert timestamp to datetime
-                            dt.datetime.fromtimestamp(int(trx["created_at"])),
+                            date_from_timestamp(int(trx["created_at"])),
                             trx["messages"]["body"]["from_address"],
                             trx["messages"]["body"]["to_address"],
                             int(trx["messages"]["body"]["amount"][0]["amount"])
@@ -106,7 +106,7 @@ def get_transactions_df(address: str):
                     [
                         [
                             # convert timestamp to datetime
-                            dt.datetime.fromtimestamp(int(trx["created_at"])),
+                            date_from_timestamp(int(trx["created_at"])),
                             trx["messages"]["body"]["validator_address"],
                             trx["messages"]["body"]["delegator_address"],
                             # set the amount to zero

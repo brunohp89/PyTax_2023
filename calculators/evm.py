@@ -1,10 +1,10 @@
 import requests
 import pandas as pd
-import datetime as dt
 import numpy as np
 from PricesClass import Prices
 import tax_library as tx
 import os
+from utils import date_from_timestamp
 
 scam = [
     "0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59",
@@ -161,7 +161,7 @@ def get_crypto_dot_org_transactions(address):
         df_list.append(df_loop)
     final_df = pd.concat(df_list, axis=0, ignore_index=True)
     final_df.index = [
-        tx.str_to_datetime(x.replace(" UTC", "")) + dt.timedelta(hours=1)
+        tx.str_to_datetime(x.replace(" UTC", ""))
         for x in list(final_df["Timestamp"])
     ]
 
@@ -6658,9 +6658,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for x, y in zip(list(final_df["Gasprice"]), list(final_df["Gasused"]))
     ]
     final_df["Fee Coin"] = gas_coin
-    final_df.index = final_df["Timestamp"].map(
-        lambda x: dt.datetime.fromtimestamp(int(x))
-    )
+    final_df.index = final_df["Timestamp"].map(lambda x: date_from_timestamp(x))
 
     final_df["Fee Fiat"] = None
     final_df["Fiat"] = "EUR"
@@ -6695,8 +6693,16 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         np.logical_or(final_df["To Coin"].isin(nfts), final_df["From Coin"].isin(nfts))
     ]
 
-    final_df.loc[final_df["To Coin"].isin(nfts), "Kind"] = final_df.loc[final_df["To Coin"].isin(nfts), "Kind"]+'_'+final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"]
-    final_df.loc[final_df["From Coin"].isin(nfts), "Kind"] = final_df.loc[final_df["From Coin"].isin(nfts), "Kind"]+'_'+final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"]
+    final_df.loc[final_df["To Coin"].isin(nfts), "Kind"] = (
+        final_df.loc[final_df["To Coin"].isin(nfts), "Kind"]
+        + "_"
+        + final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"]
+    )
+    final_df.loc[final_df["From Coin"].isin(nfts), "Kind"] = (
+        final_df.loc[final_df["From Coin"].isin(nfts), "Kind"]
+        + "_"
+        + final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"]
+    )
 
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
     final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"] = None

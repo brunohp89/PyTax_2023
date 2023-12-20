@@ -1,6 +1,7 @@
 import pickle as pk
 import contextlib
 import pandas as pd
+import datetime as dt
 
 
 def save_pickle(obj, name):
@@ -42,10 +43,14 @@ def calculate_pmc(coin, transactions):
                 coin_df.loc[np.logical_or(coin_df['To Coin'] == 'PIT', coin_df['From Coin'] == 'PIT'), 'Fiat Price'] = \
                     to_price['Fiat Price']
 
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC721', na=False)), 'From Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'To Coin'] = 'NFT Exchange'
-    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']), coin_df['Tag'].str.contains('ERC1155', na=False)), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']),
+                               coin_df['Tag'].str.contains('ERC721', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']),
+                               coin_df['Tag'].str.contains('ERC721', na=False)), 'From Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['To Coin']),
+                               coin_df['Tag'].str.contains('ERC1155', na=False)), 'To Coin'] = 'NFT Exchange'
+    coin_df.loc[np.logical_and(pd.isna(coin_df['From Coin']),
+                               coin_df['Tag'].str.contains('ERC1155', na=False)), 'From Coin'] = 'NFT Exchange'
 
     coin_df2 = coin_df[np.logical_and(~pd.isna(coin_df['To Coin']), ~pd.isna(coin_df['From Coin']))]
     coin_df3 = coin_df[coin_df['Tag'].isin(['Interest', 'Reward', 'Cashback'])]
@@ -75,7 +80,6 @@ def calculate_pmc(coin, transactions):
         np.logical_and(coin_df['Fee Coin'] != coin, coin_df['From Coin'] == coin), 'Fee Fiat']
     coin_df.loc[np.logical_and(coin_df['Fee Coin'] != coin, coin_df['To Coin'] == coin), 'Fiat Price'] += coin_df.loc[
         np.logical_and(coin_df['Fee Coin'] != coin, coin_df['To Coin'] == coin), 'Fee Fiat']
-
 
     coin_df = pd.concat([coin_df[['Amount', 'Fiat Price']], fee_df[['Amount', 'Fiat Price']]])
     coin_df['Amount'] = coin_df['Amount'].fillna(0)
@@ -109,3 +113,8 @@ def calculate_pmc(coin, transactions):
         f'Ultimo acquisto {coin}': ultimo_acq,
         f'Ultima vendita {coin}': ultima_ven
     }
+
+
+def date_from_timestamp(x):
+    diff_utc = -round(((dt.datetime.now() - dt.datetime.utcnow()).seconds / 60) / 60)
+    return dt.datetime.fromtimestamp(int(x)) + dt.timedelta(hours=diff_utc)
