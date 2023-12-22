@@ -4357,184 +4357,185 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         final_df = pd.concat([final_df, sandbox_df])
 
-        # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        # =================================================DERI FINANCE======================================================
-        # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        deri_contracts = [
-            "0x9F63A5f24625d8be7a34e15477a7d6d66e99582e".lower(),
-            "0x77a7f94b3469E814AD092B1c3f1Fa623B2e4DE3d".lower(),
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    # =================================================DERI FINANCE======================================================
+    # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    deri_contracts = [
+        "0x9F63A5f24625d8be7a34e15477a7d6d66e99582e".lower(),
+        "0x77a7f94b3469E814AD092B1c3f1Fa623B2e4DE3d".lower(),
+    ]
+
+    deri_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(deri_contracts),
+            trx_df["to_normal"].isin(deri_contracts),
+        )
+    ].copy()
+
+    trx_df = pd.concat([trx_df, deri_df]).drop_duplicates(keep=False)
+    if deri_df.shape[0] > 0:
+
+        # Claim Fees
+        temp_df = deri_df[deri_df["methodId"] == "0x1e83409a"].copy()
+        deri_df = deri_df[deri_df["methodId"] != "0x1e83409a"]
+
+        temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
+        temp_df["value"] = [int(k) for k in temp_df["value"]]
+        temp_df["value_normal"] = [
+            int(x) / 10**18 for x in temp_df["value_normal"]
+        ]
+        temp_df["value"] = [
+            int(x) / 10 ** int(y)
+            for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
         ]
 
-        deri_df = trx_df[
-            np.logical_or(
-                trx_df["from_normal"].isin(deri_contracts),
-                trx_df["to_normal"].isin(deri_contracts),
-            )
-        ].copy()
+        temp_df = temp_df[
+            [
+                "timeStamp_normal",
+                "from",
+                "to",
+                "gasUsed_normal",
+                "gasPrice",
+                "value",
+                "tokenSymbol",
+            ]
+        ]
+        temp_df.columns = [
+            "Timestamp",
+            "From",
+            "To",
+            "Gasused",
+            "Gasprice",
+            "To Amount",
+            "To Coin",
+        ]
+        temp_df[["From Amount", "From Coin"]] = None
+        temp_df["Kind"] = "Reward"
+
+        final_df = pd.concat([final_df, temp_df])
+
+        # Liquidity with ETH
+        temp_df = deri_df[deri_df["methodId"].isin(["0x4355bcd6", "0x489d6b06"])]
+        deri_df = deri_df[~deri_df["methodId"].isin(["0x4355bcd6", "0x489d6b06"])]
+
+        temp_df.loc[
+            temp_df["isError_normal"] == "1",
+            ["value_normal", "value_internal", "value", "tokenDecimal"],
+        ] = 0
+        temp_df.loc[temp_df["isError_normal"] == "1", "tokenSymbol"] = "Error"
+        temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
+
+        temp_df["value_internal"] = [int(k) for k in temp_df["value_internal"]]
+        temp_df["value"] = [int(k) for k in temp_df["value"]]
+        temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
+        temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
+        temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
+        temp_df.loc[temp_df["to"] != address, "value"] *= -1
+        temp_df["value_normal"] = [
+            int(x) / 10**18 for x in temp_df["value_normal"]
+        ]
+        temp_df["value_internal"] = [
+            int(x) / 10**18 for x in temp_df["value_internal"]
+        ]
+        temp_df["value"] = [
+            int(x) / 10 ** int(y)
+            for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
+        ]
+
+        temp_df["value_normal"] += temp_df["value_internal"]
+
+        temp_df1 = temp_df[
+            [
+                "timeStamp_normal",
+                "from",
+                "to",
+                "gasUsed_normal",
+                "gasPrice",
+                "value_normal",
+            ]
+        ]
+        temp_df1.columns = [
+            "Timestamp",
+            "From",
+            "To",
+            "Gasused",
+            "Gasprice",
+            "From Amount",
+        ]
+
+        temp_df2 = temp_df[
+            [
+                "timeStamp_normal",
+                "from",
+                "to",
+                "gasUsed_normal",
+                "gasPrice",
+                "value",
+                "tokenSymbol",
+            ]
+        ]
+        temp_df2.columns = [
+            "Timestamp",
+            "From",
+            "To",
+            "Gasused",
+            "Gasprice",
+            "From Amount",
+            "From Coin",
+        ]
+
+        temp_df = pd.concat([temp_df1, temp_df2])
+        temp_df["From Coin"] = temp_df["From Coin"].fillna(gas_coin)
+        temp_df = temp_df.sort_values("Timestamp")
+
+        for coin in temp_df["From Coin"].unique():
+            temp_df.loc[temp_df["From Coin"] == coin, "From Amount"] = temp_df.loc[
+                temp_df["From Coin"] == coin, "From Amount"
+            ].cumsum()
+            temp_df.loc[temp_df["From Coin"] == coin, "From Amount"] = list(
+                temp_df.loc[temp_df["From Coin"] == coin, "From Amount"]
+            )[-1]
+            temp_df.loc[
+                np.logical_and(
+                    temp_df["From Coin"] == coin,
+                    temp_df["Timestamp"]
+                    != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
+                ),
+                "From Amount",
+            ] = None
+            temp_df.loc[
+                np.logical_and(
+                    temp_df["From Coin"] == coin,
+                    temp_df["Timestamp"]
+                    != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
+                ),
+                "Kind",
+            ] = "Deri Finance Liquidity"
+
+            temp_df["Gasused"] = [str(int(int(x) / 2)) for x in temp_df["Gasused"]]
+
+        temp_df[["From", "To"]] = None
+        temp_df["To Coin"] = None
+        temp_df["To Amount"] = None
+        temp_df.loc[temp_df["From Amount"] > 0, "To Amount"] = temp_df.loc[
+            temp_df["From Amount"] > 0, "From Amount"
+        ]
+        temp_df.loc[temp_df["From Amount"] > 0, "To Coin"] = temp_df.loc[
+            temp_df["From Amount"] > 0, "From Coin"
+        ]
+
+        temp_df.loc[temp_df["From Amount"] > 0, "From Coin"] = None
+        temp_df.loc[temp_df["From Amount"] > 0, "From Amount"] = None
+
+        temp_df.loc[pd.isna(temp_df["From Amount"]), "From Coin"] = None
+        if temp_df.shape[0] > 0:
+            temp_df.loc[pd.isna(temp_df["Kind"]), "Kind"] = "Reward"
+        temp_df.loc[temp_df["From Coin"] == "Error", "From Coin"] = gas_coin
+
+        final_df = pd.concat([final_df, temp_df])
 
         if deri_df.shape[0] > 0:
-
-            # Claim Fees
-            temp_df = deri_df[deri_df["methodId"] == "0x1e83409a"].copy()
-            deri_df = deri_df[deri_df["methodId"] != "0x1e83409a"]
-
-            temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
-            temp_df["value"] = [int(k) for k in temp_df["value"]]
-            temp_df["value_normal"] = [
-                int(x) / 10**18 for x in temp_df["value_normal"]
-            ]
-            temp_df["value"] = [
-                int(x) / 10 ** int(y)
-                for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
-            ]
-
-            temp_df = temp_df[
-                [
-                    "timeStamp_normal",
-                    "from",
-                    "to",
-                    "gasUsed_normal",
-                    "gasPrice",
-                    "value",
-                    "tokenSymbol",
-                ]
-            ]
-            temp_df.columns = [
-                "Timestamp",
-                "From",
-                "To",
-                "Gasused",
-                "Gasprice",
-                "To Amount",
-                "To Coin",
-            ]
-            temp_df[["From Amount", "From Coin"]] = None
-            temp_df["Kind"] = "Reward"
-
-            final_df = pd.concat([final_df, temp_df])
-
-            # Liquidity with ETH
-            temp_df = deri_df[deri_df["methodId"].isin(["0x4355bcd6", "0x489d6b06"])]
-            deri_df = deri_df[~deri_df["methodId"].isin(["0x4355bcd6", "0x489d6b06"])]
-
-            temp_df.loc[
-                temp_df["isError_normal"] == "1",
-                ["value_normal", "value_internal", "value", "tokenDecimal"],
-            ] = 0
-            temp_df.loc[temp_df["isError_normal"] == "1", "tokenSymbol"] = "Error"
-            temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-
-            temp_df["value_internal"] = [int(k) for k in temp_df["value_internal"]]
-            temp_df["value"] = [int(k) for k in temp_df["value"]]
-            temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
-            temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
-            temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
-            temp_df.loc[temp_df["to"] != address, "value"] *= -1
-            temp_df["value_normal"] = [
-                int(x) / 10**18 for x in temp_df["value_normal"]
-            ]
-            temp_df["value_internal"] = [
-                int(x) / 10**18 for x in temp_df["value_internal"]
-            ]
-            temp_df["value"] = [
-                int(x) / 10 ** int(y)
-                for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
-            ]
-
-            temp_df["value_normal"] += temp_df["value_internal"]
-
-            temp_df1 = temp_df[
-                [
-                    "timeStamp_normal",
-                    "from",
-                    "to",
-                    "gasUsed_normal",
-                    "gasPrice",
-                    "value_normal",
-                ]
-            ]
-            temp_df1.columns = [
-                "Timestamp",
-                "From",
-                "To",
-                "Gasused",
-                "Gasprice",
-                "From Amount",
-            ]
-
-            temp_df2 = temp_df[
-                [
-                    "timeStamp_normal",
-                    "from",
-                    "to",
-                    "gasUsed_normal",
-                    "gasPrice",
-                    "value",
-                    "tokenSymbol",
-                ]
-            ]
-            temp_df2.columns = [
-                "Timestamp",
-                "From",
-                "To",
-                "Gasused",
-                "Gasprice",
-                "From Amount",
-                "From Coin",
-            ]
-
-            temp_df = pd.concat([temp_df1, temp_df2])
-            temp_df["From Coin"] = temp_df["From Coin"].fillna(gas_coin)
-            temp_df = temp_df.sort_values("Timestamp")
-
-            for coin in temp_df["From Coin"].unique():
-                temp_df.loc[temp_df["From Coin"] == coin, "From Amount"] = temp_df.loc[
-                    temp_df["From Coin"] == coin, "From Amount"
-                ].cumsum()
-                temp_df.loc[temp_df["From Coin"] == coin, "From Amount"] = list(
-                    temp_df.loc[temp_df["From Coin"] == coin, "From Amount"]
-                )[-1]
-                temp_df.loc[
-                    np.logical_and(
-                        temp_df["From Coin"] == coin,
-                        temp_df["Timestamp"]
-                        != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
-                    ),
-                    "From Amount",
-                ] = None
-                temp_df.loc[
-                    np.logical_and(
-                        temp_df["From Coin"] == coin,
-                        temp_df["Timestamp"]
-                        != max(temp_df.loc[temp_df["From Coin"] == coin, "Timestamp"]),
-                    ),
-                    "Kind",
-                ] = "Deri Finance Liquidity"
-
-                temp_df["Gasused"] = [str(int(int(x) / 2)) for x in temp_df["Gasused"]]
-
-            temp_df[["From", "To"]] = None
-            temp_df["To Coin"] = None
-            temp_df["To Amount"] = None
-            temp_df.loc[temp_df["From Amount"] > 0, "To Amount"] = temp_df.loc[
-                temp_df["From Amount"] > 0, "From Amount"
-            ]
-            temp_df.loc[temp_df["From Amount"] > 0, "To Coin"] = temp_df.loc[
-                temp_df["From Amount"] > 0, "From Coin"
-            ]
-
-            temp_df.loc[temp_df["From Amount"] > 0, "From Coin"] = None
-            temp_df.loc[temp_df["From Amount"] > 0, "From Amount"] = None
-
-            temp_df.loc[pd.isna(temp_df["From Amount"]), "From Coin"] = None
-            if temp_df.shape[0] > 0:
-                temp_df.loc[pd.isna(temp_df["Kind"]), "Kind"] = "Reward"
-            temp_df.loc[temp_df["From Coin"] == "Error", "From Coin"] = gas_coin
-
-            final_df = pd.concat([final_df, temp_df])
-
-            if deri_df.shape[0] > 0:
-                print("DERI FINANCE TRANSACTIONS ARE NOT BEING CONSIDERED")
+            print("DERI FINANCE TRANSACTIONS ARE NOT BEING CONSIDERED")
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ===============================================ARGO================================================================
