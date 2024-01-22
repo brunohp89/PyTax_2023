@@ -6,7 +6,10 @@ import tax_library as tx
 import os
 from utils import date_from_timestamp
 
-scam = [
+scam = ["TONCRYPTO.IO","0xB8c8A93168Bb610428c85EB9c9e253768C36e67D",
+        "0x59C1A84420027e17ddb3E37e5489dc20504e9435",
+        "TONCRYPTO.IO",
+        "TONCrypto.io",
     "0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59",
     "#Synthetix.cc (sUSD)",
     "cronosclassic.com",
