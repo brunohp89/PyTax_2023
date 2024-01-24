@@ -6,128 +6,132 @@ import tax_library as tx
 import os
 from utils import date_from_timestamp
 
-scam = ["TONCRYPTO.IO","0xB8c8A93168Bb610428c85EB9c9e253768C36e67D",
+
+scam = ['0Army.io', 'DBT',
+        'XEC', 'MGRT', '995$ Visit USDTReward.com to claim',
+        'AI-A', 'XEN', 'Staked Bitrock (www.bitrock.app)',
+        "TONCRYPTO.IO", "0xB8c8A93168Bb610428c85EB9c9e253768C36e67D",
         "0x59C1A84420027e17ddb3E37e5489dc20504e9435",
         "TONCRYPTO.IO",
         "TONCrypto.io",
-    "0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59",
-    "#Synthetix.cc (sUSD)",
-    "cronosclassic.com",
-    "CRONOSCLASSIC.COM",
-    "0xab57aef3601cad382aa499a6ae2018a69aad9cf0",
-    "0xf3822314b333cbd7a36753b77589afbe095df1ba",
-    "CRONOSCLASSIC.COM",
-    "Valorant Mint Pass Official - 8",
-    "Walking Mushroom Mint Box Limited - 509",
-    "0xe592427a0aece92de3edee1f18e0157c05861564",
-    "Overwatch SZN1 Mint Pass Limited - 288",
-    "KRDH Official - 257",
-    "YUGA: Gucci Merch PASS - 35",
-    "Crypto Diverse Items - 258",
-    "Gods and Titans Mint Pass Original - 103",
-    "Claim USDC at https://cusdcs.eth.li",
-    "LOOKSDROP.COM",
-    "995$ Visit USDTReward.com to claim",
-    "FCKIT",
-    "DBT",
-    "MKS",
-    "MGRT",
-    "XEC",
-    "BSC",
-    "BSC-USD",
-    "XEN",
-    "0Army.io",
-    "BEP-20 TOKEN",
-    "BEP-20",
-    "AI-A",
-    "https://wincoin.win/",
-    "Claim USDC at https://cusdcs.eth.li",
-    "wHEX",
-    "wSNX",
-    "Visit sufek.com and claim special rewards",
-    "$ Free Claim and Play",
-    "BalancerV2.com",
-    "TheSandBox.PRO",
-    "Visit https://jbonus.site to claim reward",
-    "Claim USDC/WETH at https://USDCpool.site",
-    "vanity-address.io",
-    "lrETH",
-    "DogX.AI NFT",
-    "wRDNT",
-    "$ sUSD",
-    "wSNX",
-    "sUSD [Synthetix.cc]",
-    "! !$100,000 SHIB #1 - 0",
-    "Life Goes On 846 Meta - 273",
-    "BlurredApeYachtClub - 0",
-    "ULand Genesis Item - 1",
-    "$1000 SPEND REWARDS - 0",
-    "APE NFT TICKETS - 1781",
-    "$$30,000 BONE - 0",
-    "UnisMeta 1671392971464 - 153",
-    "$1000 REWARDS - 0",
-    "StarBored - 8014",
-    "BAYC Airdrop - 13",
-    "! !$100,000 BONE - 0",
-    "dYdX Exchange Event - 202",
-    "MATIC BONUS - 5838",
-    "Milady NFT Gift - 1",
-    "$ELO Coin Launch Party - 0",
-    "!1 0PENSEA V0UCHER - 0",
-    "2,000 USDT Reward - 0",
-    "VWIN - 872448",
-    "10 000 USD FOR FREE - 10034870321424364224204695929735558941153547521495712359208821587756539969537",
-    "TheSandBox.PRO",
-    "$1000 Rewards - 0",
-    "$$$AIRDROP 0PENSEA - 45975694115932666297700772423167124246419737974611922237769215783254357966850",
-    "Star Fighter Club QX - 31",
-    "1000$ Reward - 0",
-    "ApeCoin NFT - 434",
-    "SavageNation LW Tournament Pass Originals - 24",
-    "The Sougen Genesis Pass - 1",
-    "$2000 USDT Airdrop - 1",
-    "1099$ USDC - 83215",
-    "5000 USDC - 0",
-    "DarkoZoo - 9101",
-    "The QPT Originals - 336",
-    "AVALANCE NFT TICKETS - 9335",
-    "SHIBPOOL.COM - 1",
-    "4,651$ SHIB - 0",
-    "BAYC Airdrop - 12",
-    "2500 USDT by ETHERSCAN x METAWIN - 0",
-    "1 stETH - 0",
-    "$!$ 30,000 BONE - 0",
-    "CyberStrife Axe Drop 1 - 234",
-    "5000 USDC Voucher - 0",
-    "BLUR EVENT - 2009",
-    "Anatomic WCE Apes - 532",
-    "Kodao-G Membership - 28",
-    "Wiz GGY Box - 131",
-    "Magma CO Pass - 28",
-    "Uniswap Summer Event - 176",
-    "The Mutants Return Land Pass Officials - 1",
-    "Warning - 31093",
-    "LIDO WHITELIST - 1",
-    "$1000 USDC - 0",
-    "Super Boys Orignal - 1",
-    "5 ETH Voucher by Base - 0",
-    "Otherdeed Coda Key - 2",
-    "APE NFT TICKETS - 8432",
-    "Nested Box BJ Club - 36",
-    "LIDO WHITELIST - 1196",
-    "1 WETH - 560631",
-    "0x794a61358d6845594f94dc1db02a252b5b4814ad",
-    "RTFKT - MNLTH CVD X - 199",
-    "LIDO NFT TICKETS - 1",
-    "MNEB",
-    "VERA",
-    "EVER",
-    "BSCTOKEN",
-    "AIR",
-    "BNBW",
-    "ABFIN",
-    "Zepe.io",
-]
+        "0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59",
+        "#Synthetix.cc (sUSD)",
+        "cronosclassic.com",
+        "CRONOSCLASSIC.COM",
+        "0xab57aef3601cad382aa499a6ae2018a69aad9cf0",
+        "0xf3822314b333cbd7a36753b77589afbe095df1ba",
+        "CRONOSCLASSIC.COM",
+        "Valorant Mint Pass Official - 8",
+        "Walking Mushroom Mint Box Limited - 509",
+        "0xe592427a0aece92de3edee1f18e0157c05861564",
+        "Overwatch SZN1 Mint Pass Limited - 288",
+        "KRDH Official - 257",
+        "YUGA: Gucci Merch PASS - 35",
+        "Crypto Diverse Items - 258",
+        "Gods and Titans Mint Pass Original - 103",
+        "Claim USDC at https://cusdcs.eth.li",
+        "LOOKSDROP.COM",
+        "995$ Visit USDTReward.com to claim",
+        "FCKIT",
+        "DBT",
+        "MKS",
+        "MGRT",
+        "XEC",
+        "BSC",
+        "BSC-USD",
+        "XEN",
+        "0Army.io",
+        "BEP-20 TOKEN",
+        "BEP-20",
+        "AI-A",
+        "https://wincoin.win/",
+        "Claim USDC at https://cusdcs.eth.li",
+        "wHEX",
+        "wSNX",
+        "Visit sufek.com and claim special rewards",
+        "$ Free Claim and Play",
+        "BalancerV2.com",
+        "TheSandBox.PRO",
+        "Visit https://jbonus.site to claim reward",
+        "Claim USDC/WETH at https://USDCpool.site",
+        "vanity-address.io",
+        "lrETH",
+        "DogX.AI NFT",
+        "wRDNT",
+        "$ sUSD",
+        "wSNX",
+        "sUSD [Synthetix.cc]",
+        "! !$100,000 SHIB #1 - 0",
+        "Life Goes On 846 Meta - 273",
+        "BlurredApeYachtClub - 0",
+        "ULand Genesis Item - 1",
+        "$1000 SPEND REWARDS - 0",
+        "APE NFT TICKETS - 1781",
+        "$$30,000 BONE - 0",
+        "UnisMeta 1671392971464 - 153",
+        "$1000 REWARDS - 0",
+        "StarBored - 8014",
+        "BAYC Airdrop - 13",
+        "! !$100,000 BONE - 0",
+        "dYdX Exchange Event - 202",
+        "MATIC BONUS - 5838",
+        "Milady NFT Gift - 1",
+        "$ELO Coin Launch Party - 0",
+        "!1 0PENSEA V0UCHER - 0",
+        "2,000 USDT Reward - 0",
+        "VWIN - 872448",
+        "10 000 USD FOR FREE - 10034870321424364224204695929735558941153547521495712359208821587756539969537",
+        "TheSandBox.PRO",
+        "$1000 Rewards - 0",
+        "$$$AIRDROP 0PENSEA - 45975694115932666297700772423167124246419737974611922237769215783254357966850",
+        "Star Fighter Club QX - 31",
+        "1000$ Reward - 0",
+        "ApeCoin NFT - 434",
+        "SavageNation LW Tournament Pass Originals - 24",
+        "The Sougen Genesis Pass - 1",
+        "$2000 USDT Airdrop - 1",
+        "1099$ USDC - 83215",
+        "5000 USDC - 0",
+        "DarkoZoo - 9101",
+        "The QPT Originals - 336",
+        "AVALANCE NFT TICKETS - 9335",
+        "SHIBPOOL.COM - 1",
+        "4,651$ SHIB - 0",
+        "BAYC Airdrop - 12",
+        "2500 USDT by ETHERSCAN x METAWIN - 0",
+        "1 stETH - 0",
+        "$!$ 30,000 BONE - 0",
+        "CyberStrife Axe Drop 1 - 234",
+        "5000 USDC Voucher - 0",
+        "BLUR EVENT - 2009",
+        "Anatomic WCE Apes - 532",
+        "Kodao-G Membership - 28",
+        "Wiz GGY Box - 131",
+        "Magma CO Pass - 28",
+        "Uniswap Summer Event - 176",
+        "The Mutants Return Land Pass Officials - 1",
+        "Warning - 31093",
+        "LIDO WHITELIST - 1",
+        "$1000 USDC - 0",
+        "Super Boys Orignal - 1",
+        "5 ETH Voucher by Base - 0",
+        "Otherdeed Coda Key - 2",
+        "APE NFT TICKETS - 8432",
+        "Nested Box BJ Club - 36",
+        "LIDO WHITELIST - 1196",
+        "1 WETH - 560631",
+        "0x794a61358d6845594f94dc1db02a252b5b4814ad",
+        "RTFKT - MNLTH CVD X - 199",
+        "LIDO NFT TICKETS - 1",
+        "MNEB",
+        "VERA",
+        "EVER",
+        "BSCTOKEN",
+        "AIR",
+        "BNBW",
+        "ABFIN",
+        "Zepe.io",
+        ]
 
 
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
@@ -794,7 +798,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         vout = pd.concat([vout, temp_df])
 
         # Bridging ERC20
-        temp_df = stargate_df.loc[stargate_df["functionName"].isin(["swap", ""])].copy()
+        temp_df = stargate_df.loc[stargate_df["functionName"].isin(["swap", "", "sendTokens"])].copy()
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
         temp_df["value_normal"] = [
             (-int(x) + int(y)) / 10**18
@@ -871,7 +875,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                 temp_df["Timestamp"] == i
             ].shape[0]
 
-        stargate_df = stargate_df.loc[~stargate_df["functionName"].isin(["swap", ""])]
+        stargate_df = stargate_df.loc[~stargate_df["functionName"].isin(["swap", "", "sendTokens"])]
 
         vout = pd.concat([vout, temp_df])
 
@@ -899,7 +903,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         vout = pd.concat([vout, temp_df])
 
         # Claim fees
-        temp_df = stargate_df.loc[stargate_df["functionName"] == "claimTokens"].copy()
+        temp_df = stargate_df.loc[stargate_df["functionName"].isin(["claimTokens", "redeemFees"])].copy()
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -929,7 +933,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         temp_df["Kind"] = "Reward"
 
-        stargate_df = stargate_df.loc[stargate_df["functionName"] != "claimTokens"]
+        stargate_df = stargate_df.loc[~stargate_df["functionName"].isin(["claimTokens", "redeemFees"])]
 
         vout = pd.concat([vout, temp_df])
 
@@ -940,94 +944,95 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         # Contract interactions Layer Zero (relayer V2)
         stargate_v2 = trx_df[trx_df["from_internal"].isin(stargate_contracts)]
-        trx_df = pd.concat([trx_df, stargate_v2]).drop_duplicates(keep=False)
+        if stargate_v2.shape[0] > 0:
+            trx_df = pd.concat([trx_df, stargate_v2]).drop_duplicates(keep=False)
 
-        stargate_v2["value"] = [
-            int(x) / 10 ** int(y)
-            for x, y in zip(stargate_v2["value"], stargate_v2["tokenDecimal"])
-        ]
-        stargate_v2["value_internal"] = [
-            int(x) / 10**18 for x in stargate_v2["value_internal"]
-        ]
-        stargate_v2["gasUsed_internal"] = [
-            str(int(x) / 2) for x in stargate_v2["gasUsed_internal"]
-        ]
-
-        stargate_v2 = stargate_v2[
-            [
-                "timeStamp_internal",
-                "from_internal",
-                "to_internal",
-                "gasUsed_internal",
-                "gasPrice_erc20",
-                "value_internal",
-                "value",
-                "tokenSymbol",
+            stargate_v2["value"] = [
+                int(x) / 10 ** int(y)
+                for x, y in zip(stargate_v2["value"], stargate_v2["tokenDecimal"])
             ]
-        ]
-
-        temp_df1 = stargate_v2[
-            [
-                "timeStamp_internal",
-                "from_internal",
-                "to_internal",
-                "gasUsed_internal",
-                "gasPrice_erc20",
-                "value_internal",
+            stargate_v2["value_internal"] = [
+                int(x) / 10**18 for x in stargate_v2["value_internal"]
             ]
-        ]
-        temp_df1.columns = [
-            "Timestamp",
-            "From",
-            "To",
-            "Gasused",
-            "Gasprice",
-            "From Amount",
-        ]
-
-        temp_df2 = stargate_v2[
-            [
-                "timeStamp_internal",
-                "from_internal",
-                "to_internal",
-                "gasUsed_internal",
-                "gasPrice_erc20",
-                "value",
-                "tokenSymbol",
+            stargate_v2["gasUsed_internal"] = [
+                str(int(x) / 2) for x in stargate_v2["gasUsed_internal"]
             ]
-        ]
-        temp_df2.columns = [
-            "Timestamp",
-            "From",
-            "To",
-            "Gasused",
-            "Gasprice",
-            "From Amount",
-            "From Coin",
-        ]
 
-        temp_df = pd.concat([temp_df1, temp_df2])
+            stargate_v2 = stargate_v2[
+                [
+                    "timeStamp_internal",
+                    "from_internal",
+                    "to_internal",
+                    "gasUsed_internal",
+                    "gasPrice_erc20",
+                    "value_internal",
+                    "value",
+                    "tokenSymbol",
+                ]
+            ]
 
-        if temp_df.shape[0] > 0:
-            temp_df.loc[pd.isna(temp_df["From Coin"]), "From Coin"] = gas_coin
+            temp_df1 = stargate_v2[
+                [
+                    "timeStamp_internal",
+                    "from_internal",
+                    "to_internal",
+                    "gasUsed_internal",
+                    "gasPrice_erc20",
+                    "value_internal",
+                ]
+            ]
+            temp_df1.columns = [
+                "Timestamp",
+                "From",
+                "To",
+                "Gasused",
+                "Gasprice",
+                "From Amount",
+            ]
 
-        temp_df["Kind"] = "Stargate - Layer Zero Relayer V2"
+            temp_df2 = stargate_v2[
+                [
+                    "timeStamp_internal",
+                    "from_internal",
+                    "to_internal",
+                    "gasUsed_internal",
+                    "gasPrice_erc20",
+                    "value",
+                    "tokenSymbol",
+                ]
+            ]
+            temp_df2.columns = [
+                "Timestamp",
+                "From",
+                "To",
+                "Gasused",
+                "Gasprice",
+                "From Amount",
+                "From Coin",
+            ]
 
-        temp_df["Gasused"] = [int(float(x)) for x in temp_df["Gasused"]]
-        for i in set(temp_df["Timestamp"]):
-            temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
-                temp_df["Timestamp"] == i
-            ].shape[0]
+            temp_df = pd.concat([temp_df1, temp_df2])
 
-        temp_df.loc[temp_df["From Amount"] > 0, "To Amount"] = temp_df.loc[
-            temp_df["From Amount"] > 0, "From Amount"
-        ]
-        temp_df.loc[temp_df["From Amount"] > 0, "To Coin"] = temp_df.loc[
-            temp_df["From Amount"] > 0, "From Coin"
-        ]
-        temp_df.loc[temp_df["From Amount"] > 0, ["From Amount", "From Coin"]] = None
+            if temp_df.shape[0] > 0:
+                temp_df.loc[pd.isna(temp_df["From Coin"]), "From Coin"] = gas_coin
 
-        final_df = pd.concat([final_df, temp_df])
+            temp_df["Kind"] = "Stargate - Layer Zero Relayer V2"
+
+            temp_df["Gasused"] = [int(float(x)) for x in temp_df["Gasused"]]
+            for i in set(temp_df["Timestamp"]):
+                temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
+                    temp_df["Timestamp"] == i
+                ].shape[0]
+
+            temp_df.loc[temp_df["From Amount"] > 0, "To Amount"] = temp_df.loc[
+                temp_df["From Amount"] > 0, "From Amount"
+            ]
+            temp_df.loc[temp_df["From Amount"] > 0, "To Coin"] = temp_df.loc[
+                temp_df["From Amount"] > 0, "From Coin"
+            ]
+            temp_df.loc[temp_df["From Amount"] > 0, ["From Amount", "From Coin"]] = None
+
+            final_df = pd.concat([final_df, temp_df])
 
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     # ===========================================SOFI SWAP===============================================================
