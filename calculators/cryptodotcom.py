@@ -214,4 +214,4 @@ def get_eur_invested(year=None):
     all_trx = get_transactions_df(return_fiat=True)
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
-    return all_trx.loc[all_trx["Transaction Kind"] == "viban_purchase", "Amount"].sum()
+    return all_trx.loc[all_trx["Transaction Kind"] == "viban_purchase", "Amount"].sum() + all_trx.loc[all_trx["Transaction Kind"] == "recurring_buy_order", "Amount"].sum() - all_trx.loc[all_trx["Transaction Kind"] == "crypto_viban", "Amount"].sum()

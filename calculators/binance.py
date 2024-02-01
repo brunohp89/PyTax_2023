@@ -612,7 +612,7 @@ def get_eur_invested(year=None, net=False):
     if year is not None:
         all_trx = all_trx[all_trx.index.year == year]
 
-    all_in = all_trx.query("Coin == 'EUR' and Operation!='Binance Card Spending'")
+    all_in = all_trx.query("Coin == 'EUR' and Operation not in ('Binance Card Spending', 'Main and funding account transfer')")
     all_in = all_in.query("Operation not in ['Deposit', 'Fiat Deposit']")
     if not net:
         return -round(all_in.query("Change < 0")["Change"].sum(), 2)
