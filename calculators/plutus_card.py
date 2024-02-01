@@ -21,7 +21,10 @@ def get_transactions_df(cashback_level=0.03, returnOnlyAvailablePlu=False):
                 if 'Account Statement' not in transaction and 'Deposit' not in transaction:
                     dates.append(dt.datetime.strptime(re.findall(exp, transaction)[0].replace(',', ''),
                                                       '%Y/%d/%m %H:%M'))  # + dt.timedelta(days=45))
-                    amounts.append(transaction.split('€')[1].replace('\n', ''))
+                    if float(transaction.split('€')[1]) < 0:
+                        amounts.append(abs(float(transaction.split('€')[1].replace('\n', ''))))
+                    else:
+                        amounts.append(0)
                     notes.append(transaction)
                     perk.append(None)
                 if 'SPOTIFY' in transaction or 'NETFLIX' in transaction:

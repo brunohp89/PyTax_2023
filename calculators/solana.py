@@ -105,7 +105,72 @@ def get_transactions_df(address):
     final_df = pd.DataFrame()
 
     for transaction in response_pd["data"]:
-        if "HarvestKi" in ",".join(transaction["meta"]["logMessages"]):
+        if 'Bubblegum' in str(transaction):
+            # Drip Drop
+            continue
+        elif 'NewClaim' in str(transaction) and 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN' in str(transaction):
+            #JUP airdrop
+            tokens = calculate_tokens_balances(transaction, address)
+
+            response_pd.loc[response_pd["data"] == transaction, "To"] = address
+            response_pd.loc[response_pd["data"] == transaction, "From"] = transaction[
+                "transaction"
+            ]["message"]["accountKeys"][-1]["pubkey"]
+            response_pd.loc[
+                response_pd["data"] == transaction, "To Amount"
+            ] = tokens.loc[
+                tokens["tokens"] == "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+                "result",
+            ].values[
+                0
+            ]
+            response_pd.loc[
+                response_pd["data"] == transaction, "Notes"
+            ] = "JUP airdrop"
+            response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "JUP"
+            response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
+                                                                                 -transaction["meta"]["fee"] / 10 ** 9
+                                                                         )
+            response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
+            response_pd.loc[response_pd["data"] == transaction, "Tag"] = "Reward"
+
+            final_df = pd.concat(
+                [final_df, response_pd[response_pd["data"] == transaction]]
+            )
+
+            response_pd = response_pd[response_pd["data"] != transaction]
+        elif "TransferChecked" in str(transaction) and "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN" in str(transaction):
+            # JUP transfer
+            tokens = calculate_tokens_balances(transaction, address)
+
+            response_pd.loc[response_pd["data"] == transaction, "From"] = address
+            response_pd.loc[response_pd["data"] == transaction, "To"] = transaction[
+                "transaction"
+            ]["message"]["accountKeys"][-1]["pubkey"]
+            response_pd.loc[
+                response_pd["data"] == transaction, "From Amount"
+            ] = tokens.loc[
+                tokens["tokens"] == "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+                "result",
+            ].values[
+                0
+            ]
+            response_pd.loc[
+                response_pd["data"] == transaction, "Notes"
+            ] = "Movement"
+            response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "JUP"
+            response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
+                                                                                 -transaction["meta"]["fee"] / 10 ** 9
+                                                                         )
+            response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
+            response_pd.loc[response_pd["data"] == transaction, "Tag"] = "Movement"
+
+            final_df = pd.concat(
+                [final_df, response_pd[response_pd["data"] == transaction]]
+            )
+
+            response_pd = response_pd[response_pd["data"] != transaction]
+        elif "HarvestKi" in ",".join(transaction["meta"]["logMessages"]):
             response_pd.loc[response_pd["data"] == transaction, "From"] = address
             response_pd.loc[response_pd["data"] == transaction, "To"] = transaction[
                 "transaction"
@@ -935,7 +1000,6 @@ def get_transactions_df(address):
 
                 temp_df["Notes"] = "Swap DooarSwap"
                 final_df = pd.concat([final_df, temp_df])
-
         elif "Program 11111111111111111111111111111111 success" in str(
             transaction
         ) and "Token" in ",".join(transaction["meta"]["logMessages"]):
@@ -1029,6 +1093,7 @@ def get_transactions_df(address):
             response_pd = response_pd[response_pd["data"] != transaction]
         else:
             print(f"Transaction not being processed, check!")
+            break
 
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
     final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"] = None
