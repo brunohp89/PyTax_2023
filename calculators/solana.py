@@ -1093,14 +1093,13 @@ def get_transactions_df(address):
             response_pd = response_pd[response_pd["data"] != transaction]
         else:
             print(f"Transaction not being processed, check!")
-            break
 
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
     final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"] = None
     final_df.loc[final_df["From Coin"].isin(nfts), "From Amount"] = None
     final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"] = None
 
-    final_df["Source"] = f"'Solana-{address[0:10]}"
+    final_df["Source"] = f"Solana-{address[0:10]}"
     final_df = final_df[
         [
             "From",
