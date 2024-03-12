@@ -39,7 +39,12 @@ scam = ['UnisMeta 1671392971464 - 153', '$ sUSD', 'Overwatch SZN1 Mint Pass Limi
         '0x59C1A84420027e17ddb3E37e5489dc20504e9435', '0xB8c8A93168Bb610428c85EB9c9e253768C36e67D',
         '0xe592427a0aece92de3edee1f18e0157c05861564', 'Zepe.io', 'Super Boys Orignal - 1',
         '995$ Visit USDTReward.com to claim', 'DBT', '$ELO Coin Launch Party - 0', 'KRDH Official - 257', 'BSC',
-        'Claim USDC at https://cusdcs.eth.li', '$1000 Rewards - 0']
+        'Claim USDC at https://cusdcs.eth.li', '$1000 Rewards - 0', 'Acces zerolends.com to claim reward',
+        'Visit stETH official website:  steth-voucher.site', 'A-ZKF [www.zkfair.events]', 'StakeEther.co',
+        '$USDT СLАlМ▷airUSDT.net', '$USDT СLАIМ▷lootusdt.com', 'KURO', 'Claim on: mogcoins.net/?claim',
+        '$ Visit blasdot.com to claim rewards!', 'STEIN-CHESS.COM | AirDrop - You are invited',
+        'Acces stETHERS.COM to claim rewards'
+        ]
 
 
 

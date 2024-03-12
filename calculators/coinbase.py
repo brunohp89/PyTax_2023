@@ -23,7 +23,7 @@ def get_transactions_df(raw=False):
         final_df['Notes'] = [k.replace('.', '').replace(',', '.').replace(' €', '') for k in final_df['Notes']]
 
         final_df.index = [
-            tx.str_to_datetime(j.replace("T", " ").replace("Z", ""))
+            tx.str_to_datetime(j.replace(" UTC", "").replace("T", " ").replace("Z", ""))
             for j in final_df["Timestamp"]
         ]
 

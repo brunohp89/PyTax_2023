@@ -123,7 +123,8 @@ def get_transactions_df(raw=False, return_fiat=False):
                     "Supercharger Deposit (via app)",
                     "Supercharger Stake (via app)",
                     "Supercharger Withdrawal (via app)",
-                    "Cardholder CRO Stake"
+                    "Cardholder CRO Stake",
+                    "Cardholder CRO Unstake"
 
                 ]
             )

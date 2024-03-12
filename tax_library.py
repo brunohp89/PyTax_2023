@@ -874,7 +874,7 @@ def calculate_pl(df_transactions, year_sel):
 
             temp_df['cumsum2'] = quantita_vendita - temp_df['cumsum']
             if any(temp_df['cumsum2'] < 0):
-                temp_df[temp_df['cumsum2'] < 0].iloc[-1, 0] = abs(temp_df[temp_df['cumsum2'] < 0].iloc[-1, -1])
+                temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, 0] = abs(temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, -1])
                 temp_df.loc[temp_df['cumsum2'] < 0, 'frac'] = (temp_df.loc[temp_df['cumsum2'] < 0, 'Coin'].abs() -
                                                                temp_df.loc[temp_df['cumsum2'] < 0, 'cumsum2'].abs()) / \
                                                               temp_df.loc[temp_df['cumsum2'] < 0, 'Coin'].abs()

@@ -109,7 +109,7 @@ def get_transactions_df(address):
             # Drip Drop
             continue
         elif 'NewClaim' in str(transaction) and 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN' in str(transaction):
-            #JUP airdrop
+            # JUP airdrop
             tokens = calculate_tokens_balances(transaction, address)
 
             response_pd.loc[response_pd["data"] == transaction, "To"] = address
@@ -129,8 +129,8 @@ def get_transactions_df(address):
             ] = "JUP airdrop"
             response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "JUP"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                                                                                 -transaction["meta"]["fee"] / 10 ** 9
-                                                                         )
+                    -transaction["meta"]["fee"] / 10 ** 9
+            )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Tag"] = "Reward"
 
@@ -139,7 +139,8 @@ def get_transactions_df(address):
             )
 
             response_pd = response_pd[response_pd["data"] != transaction]
-        elif "TransferChecked" in str(transaction) and "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN" in str(transaction):
+        elif "TransferChecked" in str(transaction) and "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN" in str(
+                transaction):
             # JUP transfer
             tokens = calculate_tokens_balances(transaction, address)
 
@@ -160,8 +161,8 @@ def get_transactions_df(address):
             ] = "Movement"
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "JUP"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                                                                                 -transaction["meta"]["fee"] / 10 ** 9
-                                                                         )
+                    -transaction["meta"]["fee"] / 10 ** 9
+            )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Tag"] = "Movement"
 
@@ -176,14 +177,14 @@ def get_transactions_df(address):
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                -transaction["meta"]["innerInstructions"][0]["instructions"][0][
-                    "parsed"
-                ]["info"]["lamports"]
-                / 10**9
+                    -transaction["meta"]["innerInstructions"][0]["instructions"][0][
+                        "parsed"
+                    ]["info"]["lamports"]
+                    / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -200,11 +201,11 @@ def get_transactions_df(address):
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                -transaction["meta"]["postBalances"][4] / 10**9
+                    -transaction["meta"]["postBalances"][4] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -235,8 +236,8 @@ def get_transactions_df(address):
             ] = "Genopet Mint Ki"
             response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "KI"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
-            ) / 2
+                                                                                 -transaction["meta"]["fee"] / 10 ** 9
+                                                                         ) / 2
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Tag"] = "Reward"
 
@@ -246,7 +247,7 @@ def get_transactions_df(address):
 
             response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "To Amount"] = -[
-                (y - x) / 10**9
+                (y - x) / 10 ** 9
                 for x, y in zip(
                     transaction["meta"]["postBalances"],
                     transaction["meta"]["preBalances"],
@@ -260,34 +261,34 @@ def get_transactions_df(address):
             response_pd = response_pd[response_pd["data"] != transaction]
 
         elif any(
-            [
-                True if x in scam else False
-                for x in [
+                [
+                    True if x in scam else False
+                    for x in [
                     x["pubkey"]
                     for x in transaction["transaction"]["message"]["accountKeys"]
                 ]
-            ]
+                ]
         ):
             response_pd = response_pd[response_pd["data"] != transaction]
 
         elif "TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp" in ",".join(
-            transaction["meta"]["logMessages"]
+                transaction["meta"]["logMessages"]
         ) and "Instruction: Buy" in ",".join(transaction["meta"]["logMessages"]):
             response_pd.loc[response_pd["data"] == transaction, "From"] = address
             response_pd.loc[response_pd["data"] == transaction, "To"] = transaction[
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                -sum(
-                    [
-                        x["parsed"]["info"]["lamports"]
-                        for x in transaction["meta"]["innerInstructions"][0][
+                    -sum(
+                        [
+                            x["parsed"]["info"]["lamports"]
+                            for x in transaction["meta"]["innerInstructions"][0][
                             "instructions"
                         ]
-                        if x["programId"] == "11111111111111111111111111111111"
-                    ]
-                )
-                / 10**9
+                            if x["programId"] == "11111111111111111111111111111111"
+                        ]
+                    )
+                    / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "To Amount"] = 1
@@ -297,7 +298,7 @@ def get_transactions_df(address):
                 if x["programId"] == "TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp"
             ][0]
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -318,94 +319,46 @@ def get_transactions_df(address):
             response_pd = response_pd[response_pd["data"] != transaction]
 
         elif "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc" in ",".join(
-            transaction["meta"]["logMessages"]
+                transaction["meta"]["logMessages"]
         ):
-            if (
-                len(
-                    [
-                        x["mint"]
-                        for x in transaction["meta"]["postTokenBalances"]
-                        if x["owner"] == address
-                        and x["uiTokenAmount"]["uiAmount"] is not None
-                    ]
-                )
-                > 1
-            ):
-                print(
-                    f"Attention, tokens swaps not being processed. Txid: {transaction['transaction']['signatures'][0]}"
-                )
-                continue
+            tokens = calculate_tokens_balances(transaction, address)
+            tokens = tokens[tokens.result.abs() > 10 ** -6]
+            tokens = tokens.reset_index(drop=True)
+            tokens['tokens'] = tokens['tokens'].apply(
+                lambda x: requests.get(f"https://api.solana.fm/v0/tokens/{x}").json()[
+                    "result"
+                ]["data"]["symbol"])
 
-            token = [
-                x["mint"]
-                for x in transaction["meta"]["postTokenBalances"]
-                if x["owner"] == address and x["uiTokenAmount"]["uiAmount"] is not None
-            ][0]
-            token = requests.get(f"https://api.solana.fm/v0/tokens/{token}").json()[
-                "result"
-            ]["data"]["symbol"]
-
-            if (
-                len(
-                    [
-                        float(x["uiTokenAmount"]["uiAmount"])
-                        for x in transaction["meta"]["preTokenBalances"]
-                        if x["owner"] == address
-                        and x["uiTokenAmount"]["uiAmount"] is not None
-                    ]
-                )
-                > 0
-            ):
-                amount1 = [
-                    float(x["uiTokenAmount"]["uiAmount"])
-                    for x in transaction["meta"]["postTokenBalances"]
-                    if x["owner"] == address
-                    and x["uiTokenAmount"]["uiAmount"] is not None
-                ][0] - [
-                    float(x["uiTokenAmount"]["uiAmount"])
-                    for x in transaction["meta"]["preTokenBalances"]
-                    if x["owner"] == address
-                    and x["uiTokenAmount"]["uiAmount"] is not None
-                ][
-                    0
-                ]
+            if tokens.shape[0] > 1:
+                from_coin = tokens.loc[tokens.result < 0, 'tokens'].iloc[0]
+                to_coin = tokens.loc[tokens.result > 0, 'tokens'].iloc[0]
+                from_amount = tokens.loc[tokens.result < 0, 'result'].iloc[0]
+                to_amount = tokens.loc[tokens.result > 0, 'result'].iloc[0]
             else:
-                amount1 = [
-                    float(x["uiTokenAmount"]["uiAmount"])
-                    for x in transaction["meta"]["postTokenBalances"]
-                    if x["owner"] == address
-                    and x["uiTokenAmount"]["uiAmount"] is not None
+                sol_amount2 = [
+                    (x - y) / 10 ** 9
+                    for x, y in zip(
+                        transaction["meta"]["postBalances"],
+                        transaction["meta"]["preBalances"],
+                    )
                 ][0]
-            amount2 = [
-                (x - y) / 10**9
-                for x, y in zip(
-                    transaction["meta"]["postBalances"],
-                    transaction["meta"]["preBalances"],
-                )
-            ][0]
+                if sol_amount2 < 0:
+                    from_coin = 'SOL'
+                    to_coin = tokens.tokens[0]
+                    from_amount = sol_amount2
+                    to_amount = tokens.result[0]
+                else:
+                    to_coin = 'SOL'
+                    from_coin = tokens.tokens[0]
+                    to_amount = sol_amount2
+                    from_amount = tokens.result[0]
 
-            if amount1 < 0:
-                response_pd.loc[
-                    response_pd["data"] == transaction, "From Amount"
-                ] = amount1
-                response_pd.loc[response_pd["data"] == transaction, "From Coin"] = token
-                response_pd.loc[response_pd["data"] == transaction, "To Amount"] = abs(
-                    amount2
-                )
-                response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "SOL"
-            else:
-                response_pd.loc[
-                    response_pd["data"] == transaction, "To Amount"
-                ] = amount1
-                response_pd.loc[response_pd["data"] == transaction, "To Coin"] = token
-                response_pd.loc[
-                    response_pd["data"] == transaction, "From Amount"
-                ] = -abs(amount2)
-                response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
+            response_pd.loc[response_pd["data"] == transaction, "From Coin"] = from_coin
+            response_pd.loc[response_pd["data"] == transaction, "To Coin"] = to_coin
+            response_pd.loc[response_pd["data"] == transaction, "From Amount"] = from_amount
+            response_pd.loc[response_pd["data"] == transaction, "To Amount"] = to_amount
 
-            response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
-            )
+            response_pd.loc[response_pd["data"] == transaction, "Fee"] = -transaction["meta"]["fee"] / 10 ** 9
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "Notes"] = "Orca Swap"
 
@@ -417,14 +370,14 @@ def get_transactions_df(address):
         elif "TerraformHabitat" in str(transaction):
             sol_price = -abs(
                 [
-                    (x - y) / 10**9
+                    (x - y) / 10 ** 9
                     for x, y in zip(
-                        transaction["meta"]["postBalances"],
-                        transaction["meta"]["preBalances"],
-                    )
+                    transaction["meta"]["postBalances"],
+                    transaction["meta"]["preBalances"],
+                )
                 ][17]
                 + [
-                    (x - y) / 10**9
+                    (x - y) / 10 ** 9
                     for x, y in zip(
                         transaction["meta"]["postBalances"],
                         transaction["meta"]["preBalances"],
@@ -436,13 +389,13 @@ def get_transactions_df(address):
                     float(x["uiTokenAmount"]["uiAmount"])
                     for x in transaction["meta"]["postTokenBalances"]
                     if x["owner"] == address
-                    and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
+                       and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
                 ][0]
                 - [
                     float(x["uiTokenAmount"]["uiAmount"])
                     for x in transaction["meta"]["preTokenBalances"]
                     if x["owner"] == address
-                    and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
+                       and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
                 ][0]
             )
             gene_price = -abs(
@@ -450,34 +403,34 @@ def get_transactions_df(address):
                     float(x["uiTokenAmount"]["uiAmount"])
                     for x in transaction["meta"]["postTokenBalances"]
                     if x["owner"] == address
-                    and x["mint"] == "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz"
+                       and x["mint"] == "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz"
                 ][0]
                 - [
                     float(x["uiTokenAmount"]["uiAmount"])
                     for x in transaction["meta"]["preTokenBalances"]
                     if x["owner"] == address
-                    and x["mint"] == "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz"
+                       and x["mint"] == "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz"
                 ][0]
             )
             other = [
                 x["uiTokenAmount"]["uiAmount"]
                 for x in transaction["meta"]["postTokenBalances"]
                 if x["owner"] == address
-                and x["mint"]
-                not in [
-                    "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
-                    "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
-                ]
+                   and x["mint"]
+                   not in [
+                       "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
+                       "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
+                   ]
             ]
             other2 = [
                 x["uiTokenAmount"]["uiAmount"]
                 for x in transaction["meta"]["preTokenBalances"]
                 if x["owner"] == address
-                and x["mint"]
-                not in [
-                    "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
-                    "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
-                ]
+                   and x["mint"]
+                   not in [
+                       "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
+                       "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
+                   ]
             ]
             other_prices = [
                 x - y if x is not None else 0 - y for x, y in zip(other, other2)
@@ -486,11 +439,11 @@ def get_transactions_df(address):
                 x["mint"]
                 for x in transaction["meta"]["postTokenBalances"]
                 if x["owner"] == address
-                and x["mint"]
-                not in [
-                    "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
-                    "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
-                ]
+                   and x["mint"]
+                   not in [
+                       "GENEtH5amGSi8kHAtQoezp1XEXwZJ8vcuePYnXdKrMYz",
+                       "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc",
+                   ]
             ]
             nfts.extend(other_assets)
 
@@ -520,7 +473,7 @@ def get_transactions_df(address):
                 + dt.timedelta(milliseconds=x * 100)
                 for x in range(6)
             ]
-            temp_df["Fee"] = (-transaction["meta"]["fee"] / 10**9) / 6
+            temp_df["Fee"] = (-transaction["meta"]["fee"] / 10 ** 9) / 6
             temp_df["Fee Coin"] = "SOL"
             temp_df["Notes"] = "Buy NFT - Create Habitat Genopets"
 
@@ -536,21 +489,21 @@ def get_transactions_df(address):
         elif "ray_log" in str(transaction):
             response_pd.loc[
                 response_pd["data"] == transaction, ["Fee Coin", "Fee", "Notes"]
-            ] = ["SOL", -transaction["meta"]["fee"] / 10**9, "Raydium Incomplete"]
+            ] = ["SOL", -transaction["meta"]["fee"] / 10 ** 9, "Raydium Incomplete"]
             final_df = pd.concat(
                 [final_df, response_pd[response_pd["data"] == transaction]]
             )
             response_pd = response_pd[response_pd["data"] != transaction]
         elif (
-            "RemoveSubHabitat" in str(transaction)
-            or "AddSubHabitat" in str(transaction)
-            or "WithdrawHabitat" in str(transaction)
+                "RemoveSubHabitat" in str(transaction)
+                or "AddSubHabitat" in str(transaction)
+                or "WithdrawHabitat" in str(transaction)
         ):
             response_pd.loc[
                 response_pd["data"] == transaction, ["Fee Coin", "Fee", "Notes"]
             ] = [
                 "SOL",
-                -transaction["meta"]["fee"] / 10**9,
+                -transaction["meta"]["fee"] / 10 ** 9,
                 "Genopet Subhabitat Management",
             ]
             final_df = pd.concat(
@@ -564,16 +517,16 @@ def get_transactions_df(address):
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                -sum(
-                    [
-                        x["parsed"]["info"]["lamports"]
-                        for x in transaction["meta"]["innerInstructions"][0][
+                    -sum(
+                        [
+                            x["parsed"]["info"]["lamports"]
+                            for x in transaction["meta"]["innerInstructions"][0][
                             "instructions"
                         ]
-                        if x["programId"] == "11111111111111111111111111111111"
-                    ]
-                )
-                / 10**9
+                            if x["programId"] == "11111111111111111111111111111111"
+                        ]
+                    )
+                    / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "To Amount"] = 1
@@ -590,7 +543,7 @@ def get_transactions_df(address):
                 ][0]
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -608,42 +561,42 @@ def get_transactions_df(address):
             response_pd.loc[response_pd["data"] == transaction, "To"] = address
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = -abs(
                 [
-                    (x - y) / 10**9
+                    (x - y) / 10 ** 9
                     for x, y in zip(
-                        transaction["meta"]["postBalances"],
-                        transaction["meta"]["preBalances"],
-                    )
+                    transaction["meta"]["postBalances"],
+                    transaction["meta"]["preBalances"],
+                )
                 ][4]
                 + [
                     x["parsed"]["info"]["lamports"]
                     for x in transaction["transaction"]["message"]["instructions"]
                     if x["programId"] == "11111111111111111111111111111111"
                 ][0]
-                / 10**9
+                / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
             response_pd.loc[response_pd["data"] == transaction, "To Amount"] = [
                 x["uiTokenAmount"]["uiAmount"]
                 for x in transaction["meta"]["postTokenBalances"]
                 if x["owner"] == address
-                and x["mint"] != "So11111111111111111111111111111111111111112"
+                   and x["mint"] != "So11111111111111111111111111111111111111112"
             ][0]
             response_pd.loc[response_pd["data"] == transaction, "To Coin"] = [
                 x["mint"]
                 for x in transaction["meta"]["postTokenBalances"]
                 if x["owner"] == address
-                and x["mint"] != "So11111111111111111111111111111111111111112"
+                   and x["mint"] != "So11111111111111111111111111111111111111112"
             ][0]
             nfts.append(
                 [
                     x["mint"]
                     for x in transaction["meta"]["postTokenBalances"]
                     if x["owner"] == address
-                    and x["mint"] != "So11111111111111111111111111111111111111112"
+                       and x["mint"] != "So11111111111111111111111111111111111111112"
                 ][0]
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -660,21 +613,25 @@ def get_transactions_df(address):
                 "transaction"
             ]["message"]["accountKeys"][-1]["pubkey"]
             response_pd.loc[response_pd["data"] == transaction, "From Amount"] = [
-                x["uiTokenAmount"]["uiAmount"]
-                for x in transaction["meta"]["postTokenBalances"]
-                if x["owner"] == address
-                and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
-            ][0] - [
-                x["uiTokenAmount"]["uiAmount"]
-                for x in transaction["meta"]["preTokenBalances"]
-                if x["owner"] == address
-                and x["mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
-            ][
-                0
-            ]
+                                                                                     x["uiTokenAmount"]["uiAmount"]
+                                                                                     for x in transaction["meta"][
+                    "postTokenBalances"]
+                                                                                     if x["owner"] == address
+                                                                                        and x[
+                                                                                            "mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
+                                                                                 ][0] - [
+                                                                                     x["uiTokenAmount"]["uiAmount"]
+                                                                                     for x in transaction["meta"][
+                    "preTokenBalances"]
+                                                                                     if x["owner"] == address
+                                                                                        and x[
+                                                                                            "mint"] == "kiGenopAScF8VF31Zbtx2Hg8qA5ArGqvnVtXb83sotc"
+                                                                                 ][
+                                                                                     0
+                                                                                 ]
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "KI"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -722,7 +679,7 @@ def get_transactions_df(address):
                 ][0]
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -736,7 +693,7 @@ def get_transactions_df(address):
             tokens = calculate_tokens_balances(transaction, address)
             response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "KI"
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[
                 response_pd["data"] == transaction, "From Amount"
@@ -786,7 +743,7 @@ def get_transactions_df(address):
                 ][0]
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -797,8 +754,8 @@ def get_transactions_df(address):
             )
             response_pd = response_pd[response_pd["data"] != transaction]
         elif (
-            "STEPNq2UGeGSzCyGVr2nMQAzf8xuejwqebd84wcksCK" in str(transaction)
-            or "STEPNwUmvdCWRm4yzH4rtCuPUeKuEapFvFKHKteiGH5" in str(transaction)
+                "STEPNq2UGeGSzCyGVr2nMQAzf8xuejwqebd84wcksCK" in str(transaction)
+                or "STEPNwUmvdCWRm4yzH4rtCuPUeKuEapFvFKHKteiGH5" in str(transaction)
         ) and "Program log: Instruction: Transfer" in str(transaction):
             tokens = calculate_tokens_balances(transaction, address)
             token = (
@@ -821,7 +778,7 @@ def get_transactions_df(address):
                 ]["message"]["accountKeys"][-2]["pubkey"]
                 response_pd.loc[response_pd["data"] == transaction, "From"] = address
                 response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10**9
+                        -transaction["meta"]["fee"] / 10 ** 9
                 )
                 response_pd.loc[
                     response_pd["data"] == transaction, "From Amount"
@@ -835,11 +792,11 @@ def get_transactions_df(address):
             )
             response_pd = response_pd[response_pd["data"] != transaction]
         elif "STEPNq2UGeGSzCyGVr2nMQAzf8xuejwqebd84wcksCK" in str(
-            transaction
+                transaction
         ) and "Program 11111111111111111111111111111111 invoke" in str(transaction):
             if (
-                transaction["transaction"]["message"]["accountKeys"][0]["pubkey"]
-                == address
+                    transaction["transaction"]["message"]["accountKeys"][0]["pubkey"]
+                    == address
             ):
                 response_pd.loc[
                     response_pd["data"] == transaction, "From"
@@ -848,14 +805,14 @@ def get_transactions_df(address):
                     "transaction"
                 ]["message"]["accountKeys"][-2]["pubkey"]
                 response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                    -transaction["transaction"]["message"]["instructions"][0]["parsed"][
-                        "info"
-                    ]["lamports"]
-                    / 10**9
+                        -transaction["transaction"]["message"]["instructions"][0]["parsed"][
+                            "info"
+                        ]["lamports"]
+                        / 10 ** 9
                 )
                 response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
                 response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10**9
+                        -transaction["meta"]["fee"] / 10 ** 9
                 )
             else:
                 response_pd.loc[response_pd["data"] == transaction, "To"] = address
@@ -863,10 +820,10 @@ def get_transactions_df(address):
                     response_pd["data"] == transaction, "From"
                 ] = transaction["transaction"]["message"]["accountKeys"][0]["pubkey"]
                 response_pd.loc[response_pd["data"] == transaction, "To Amount"] = (
-                    transaction["transaction"]["message"]["instructions"][0]["parsed"][
-                        "info"
-                    ]["lamports"]
-                    / 10**9
+                        transaction["transaction"]["message"]["instructions"][0]["parsed"][
+                            "info"
+                        ]["lamports"]
+                        / 10 ** 9
                 )
                 response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "SOL"
             response_pd.loc[
@@ -877,11 +834,11 @@ def get_transactions_df(address):
             )
             response_pd = response_pd[response_pd["data"] != transaction]
         elif (
-            "SysvarRent111111111111111111111111111111111" in str(transaction)
-            or "Program log: Instruction: MintToChecked" in str(transaction)
+                "SysvarRent111111111111111111111111111111111" in str(transaction)
+                or "Program log: Instruction: MintToChecked" in str(transaction)
         ) and "Program log: Instruction: Transfer" not in str(transaction):
             response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                -transaction["meta"]["fee"] / 10**9
+                    -transaction["meta"]["fee"] / 10 ** 9
             )
             response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             response_pd.loc[
@@ -902,14 +859,14 @@ def get_transactions_df(address):
             )
 
             if (
-                tokens[tokens["result"] < 0].shape[0] == 0
-                or tokens[tokens["result"] > 0].shape[0] == 0
+                    tokens[tokens["result"] < 0].shape[0] == 0
+                    or tokens[tokens["result"] > 0].shape[0] == 0
             ):
                 if tokens[tokens["result"] < 0].shape[0] == 0:
                     temp = pd.DataFrame(
                         data=[
                             -[
-                                (y - x) / 10**9
+                                (y - x) / 10 ** 9
                                 for x, y in zip(
                                     transaction["meta"]["postBalances"],
                                     transaction["meta"]["preBalances"],
@@ -925,11 +882,11 @@ def get_transactions_df(address):
                         data=[
                             abs(
                                 [
-                                    (y - x) / 10**9
+                                    (y - x) / 10 ** 9
                                     for x, y in zip(
-                                        transaction["meta"]["postBalances"],
-                                        transaction["meta"]["preBalances"],
-                                    )
+                                    transaction["meta"]["postBalances"],
+                                    transaction["meta"]["preBalances"],
+                                )
                                 ][0]
                             ),
                             "SOL",
@@ -940,8 +897,9 @@ def get_transactions_df(address):
 
             if tokens.shape[0] == 2:
                 response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10**9
-                ) / 2
+                                                                                     -transaction["meta"][
+                                                                                         "fee"] / 10 ** 9
+                                                                             ) / 2
                 response_pd.loc[
                     response_pd["data"] == transaction, "From Amount"
                 ] = tokens.loc[tokens["result"] < 0, "result"].values[0]
@@ -963,7 +921,7 @@ def get_transactions_df(address):
                 response_pd = response_pd[response_pd["data"] != transaction]
 
                 temp_df = pd.concat([temp_df, temp_df])
-                temp_df["Fee"] = (-transaction["meta"]["fee"] / 10**9) / 3
+                temp_df["Fee"] = (-transaction["meta"]["fee"] / 10 ** 9) / 3
                 if len(tokens.loc[tokens["result"] < 0, "result"].values) == 1:
                     temp_df["From Amount"] = [
                         tokens.loc[tokens["result"] < 0, "result"].values[0],
@@ -1001,7 +959,7 @@ def get_transactions_df(address):
                 temp_df["Notes"] = "Swap DooarSwap"
                 final_df = pd.concat([final_df, temp_df])
         elif "Program 11111111111111111111111111111111 success" in str(
-            transaction
+                transaction
         ) and "Token" in ",".join(transaction["meta"]["logMessages"]):
             tokens = calculate_tokens_balances(transaction, address)
             tokens = tokens[tokens["result"] != 0]
@@ -1013,7 +971,7 @@ def get_transactions_df(address):
 
             if tokens.result[0] < 0:
                 response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10**9
+                        -transaction["meta"]["fee"] / 10 ** 9
                 )
                 response_pd.loc[
                     response_pd["data"] == transaction, "From Amount"
@@ -1039,21 +997,21 @@ def get_transactions_df(address):
 
         elif "Program 11111111111111111111111111111111 success" in str(transaction):
             if (
-                transaction["transaction"]["message"]["instructions"][-1]["parsed"][
-                    "info"
-                ]["source"]
-                == address
+                    transaction["transaction"]["message"]["instructions"][-1]["parsed"][
+                        "info"
+                    ]["source"]
+                    == address
             ):
                 response_pd.loc[response_pd["data"] == transaction, "From"] = address
                 response_pd.loc[response_pd["data"] == transaction, "From Amount"] = (
-                    -transaction["transaction"]["message"]["instructions"][-1][
-                        "parsed"
-                    ]["info"]["lamports"]
-                    / 10**9
+                        -transaction["transaction"]["message"]["instructions"][-1][
+                            "parsed"
+                        ]["info"]["lamports"]
+                        / 10 ** 9
                 )
                 response_pd.loc[response_pd["data"] == transaction, "From Coin"] = "SOL"
                 response_pd.loc[response_pd["data"] == transaction, "Fee"] = (
-                    -transaction["meta"]["fee"] / 10**9
+                        -transaction["meta"]["fee"] / 10 ** 9
                 )
                 response_pd.loc[response_pd["data"] == transaction, "Fee Coin"] = "SOL"
             else:
@@ -1066,17 +1024,17 @@ def get_transactions_df(address):
                 ]
 
             if (
-                transaction["transaction"]["message"]["instructions"][-1]["parsed"][
-                    "info"
-                ]["destination"]
-                == address
+                    transaction["transaction"]["message"]["instructions"][-1]["parsed"][
+                        "info"
+                    ]["destination"]
+                    == address
             ):
                 response_pd.loc[response_pd["data"] == transaction, "To"] = address
                 response_pd.loc[response_pd["data"] == transaction, "To Amount"] = (
-                    transaction["transaction"]["message"]["instructions"][-1]["parsed"][
-                        "info"
-                    ]["lamports"]
-                    / 10**9
+                        transaction["transaction"]["message"]["instructions"][-1]["parsed"][
+                            "info"
+                        ]["lamports"]
+                        / 10 ** 9
                 )
                 response_pd.loc[response_pd["data"] == transaction, "To Coin"] = "SOL"
             else:
