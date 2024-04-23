@@ -6,46 +6,49 @@ import tax_library as tx
 import os
 from utils import date_from_timestamp
 
-scam = ['UnisMeta 1671392971464 - 153', '$ sUSD', 'Overwatch SZN1 Mint Pass Limited - 288', '5000 USDC Voucher - 0',
-        '!1 0PENSEA V0UCHER - 0', 'MATIC BONUS - 5838', 'ULand Genesis Item - 1',
-        '$$$AIRDROP 0PENSEA - 45975694115932666297700772423167124246419737974611922237769215783254357966850',
-        '4,651$ SHIB - 0', '! !$100,000 SHIB #1 - 0', 'Staked Bitrock (www.bitrock.app)', 'LOOKSDROP.COM', 'ABFIN',
-        'AIR', 'lrETH', 'Gods and Titans Mint Pass Original - 103', 'https://wincoin.win/',
-        'YUGA: Gucci Merch PASS - 35', 'APE NFT TICKETS - 1781', 'Uniswap Summer Event - 176', 'AI-A', 'TheSandBox.PRO',
-        'DogX.AI NFT', 'TONCRYPTO.IO', 'Wiz GGY Box - 131', '$1000 REWARDS - 0', 'XEN', 'StarBored - 8014',
-        'sUSD [Synthetix.cc]', '0xf3822314b333cbd7a36753b77589afbe095df1ba', 'TONCrypto.io', 'APE NFT TICKETS - 8432',
-        'BEP-20 TOKEN', 'Kodao-G Membership - 28', 'wSNX', 'Crypto Diverse Items - 258',
-        'Acces Liquid-ether.com to claim rewards', 'BlurredApeYachtClub - 0', 'BLUR EVENT - 2009', 'ApeCoin NFT - 434',
-        'BNBW', 'CyberStrife Axe Drop 1 - 234', 'MGRT', 'DarkoZoo - 9101',
-        'SavageNation LW Tournament Pass Originals - 24', '5 ETH Voucher by Base - 0', 'Milady NFT Gift - 1',
-        '0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59', '1 stETH - 0', '1 WETH - 560631', 'VWIN - 872448',
-        '$1000 USDC - 0', '0xab57aef3601cad382aa499a6ae2018a69aad9cf0', 'Anatomic WCE Apes - 532',
-        'Nested Box BJ Club - 36', 'FCKIT', '5000 USDC - 0', '$ Free Claim and Play', 'vanity-address.io',
-        'RTFKT - MNLTH CVD X - 199', 'SHIBPOOL.COM - 1', '1099$ USDC - 83215', '2,000 USDT Reward - 0',
-        'cronosclassic.com', 'LIDO WHITELIST - 1', 'CRONOSCLASSIC.COM', 'Warning - 31093', '$1000 SPEND REWARDS - 0',
-        'MNEB', 'VERA', '0Army.io', '2500 USDT by ETHERSCAN x METAWIN - 0', 'Visit sufek.com and claim special rewards',
-        'XEC', 'Life Goes On 846 Meta - 273', '0x794a61358d6845594f94dc1db02a252b5b4814ad', 'wHEX', 'BSCTOKEN',
-        'Visit https://jbonus.site to claim reward', 'BAYC Airdrop - 12', '1000$ Reward - 0', 'EVER',
-        'dYdX Exchange Event - 202', 'Get stETH airdrop ( https://droppradar.space )',
-        'Valorant Mint Pass Official - 8', '$!$ 30,000 BONE - 0', '$$30,000 BONE - 0', 'BEP-20',
-        '0xd9c242f6Ca08Fe45C58CA9E9A8558CFE7497E7c2', 'Magma CO Pass - 28', '! !$100,000 BONE - 0',
-        '#Synthetix.cc (sUSD)', 'The Sougen Genesis Pass - 1', 'MKS', 'AVALANCE NFT TICKETS - 9335',
-        'The QPT Originals - 336',
+scam = ['$1000 USDC - 0', 'LIDO NFT TICKETS - 1', 'Visit ethena-2l.com to claim rewards', 'VWIN - 872448',
+        'Super Boys Orignal - 1', 'TONCrypto.io', 'Warning - 31093', 'SEB', 'ZIKTOKEN.COM-SWAP AND GET 100 ZEC',
         '10 000 USD FOR FREE - 10034870321424364224204695929735558941153547521495712359208821587756539969537',
-        'Star Fighter Club QX - 31', 'LIDO NFT TICKETS - 1', 'LIDO WHITELIST - 1196', 'BSC-USD',
-        'Claim USDC/WETH at https://USDCpool.site', 'Visit Lido-event.site to join LIDO Giveaway!', 'BalancerV2.com',
-        'Walking Mushroom Mint Box Limited - 509', '$2000 USDT Airdrop - 1',
-        'The Mutants Return Land Pass Officials - 1', 'BAYC Airdrop - 13', 'wRDNT', 'Otherdeed Coda Key - 2',
-        '0x59C1A84420027e17ddb3E37e5489dc20504e9435', '0xB8c8A93168Bb610428c85EB9c9e253768C36e67D',
-        '0xe592427a0aece92de3edee1f18e0157c05861564', 'Zepe.io', 'Super Boys Orignal - 1',
-        '995$ Visit USDTReward.com to claim', 'DBT', '$ELO Coin Launch Party - 0', 'KRDH Official - 257', 'BSC',
-        'Claim USDC at https://cusdcs.eth.li', '$1000 Rewards - 0', 'Acces zerolends.com to claim reward',
-        'Visit stETH official website:  steth-voucher.site', 'A-ZKF [www.zkfair.events]', 'StakeEther.co',
-        '$USDT СLАlМ▷airUSDT.net', '$USDT СLАIМ▷lootusdt.com', 'KURO', 'Claim on: mogcoins.net/?claim',
-        '$ Visit blasdot.com to claim rewards!', 'STEIN-CHESS.COM | AirDrop - You are invited',
-        'Acces stETHERS.COM to claim rewards'
-        ]
-
+        'BEP-20 TOKEN', '$1000 REWARDS - 0', '$1000 Rewards - 0', 'BSC', 'TheSandBox.PRO', '1 stETH - 0',
+        '$ELO Coin Launch Party - 0', 'FOMO', '!1 0PENSEA V0UCHER - 0', 'BSC-USD', 'MATIC BONUS - 5838', 'WGC',
+        'FOMEDOG', '0xab57aef3601cad382aa499a6ae2018a69aad9cf0', 'cronosclassic.com', '$!$ 30,000 BONE - 0',
+        'ApeCoin NFT - 434', '0xe592427a0aece92de3edee1f18e0157c05861564', 'LIDO WHITELIST - 1196',
+        '$ Visit blasdot.com to claim rewards!', 'CyberStrife Axe Drop 1 - 234',
+        '0xf3822314b333cbd7a36753b77589afbe095df1ba', 'Claim on: sandbox.droptokens.net/?claim',
+        'UnisMeta 1671392971464 - 153', 'AI-A', '$USDT СLАIМ▷lootusdt.com', 'BOLG', 'KURO', '0Army.io',
+        'Magma CO Pass - 28', 'OPT', '1099$ USDC - 83215', 'RTFKT - MNLTH CVD X - 199', 'ABFIN',
+        'KURO  [www.kuroro.gg]', '#Synthetix.cc (sUSD)', '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+        'Life Goes On 846 Meta - 273', 'Airdrop on: brettbased.com', 'LOOKSDROP.COM',
+        'SavageNation LW Tournament Pass Originals - 24', 'Star Fighter Club QX - 31', 'Uniswap Summer Event - 176',
+        'AVALANCE NFT TICKETS - 9335', 'MNEB', 'CRONOSCLASSIC.COM', 'BAYC Airdrop - 12', 'Zepe.io', 'FCKIT',
+        '2500 USDT by ETHERSCAN x METAWIN - 0', 'XEN', '5000 USDC - 0', 'TRC20CUPON.COM GET 2000usdt NOW', 'pepewife',
+        'EVER', 'BlurredApeYachtClub - 0', 'APE NFT TICKETS - 8432', 'StakeEther.co', '! !$100,000 BONE - 0',
+        'DarkoZoo - 9101', 'LIDO WHITELIST - 1', 'Get stETH airdrop ( https://droppradar.space )',
+        'Visit https://jbonus.site to claim reward', '995$ Visit USDTReward.com to claim',
+        '0x59C1A84420027e17ddb3E37e5489dc20504e9435', '0x3f0B8B206A7FBdB3ecFc08c9407CA83F5aB1Ce59',
+        'Gods and Titans Mint Pass Original - 103', 'Nested Box BJ Club - 36', 'YUGA: Gucci Merch PASS - 35', 'wSNX',
+        'wHEX', 'Claim on: rewards.aerodrome-network.com', '2,000 USDT Reward - 0', 'Collect on: swap-based.com',
+        '$ sUSD', 'FUNGI', '5000 USDC Voucher - 0', 'Visit sufek.com and claim special rewards', 'Milady NFT Gift - 1',
+        'Walking Mushroom Mint Box Limited - 509', '0xd9c242f6Ca08Fe45C58CA9E9A8558CFE7497E7c2',
+        'Kodao-G Membership - 28', 'BaseWif', '$2000 USDT Airdrop - 1',
+        'Visit stETH official website:  steth-voucher.site', 'MGRT', 'DOG', 'AIR', '$$30,000 BONE - 0', 'DBT',
+        'sUSD [Synthetix.cc]', 'ULand Genesis Item - 1', 'Claim at: claim.fungi-airdrop.com',
+        'Acces Liquid-ether.com to claim rewards', '$1000 SPEND REWARDS - 0', 'lrETH',
+        'Overwatch SZN1 Mint Pass Limited - 288', 'Claim on: mogcoins.net/?claim', 'Staked Bitrock (www.bitrock.app)',
+        'https://wincoin.win/', 'Visit Lido-event.site to join LIDO Giveaway!', 'Wifs', 'The QPT Originals - 336',
+        'vanity-address.io', '5 ETH Voucher by Base - 0', 'wRDNT', 'PEPE WIFCOIN', '1 WETH - 560631',
+        '$ Free Claim and Play', '4,651$ SHIB - 0', 'BNBW', 'BEP-20', 'BENTO', '1000$ Reward - 0',
+        '0xB8c8A93168Bb610428c85EB9c9e253768C36e67D', 'The Mutants Return Land Pass Officials - 1',
+        'Claim USDC/WETH at https://USDCpool.site', 'Crypto Diverse Items - 258', 'dYdX Exchange Event - 202',
+        'Claim on: brettbased.com', 'BSCTOKEN', '! !$100,000 SHIB #1 - 0', 'TONCRYPTO.IO', 'BalancerV2.com',
+        'BAYC Airdrop - 13', 'KRDH Official - 257', 'Acces stETHERS.COM to claim rewards',
+        '$$$AIRDROP 0PENSEA - 45975694115932666297700772423167124246419737974611922237769215783254357966850', 'BS69',
+        'Acces zerolends.com to claim reward', 'The Sougen Genesis Pass - 1', 'XEC', 'VERA', '$USDT СLАlМ▷airUSDT.net',
+        'StarBored - 8014', 'Claim USDC at https://cusdcs.eth.li', 'DogX.AI NFT', 'Anatomic WCE Apes - 532',
+        'Wiz GGY Box - 131', 'BASEMEMES', 'MKS', 'PLEB GME', 'MOEW', 'A-ZKF [www.zkfair.events]',
+        'Visit blast2l.com to claim rewards', 'APE NFT TICKETS - 1781', 'SHIBPOOL.COM - 1', 'PEPEX314',
+        'Valorant Mint Pass Official - 8', 'STEIN-CHESS.COM | AirDrop - You are invited', 'BLUR EVENT - 2009',
+        'Otherdeed Coda Key - 2']
 
 
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
@@ -212,15 +215,15 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     if erc721.shape[0] > 0:
         if "tokenName" not in erc721.columns:
             erc721["erc721_complete_name"] = (
-                "ZKSYNC_NFT - " + erc721["tokenID"] + " -> " + erc721["contractAddress"]
+                    "ZKSYNC_NFT - " + erc721["tokenID"] + " -> " + erc721["contractAddress"]
             )
         else:
             erc721["erc721_complete_name"] = (
-                erc721["tokenName"]
-                + " - "
-                + erc721["tokenID"]
-                + " -> "
-                + erc721["contractAddress"]
+                    erc721["tokenName"]
+                    + " - "
+                    + erc721["tokenID"]
+                    + " -> "
+                    + erc721["contractAddress"]
             )
 
     erc1155 = pd.DataFrame()
@@ -230,11 +233,11 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         erc1155 = pd.DataFrame(response.json().get("result"))
         if erc1155.shape[0] > 0:
             erc1155["erc1155_complete_name"] = (
-                erc1155["tokenName"]
-                + " - "
-                + erc1155["tokenID"]
-                + " -> "
-                + erc1155["contractAddress"]
+                    erc1155["tokenName"]
+                    + " - "
+                    + erc1155["tokenID"]
+                    + " -> "
+                    + erc1155["contractAddress"]
             )
     if chain in ["arb-mainnet", "zksync-mainnet"]:
         erc1155 = pd.DataFrame()
@@ -252,8 +255,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         erc20["from"] = [k.lower() for k in erc20["from"]]
         for timestamp in erc20["timeStamp"].unique():
             if (
-                list(erc20.loc[erc20["timeStamp"] == timestamp, "from"])[0]
-                == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18"
+                    list(erc20.loc[erc20["timeStamp"] == timestamp, "from"])[0]
+                    == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18"
             ):
                 erc20.loc[erc20["timeStamp"] == timestamp, "value"] = str(
                     int(list(erc20.loc[erc20["timeStamp"] == timestamp, "value"])[0])
@@ -459,7 +462,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         "To Coin",
         "Kind",
     ]
-    final_df["To Amount"] = [int(x) / 10**18 for x in final_df["To Amount"]]
+    final_df["To Amount"] = [int(x) / 10 ** 18 for x in final_df["To Amount"]]
     final_df["From Amount"] = final_df["From Coin"] = None
 
     final_df.loc[final_df["To"] != address, "To Amount"] *= -1
@@ -494,12 +497,13 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         "0xce16F69375520ab01377ce7B88f5BA8C48F8D666".lower(),  # Base
         "0x50b6ebc2103bfec165949cc946d739d5650d7ae4".lower(),
         "0x06eb48763f117c7be887296cdcdfad2e4092739c".lower(),
+        "0x2Eb9ea9dF49BeBB97e7750f231A32129a89b82ee".lower()
     ]
 
     stargate_df = trx_df[trx_df["to_normal"].isin(stargate_contracts)].copy()
     stargate_df = stargate_df[
         stargate_df["functionName"] != "approve(address _spender, uint256 _value)"
-    ]
+        ]
     trx_df = pd.concat([stargate_df, trx_df]).drop_duplicates(keep=False)
     vout = pd.DataFrame(
         columns=[
@@ -541,7 +545,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(vout["Timestamp"]):
             vout.loc[vout["Timestamp"] == i, "Gasused"] /= vout[
                 vout["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         stargate_df = stargate_df.loc[
             ~stargate_df["functionName"].isin(["addLiquidityETH", "addLiquidity"])
@@ -551,7 +555,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = stargate_df.loc[
             np.logical_and(
                 stargate_df["functionName"] == "deposit",
-                stargate_df["tokenSymbol"].str.contains("\*"),
+                stargate_df["tokenSymbol"].str.contains(r"*"),
             ),
             [
                 "timeStamp_normal",
@@ -570,7 +574,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = stargate_df.loc[
             np.logical_and(
                 stargate_df["functionName"] == "deposit",
-                stargate_df["tokenSymbol"].str.contains("\*"),
+                stargate_df["tokenSymbol"].str.contains(r"*"),
             )
         ].copy()
         temp_df = pd.concat(
@@ -614,7 +618,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
         ]
         temp_df.loc[
-            temp_df["tokenSymbol"].str.contains("\*"), ["value", "tokenSymbol"]
+            temp_df["tokenSymbol"].str.contains(r"*"), ["value", "tokenSymbol"]
         ] = None
         temp_df.loc[pd.isna(temp_df["value"]), "gasUsed_normal"] = 0
 
@@ -658,7 +662,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         # Withdraw liquidity
         temp_df = stargate_df.loc[
             stargate_df["functionName"] == "instantRedeemLocal"
-        ].copy()
+            ].copy()
         temp_df = temp_df[
             [
                 "timeStamp_normal",
@@ -673,13 +677,13 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         if temp_df.shape[0] > 0:
             stargate_df = stargate_df.loc[
                 stargate_df["functionName"] != "instantRedeemLocal"
-            ]
+                ]
 
         vout = pd.concat([vout, temp_df])
 
         # Bridging ETH
         temp_df = stargate_df.loc[stargate_df["functionName"] == "swapETH"].copy()
-        temp_df["value_normal"] = [-int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [-int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df = temp_df[
             [
                 "timeStamp_normal",
@@ -705,17 +709,17 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         stargate_df = stargate_df.loc[stargate_df["functionName"] != "swapETH"]
 
         vout = pd.concat([vout, temp_df])
 
         # Bridging ERC20
-        temp_df = stargate_df.loc[stargate_df["functionName"].isin(["swap", "", "sendTokens"])].copy()
+        temp_df = stargate_df.loc[stargate_df["functionName"].isin(["swap", "", "sendTokens", "swapTokens"])].copy()
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
         temp_df["value_normal"] = [
-            (-int(x) + int(y)) / 10**18
+            (-int(x) + int(y)) / 10 ** 18
             for x, y in zip(temp_df["value_normal"], temp_df["value_internal"])
         ]
         temp_df["value"] = [
@@ -787,9 +791,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
-        stargate_df = stargate_df.loc[~stargate_df["functionName"].isin(["swap", "", "sendTokens"])]
+        stargate_df = stargate_df.loc[~stargate_df["functionName"].isin(["swap", "", "sendTokens", "swapTokens"])]
 
         vout = pd.concat([vout, temp_df])
 
@@ -866,7 +870,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                 for x, y in zip(stargate_v2["value"], stargate_v2["tokenDecimal"])
             ]
             stargate_v2["value_internal"] = [
-                int(x) / 10**18 for x in stargate_v2["value_internal"]
+                int(x) / 10 ** 18 for x in stargate_v2["value_internal"]
             ]
             stargate_v2["gasUsed_internal"] = [
                 str(int(x) / 2) for x in stargate_v2["gasUsed_internal"]
@@ -936,7 +940,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             for i in set(temp_df["Timestamp"]):
                 temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                     temp_df["Timestamp"] == i
-                ].shape[0]
+                    ].shape[0]
 
             temp_df.loc[temp_df["From Amount"] > 0, "To Amount"] = temp_df.loc[
                 temp_df["From Amount"] > 0, "From Amount"
@@ -965,9 +969,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -1032,7 +1036,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -1126,11 +1130,11 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ].copy()
         if pancake_liq.shape[0] > 0:
             pancake_liq["value_normal"] = [
-                int(x) / 10**18 for x in pancake_liq["value_normal"]
+                int(x) / 10 ** 18 for x in pancake_liq["value_normal"]
             ]
             pancake_liq["value_internal"] = pancake_liq["value_internal"].fillna(0)
             pancake_liq["value_internal"] = [
-                int(x) / 10**18 for x in pancake_liq["value_internal"]
+                int(x) / 10 ** 18 for x in pancake_liq["value_internal"]
             ]
             pancake_liq["value"] = [
                 int(x) / 10 ** int(y)
@@ -1146,7 +1150,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             ] *= -1
 
             pancake_liq["value_normal"] = (
-                pancake_liq["value_normal"] + pancake_liq["value_internal"]
+                    pancake_liq["value_normal"] + pancake_liq["value_internal"]
             )
             pancake_liq = pancake_liq[pancake_liq["tokenSymbol"] != "Cake-LP"]
             pancake_liq = pancake_liq.sort_values("timeStamp")
@@ -1244,6 +1248,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                     "swapExactETHForTokens",
                     "swapExactETHForTokensSupportingFeeOnTransferTokens",
                     "multicall",
+                    "swapTokens"
                 ]
             )
         ]
@@ -1251,7 +1256,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             int(x) / 10 ** int(y)
             for x, y in zip(pancake["value"], pancake["tokenDecimal"])
         ]
-        pancake["value_normal"] = [int(x) / 10**18 for x in pancake["value_normal"]]
+        pancake["value_normal"] = [int(x) / 10 ** 18 for x in pancake["value_normal"]]
         pancake.loc[pancake["to"] != address, "value"] *= -1
         pancake.loc[pancake["to_normal"] != address, "value_normal"] *= -1
 
@@ -1592,10 +1597,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         one_inch_swap["value_internal"] = one_inch_swap["value_internal"].fillna(0)
         one_inch_swap["value_internal"] = [
-            int(x) / 10**18 for x in one_inch_swap["value_internal"]
+            int(x) / 10 ** 18 for x in one_inch_swap["value_internal"]
         ]
         one_inch_swap["value_normal"] = [
-            int(x) / 10**18 for x in one_inch_swap["value_normal"]
+            int(x) / 10 ** 18 for x in one_inch_swap["value_normal"]
         ]
         one_inch_swap["value"] = [
             int(x) / 10 ** int(y)
@@ -1927,7 +1932,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = temp_df[temp_df["tokenSymbol"] != "UNI-V2"]
 
         temp_df["value_normal"] = [
-            (int(y) - int(x)) / 10**18
+            (int(y) - int(x)) / 10 ** 18
             for x, y in zip(temp_df["value_normal"], temp_df["value_internal"])
         ]
         temp_df["value"] = [
@@ -2036,7 +2041,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = uniswap_df[uniswap_df["functionName"] == "swapExactETHForTokens"]
         uniswap_df = uniswap_df[uniswap_df["functionName"] != "swapExactETHForTokens"]
 
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -2099,7 +2104,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -2112,9 +2117,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ]
         uniswap_df = pd.concat([uniswap_df, temp_df]).drop_duplicates(keep=False)
 
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -2202,7 +2207,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
         final_df = pd.concat([final_df, temp_df])
 
         # Swap with ETH via Multicall
@@ -2214,9 +2219,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ]
         uniswap_df = pd.concat([uniswap_df, temp_df]).drop_duplicates(keep=False)
 
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -2304,14 +2309,14 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
         final_df = pd.concat([final_df, temp_df])
 
         # Swap with ETH via Multicall 2
         temp_df = uniswap_df[uniswap_df["functionName"] == "multicall"]
         uniswap_df = pd.concat([uniswap_df, temp_df]).drop_duplicates(keep=False)
 
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -2387,7 +2392,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
         final_df = pd.concat([final_df, temp_df])
 
         # Swap with EXECUTE function
@@ -2398,10 +2403,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
             temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
             temp_df["value_normal"] = [
-                int(x) / 10**18 for x in temp_df["value_normal"]
+                int(x) / 10 ** 18 for x in temp_df["value_normal"]
             ]
             temp_df["value_internal"] = [
-                int(x) / 10**18 for x in temp_df["value_internal"]
+                int(x) / 10 ** 18 for x in temp_df["value_internal"]
             ]
             temp_df["value"] = [
                 int(x) / 10 ** int(y)
@@ -2413,7 +2418,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             temp_df.loc[temp_df["to"] != address, "value"] *= -1
 
             temp_df["value_internal"] = (
-                temp_df["value_normal"] + temp_df["value_internal"]
+                    temp_df["value_normal"] + temp_df["value_internal"]
             )
 
             # SWAP WITH ETH EXECUTE
@@ -2582,7 +2587,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = spacefi_df[spacefi_df["methodId"] == "0xfb3bdb41"].copy()
         spacefi_df = spacefi_df[spacefi_df["methodId"] != "0xfb3bdb41"]
 
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -2645,7 +2650,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -2667,9 +2672,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -2815,9 +2820,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -2920,9 +2925,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         sync_df = mute_df[mute_df["methodId"] != "0x2cc4081e"]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -2991,11 +2996,11 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
             if (
-                temp_df.loc[temp_df["Timestamp"] == i, "From Amount"].sum()
-                == temp_df.loc[temp_df["Timestamp"] == i, "From Amount"].tolist()[0]
-                * temp_df[temp_df["Timestamp"] == i].shape[0]
+                    temp_df.loc[temp_df["Timestamp"] == i, "From Amount"].sum()
+                    == temp_df.loc[temp_df["Timestamp"] == i, "From Amount"].tolist()[0]
+                    * temp_df[temp_df["Timestamp"] == i].shape[0]
             ):
                 temp_df.loc[temp_df["Timestamp"] == i, "To Amount"] = temp_df.loc[
                     temp_df["Timestamp"] == i, "To Amount"
@@ -3123,9 +3128,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3279,9 +3284,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3392,9 +3397,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         izumi_df = izumi_df[izumi_df["methodId"] != "0xac9650d8"]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3460,7 +3465,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -3507,9 +3512,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3629,9 +3634,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         izumi_df = izumi_df[izumi_df["methodId"] != "0xac9650d8"]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3697,7 +3702,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -3709,7 +3714,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     mute_contracts = [
         "0x8B791913eB07C32779a16750e3868aA8495F5964".lower(),
-        "0xDFAaB828f5F515E104BaaBa4d8D554DA9096f0e4".lower(),
+        "0xDFAaB828f5F515E104BaaBa4d8D554DA9096f0e4".lower()
     ]
 
     mute_df = trx_df[
@@ -3733,7 +3738,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
         temp_df["value"] = [int(k) for k in temp_df["value"]]
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -3783,9 +3788,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3888,9 +3893,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         mute_df = mute_df[mute_df["methodId"] != "0x51cbf10f"]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -3956,7 +3961,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -3992,9 +3997,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
         temp_df.loc[temp_df["to_normal"] != address, "value_normal"] *= -1
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
 
         temp_df["value_normal"] += temp_df["value_internal"]
@@ -4101,9 +4106,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ] = 0
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4304,7 +4309,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df["value_normal"] = [int(k) for k in temp_df["value_normal"]]
         temp_df["value"] = [int(k) for k in temp_df["value"]]
         temp_df["value_normal"] = [
-            int(x) / 10**18 for x in temp_df["value_normal"]
+            int(x) / 10 ** 18 for x in temp_df["value_normal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4354,10 +4359,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df.loc[temp_df["to_internal"] != address, "value_internal"] *= -1
         temp_df.loc[temp_df["to"] != address, "value"] *= -1
         temp_df["value_normal"] = [
-            int(x) / 10**18 for x in temp_df["value_normal"]
+            int(x) / 10 ** 18 for x in temp_df["value_normal"]
         ]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4483,9 +4488,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         argo_df = argo_df[~argo_df["functionName"].str.contains("stake")]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4574,7 +4579,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -4647,7 +4652,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         temp_df = temp_df.drop_duplicates()
 
@@ -4680,9 +4685,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = temp_df[~temp_df["tokenSymbol"].str.contains("-LP")]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4793,7 +4798,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -4860,9 +4865,9 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ]
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-        temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df["value_internal"] = [
-            int(x) / 10**18 for x in temp_df["value_internal"]
+            int(x) / 10 ** 18 for x in temp_df["value_internal"]
         ]
         temp_df["value"] = [
             int(x) / 10 ** int(y)
@@ -4928,7 +4933,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -4960,7 +4965,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
         temp_df["value_normal"] = [
-            (int(y) - int(x)) / 10**18
+            (int(y) - int(x)) / 10 ** 18
             for x, y in zip(temp_df["value_normal"], temp_df["value_internal"])
         ]
         temp_df["value"] = [
@@ -5065,7 +5070,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -5133,7 +5138,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
         temp_df["value_normal"] = [
-            (int(y) - int(x)) / 10**18
+            (int(y) - int(x)) / 10 ** 18
             for x, y in zip(temp_df["value_normal"], temp_df["value_internal"])
         ]
         temp_df["value"] = [
@@ -5198,7 +5203,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -5277,7 +5282,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, temp_df])
 
@@ -5296,8 +5301,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     zerox_df = zerox_df[~zerox_df["functionName"].str.contains("transform")]
 
     temp_df["value_internal"] = temp_df["value_internal"].fillna(0)
-    temp_df["value_normal"] = [int(x) / 10**18 for x in temp_df["value_normal"]]
-    temp_df["value_internal"] = [int(x) / 10**18 for x in temp_df["value_internal"]]
+    temp_df["value_normal"] = [int(x) / 10 ** 18 for x in temp_df["value_normal"]]
+    temp_df["value_internal"] = [int(x) / 10 ** 18 for x in temp_df["value_internal"]]
     temp_df["value"] = [
         int(x) / 10 ** int(y) for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
     ]
@@ -5362,7 +5367,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     for i in set(temp_df["Timestamp"]):
         temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
             temp_df["Timestamp"] == i
-        ].shape[0]
+            ].shape[0]
 
     final_df = pd.concat([final_df, temp_df])
 
@@ -5374,7 +5379,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     weth = trx_df[trx_df["hash"].isin(wseth_hash)].copy()
     if weth.shape[0] > 0:
         trx_df = pd.concat([trx_df, weth]).drop_duplicates(keep=False)
-        weth["value"] = [int(x) / 10**18 for x in weth["value"]]
+        weth["value"] = [int(x) / 10 ** 18 for x in weth["value"]]
 
         weth.loc[weth["to"] != address, "value"] *= -1
 
@@ -5536,10 +5541,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
 
         for timestamp in erc20_regular_transfers["Timestamp"].unique():
             if (
-                erc20_regular_transfers.loc[
-                    erc20_regular_transfers["Timestamp"] == str(timestamp)
-                ].shape[0]
-                > 1
+                    erc20_regular_transfers.loc[
+                        erc20_regular_transfers["Timestamp"] == str(timestamp)
+                    ].shape[0]
+                    > 1
             ):
                 erc20_regular_transfers.loc[
                     erc20_regular_transfers["Timestamp"] == str(timestamp),
@@ -5551,10 +5556,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                 ] = 0
             erc20_regular_transfers.loc[
                 erc20_regular_transfers["Timestamp"] == str(timestamp)
-            ] = (
+                ] = (
                 erc20_regular_transfers.loc[
                     erc20_regular_transfers["Timestamp"] == str(timestamp)
-                ]
+                    ]
                 .ffill()
                 .bfill()
             )
@@ -5688,7 +5693,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             keep=False
         )
         internal_regular_transfers["value_internal"] = [
-            int(x) / 10**18 for x in internal_regular_transfers["value_internal"]
+            int(x) / 10 ** 18 for x in internal_regular_transfers["value_internal"]
         ]
         internal_regular_transfers = internal_regular_transfers[
             [
@@ -5779,6 +5784,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         "0x82af49447d8a07e3bd95bd0d56f35241523fbab1".lower(),
         "0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23".lower(),
         "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91".lower(),
+        "0x2E71597b779F50D6e070662F0F0b53c63504B60C".lower()
     ]
     weth = trx_df[trx_df["to_normal"].isin(weth_contracts)].copy()
     if weth.shape[0] > 0:
@@ -5829,8 +5835,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         weth["From Amount"] = weth["To Amount"]
         weth["From Amount"] *= -1
 
-        weth["To Amount"] = [int(x) / 10**18 for x in weth["To Amount"]]
-        weth["From Amount"] = [int(x) / 10**18 for x in weth["From Amount"]]
+        weth["To Amount"] = [int(x) / 10 ** 18 for x in weth["To Amount"]]
+        weth["From Amount"] = [int(x) / 10 ** 18 for x in weth["From Amount"]]
 
         if chain == "zksync-mainnet":
             weth.loc[
@@ -5874,7 +5880,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     ]
 
     stargate_sushi["value_normal"] = [
-        int(x) / 10**18 for x in stargate_sushi["value_normal"]
+        int(x) / 10 ** 18 for x in stargate_sushi["value_normal"]
     ]
     stargate_sushi["value"] = [
         int(x) / 10 ** int(y)
@@ -5929,7 +5935,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             stargate_sushi["Timestamp"] == i, "Gasused"
         ] /= stargate_sushi[stargate_sushi["Timestamp"] == i].shape[0]
 
-    erc_swap["value_internal"] = [int(x) / 10**18 for x in erc_swap["value_internal"]]
+    erc_swap["value_internal"] = [int(x) / 10 ** 18 for x in erc_swap["value_internal"]]
     erc_swap["value"] = [
         int(x) / 10 ** int(y)
         for x, y in zip(erc_swap["value"], erc_swap["tokenDecimal"])
@@ -5992,7 +5998,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     for i in set(erc_swap["Timestamp"]):
         erc_swap.loc[erc_swap["Timestamp"] == i, "Gasused"] /= erc_swap[
             erc_swap["Timestamp"] == i
-        ].shape[0]
+            ].shape[0]
 
     final_df = pd.concat([final_df, erc_swap, stargate_sushi])
 
@@ -6020,8 +6026,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         erc_swap = erc_swap[~erc_swap["hash"].isin(otherside_df.hash.unique())].copy()
         for hash in otherside_df.hash.unique():
             if (
-                "claimVessels"
-                in otherside_df[otherside_df.hash == hash].functionName.values[0]
+                    "claimVessels"
+                    in otherside_df[otherside_df.hash == hash].functionName.values[0]
             ):
                 vessels = otherside_df[otherside_df.hash == hash].copy()
                 vessels["From Coin"] = vessels.loc[
@@ -6068,8 +6074,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                 )
                 final_df = pd.concat([final_df, vessels]).drop_duplicates(keep=False)
             elif (
-                "claimMaras"
-                in otherside_df[otherside_df.hash == hash].functionName.values[0]
+                    "claimMaras"
+                    in otherside_df[otherside_df.hash == hash].functionName.values[0]
             ):
                 mara = otherside_df[otherside_df.hash == hash].copy()
                 mara["From Coin"] = mara.loc[
@@ -6115,7 +6121,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     erc_swap = erc_swap[pd.isna(erc_swap["tokenSymbol"])].reset_index(drop=True)
     trx_df = pd.concat([trx_df, erc_swap]).drop_duplicates(keep=False)
 
-    erc_swap["value_normal"] = [int(x) / 10**18 for x in erc_swap["value_normal"]]
+    erc_swap["value_normal"] = [int(x) / 10 ** 18 for x in erc_swap["value_normal"]]
     erc_swap["value"] = 1
 
     erc_swap.loc[erc_swap["to_normal"] != address, "value_normal"] *= -1
@@ -6176,7 +6182,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     for i in set(erc_swap["Timestamp"]):
         erc_swap.loc[erc_swap["Timestamp"] == i, "Gasused"] /= erc_swap[
             erc_swap["Timestamp"] == i
-        ].shape[0]
+            ].shape[0]
 
     final_df = pd.concat([final_df, erc_swap])
 
@@ -6190,7 +6196,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     erc_swap = erc_swap[pd.isna(erc_swap["tokenSymbol"])].reset_index(drop=True)
     trx_df = pd.concat([trx_df, erc_swap]).drop_duplicates(keep=False)
 
-    erc_swap["value_normal"] = [int(x) / 10**18 for x in erc_swap["value_normal"]]
+    erc_swap["value_normal"] = [int(x) / 10 ** 18 for x in erc_swap["value_normal"]]
     erc_swap["tokenValue"] = 1
 
     erc_swap.loc[erc_swap["to_normal"] != address, "value_normal"] *= -1
@@ -6251,7 +6257,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     for i in set(erc_swap["Timestamp"]):
         erc_swap.loc[erc_swap["Timestamp"] == i, "Gasused"] /= erc_swap[
             erc_swap["Timestamp"] == i
-        ].shape[0]
+            ].shape[0]
 
     final_df = pd.concat([final_df, erc_swap])
 
@@ -6264,7 +6270,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     trx_df = pd.concat([trx_df, erc_swap]).drop_duplicates(keep=False)
 
     if erc_swap.shape[0] > 0:
-        erc_swap["value_normal"] = [int(x) / 10**18 for x in erc_swap["value_normal"]]
+        erc_swap["value_normal"] = [int(x) / 10 ** 18 for x in erc_swap["value_normal"]]
         erc_swap["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(erc_swap["value"], erc_swap["tokenDecimal"])
@@ -6341,7 +6347,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(erc_swap["Timestamp"]):
             erc_swap.loc[erc_swap["Timestamp"] == i, "Gasused"] /= erc_swap[
                 erc_swap["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, erc_swap])
 
@@ -6421,7 +6427,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         for i in set(erc_swap["Timestamp"]):
             erc_swap.loc[erc_swap["Timestamp"] == i, "Gasused"] /= erc_swap[
                 erc_swap["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         final_df = pd.concat([final_df, erc_swap])
 
@@ -6556,7 +6562,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     ]
 
     # rest_df=rest_df[rest_df['Kind'] != 'nan - nan']
-    rest_df["To Amount"] = [int(x) / 10**18 for x in rest_df["To Amount"]]
+    rest_df["To Amount"] = [int(x) / 10 ** 18 for x in rest_df["To Amount"]]
     rest_df["From Amount"] = rest_df["From Coin"] = None
 
     rest_df.loc[rest_df["To"] != address, "To Amount"] *= -1
@@ -6577,7 +6583,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     final_df.reset_index(drop=True, inplace=True)
 
     final_df["Fee"] = [
-        -(int(x) * int(y)) / 10**18
+        -(int(x) * int(y)) / 10 ** 18
         for x, y in zip(list(final_df["Gasprice"]), list(final_df["Gasused"]))
     ]
     final_df["Fee Coin"] = gas_coin
@@ -6617,14 +6623,14 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     ]
 
     final_df.loc[final_df["To Coin"].isin(nfts), "Kind"] = (
-        final_df.loc[final_df["To Coin"].isin(nfts), "Kind"]
-        + "_"
-        + final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"]
+            final_df.loc[final_df["To Coin"].isin(nfts), "Kind"]
+            + "_"
+            + final_df.loc[final_df["To Coin"].isin(nfts), "To Coin"]
     )
     final_df.loc[final_df["From Coin"].isin(nfts), "Kind"] = (
-        final_df.loc[final_df["From Coin"].isin(nfts), "Kind"]
-        + "_"
-        + final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"]
+            final_df.loc[final_df["From Coin"].isin(nfts), "Kind"]
+            + "_"
+            + final_df.loc[final_df["From Coin"].isin(nfts), "From Coin"]
     )
 
     final_df.loc[final_df["To Coin"].isin(nfts), "To Amount"] = None
@@ -6702,10 +6708,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     final_df.loc[final_df["To Coin"] == "Blur Pool", "To Coin"] = None
 
     final_df.loc[
-        final_df["From Coin"].str.contains("\*", na=False), ["From Coin", "From Amount"]
+        final_df["From Coin"].str.contains(r"*", na=False), ["From Coin", "From Amount"]
     ] = None
     final_df.loc[
-        final_df["To Coin"].str.contains("\*", na=False), ["To Coin", "To Amount"]
+        final_df["To Coin"].str.contains(r"*", na=False), ["To Coin", "To Amount"]
     ] = None
 
     if chain == "cro-mainnet":
@@ -6792,7 +6798,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             )
             nft_transactions = nft_transactions[
                 nft_transactions["Kind"] != "Otherside - Vessel Claim"
-            ]
+                ]
             temp_df = temp_df[temp_df["Kind"] == "Otherside - Vessel Claim"]
             temp_df = temp_df.rename(
                 columns={"Fiat Price_y": "Fiat Price", "To Coin_x": "To Coin"}
@@ -6813,7 +6819,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             )
             nft_transactions = nft_transactions[
                 nft_transactions["Kind"] != "Otherside - Mara Claim"
-            ]
+                ]
             temp_df = temp_df[temp_df["Kind"] == "Otherside - Mara Claim"]
             temp_df = temp_df.rename(
                 columns={"Fiat Price_y": "Fiat Price", "To Coin_x": "To Coin"}
@@ -6904,17 +6910,17 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ]
 
         nfts_df["Total EUR Paid"] = (
-            nfts_df["Fee EUR Buy"].abs() + nfts_df["Price Paid EUR"].abs()
+                nfts_df["Fee EUR Buy"].abs() + nfts_df["Price Paid EUR"].abs()
         )
         nfts_df["Total EUR Received"] = (
-            nfts_df["Fee EUR Sold"].abs() - nfts_df["Price Received EUR"].abs()
+                nfts_df["Fee EUR Sold"].abs() - nfts_df["Price Received EUR"].abs()
         )
         nfts_df.loc[
             nfts_df["Total EUR Received"] == nfts_df["Fee EUR Sold"].abs(),
             "Total EUR Received",
         ] = 0
         nfts_df["PNL"] = (
-            nfts_df["Total EUR Received"].abs() - nfts_df["Total EUR Paid"].abs()
+                nfts_df["Total EUR Received"].abs() - nfts_df["Total EUR Paid"].abs()
         )
         nfts_df.loc[
             np.logical_and(
@@ -6961,6 +6967,8 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     else:
         nfts_df = pd.DataFrame()
         print(f"No NFTs found for account {address}")
+
+    final_df = final_df[~final_df.Tag.str.contains('Lens Protocol Profiles', na=False)]
 
     if return_nfts:
         return {"transactions": final_df, "NFT": nfts_df, "raw NFT": ret_raw_nft}
