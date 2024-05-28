@@ -119,6 +119,6 @@ def date_from_timestamp(x):
     time_now_sys = dt.datetime.strptime(dt.datetime.now(dt.datetime.now().astimezone().tzinfo).strftime('%Y-%m-%d '
                                                                                                         '%H:%M:%S'),
                                         '%Y-%m-%d %H:%M:%S')
-    time_now_utc = dt.datetime.strptime(dt.datetime.now(dt.UTC).strftime('%Y-%m-%d %H:%M:%S'),'%Y-%m-%d %H:%M:%S')
+    time_now_utc = dt.datetime.strptime(dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),'%Y-%m-%d %H:%M:%S')
     diff_utc = -round(((time_now_sys - time_now_utc).seconds / 60) / 60)
     return dt.datetime.fromtimestamp(int(x)) + dt.timedelta(hours=diff_utc)
