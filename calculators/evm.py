@@ -30,10 +30,10 @@ scam = ['$1000 USDC - 0', 'LIDO NFT TICKETS - 1', 'Visit ethena-2l.com to claim 
         'wHEX', 'Claim on: rewards.aerodrome-network.com', '2,000 USDT Reward - 0', 'Collect on: swap-based.com',
         '$ sUSD', 'FUNGI', '5000 USDC Voucher - 0', 'Visit sufek.com and claim special rewards', 'Milady NFT Gift - 1',
         'Walking Mushroom Mint Box Limited - 509', '0xd9c242f6Ca08Fe45C58CA9E9A8558CFE7497E7c2',
-        'Kodao-G Membership - 28', 'BaseWif', '$2000 USDT Airdrop - 1',
+        'Kodao-G Membership - 28', 'BaseWif', '$2000 USDT Airdrop - 1', 'PPBox.io',
         'Visit stETH official website:  steth-voucher.site', 'MGRT', 'DOG', 'AIR', '$$30,000 BONE - 0', 'DBT',
         'sUSD [Synthetix.cc]', 'ULand Genesis Item - 1', 'Claim at: claim.fungi-airdrop.com',
-        'Acces Liquid-ether.com to claim rewards', '$1000 SPEND REWARDS - 0', 'lrETH',
+        'Acces Liquid-ether.com to claim rewards', '$1000 SPEND REWARDS - 0', 'lrETH', 'boom', 'Boom',
         'Overwatch SZN1 Mint Pass Limited - 288', 'Claim on: mogcoins.net/?claim', 'Staked Bitrock (www.bitrock.app)',
         'https://wincoin.win/', 'Visit Lido-event.site to join LIDO Giveaway!', 'Wifs', 'The QPT Originals - 336',
         'vanity-address.io', '5 ETH Voucher by Base - 0', 'wRDNT', 'PEPE WIFCOIN', '1 WETH - 560631',
@@ -48,7 +48,12 @@ scam = ['$1000 USDC - 0', 'LIDO NFT TICKETS - 1', 'Visit ethena-2l.com to claim 
         'Wiz GGY Box - 131', 'BASEMEMES', 'MKS', 'PLEB GME', 'MOEW', 'A-ZKF [www.zkfair.events]',
         'Visit blast2l.com to claim rewards', 'APE NFT TICKETS - 1781', 'SHIBPOOL.COM - 1', 'PEPEX314',
         'Valorant Mint Pass Official - 8', 'STEIN-CHESS.COM | AirDrop - You are invited', 'BLUR EVENT - 2009',
-        'Otherdeed Coda Key - 2']
+        'Otherdeed Coda Key - 2', 'ACX   [via www.across.events]', 'Claim by link: https://claim.eigen.click', 'DVP',
+        'Visit 3eth.co to claim reward.', 'Visit [5000usdc.org] to claim Airdrop', 'BTN',
+        'Visit rocketpool.win to claim 10 rETH.', 'ACCESS [ETHNA.CC] TO CLAIM YOUR TOKENS', '$ L-ZERO.COM | AirDrop',
+        '$ Check: goldblast.io Your Gold AirDrop', 'Visit Tether.re to claim 10000 Rewards',
+        'Visit Wbtc.win to claim reward', 'Visit Rocketpool.win to claim Reward.', 'Visit Shiba.pm to claim Airdrop.',
+        'FRANK', 'Boe', 'BOOMER', 'BORD', 'toby', 'PEEZY', 'USA', 'WAZ', 'DOOMER', 'Nippy', 'PEPEALB']
 
 
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
@@ -263,6 +268,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
                     * len(list(erc20.loc[erc20["timeStamp"] == timestamp, "value"]))
                 )
         erc20 = erc20.drop_duplicates()
+        erc20 = erc20[erc20.tokenSymbol.str.len() < 10].copy()
     if erc20.shape[0] == 1000 or erc20.shape[0] >= 10000:  # API limits
         print("WARNING, API limit reached. Transactions are probably missing.")
 
@@ -555,7 +561,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = stargate_df.loc[
             np.logical_and(
                 stargate_df["functionName"] == "deposit",
-                stargate_df["tokenSymbol"].str.contains(r"*"),
+                stargate_df["tokenSymbol"].str.contains("\*"),
             ),
             [
                 "timeStamp_normal",
@@ -574,7 +580,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         temp_df = stargate_df.loc[
             np.logical_and(
                 stargate_df["functionName"] == "deposit",
-                stargate_df["tokenSymbol"].str.contains(r"*"),
+                stargate_df["tokenSymbol"].str.contains("\*"),
             )
         ].copy()
         temp_df = pd.concat(
@@ -618,7 +624,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
         ]
         temp_df.loc[
-            temp_df["tokenSymbol"].str.contains(r"*"), ["value", "tokenSymbol"]
+            temp_df["tokenSymbol"].str.contains("\*"), ["value", "tokenSymbol"]
         ] = None
         temp_df.loc[pd.isna(temp_df["value"]), "gasUsed_normal"] = 0
 
@@ -1858,6 +1864,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ferro_df = ferro_df[~ferro_df["functionName"].isin(["deposit", "withdraw"])]
 
         temp_df["tokenDecimal"] = temp_df["tokenDecimal"].fillna(0)
+        temp_df["value"] = temp_df["value"].fillna(0)
         temp_df["value"] = [
             int(x) / 10 ** int(y)
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -4807,13 +4814,13 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         mm_df = mm_df[~mm_df["functionName"].isin(["deposit", "withdraw"])]
 
         temp_df.loc[
-            temp_df["tokenSymbol"].str.contains("-LP"), ["tokenSymbol", "value"]
+            temp_df["tokenSymbol"].str.contains("-LP", na=False), ["tokenSymbol", "value"]
         ] = ""
         temp_df = pd.concat(
             [
                 temp_df[
                     np.logical_and(
-                        ~temp_df["tokenName"].str.contains("LPs"),
+                        ~temp_df["tokenName"].str.contains("LPs", na=False),
                         temp_df["functionName"] == "withdraw",
                     )
                 ],
@@ -4821,6 +4828,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             ]
         )
 
+        temp_df[["value", "tokenDecimal"]] = temp_df[["value", "tokenDecimal"]].fillna(0)
         temp_df["value"] = [
             int(x) / 10 ** int(y) if x != "" else None
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -5085,7 +5093,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             [
                 temp_df[
                     np.logical_and(
-                        ~temp_df["tokenName"].str.contains("LPs"),
+                        ~temp_df["tokenName"].str.contains("-LP", na=False),
                         temp_df["functionName"] == "withdraw",
                     )
                 ],
@@ -5235,13 +5243,13 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
         ]
 
         temp_df.loc[
-            temp_df["tokenSymbol"].str.contains("-LP"), ["tokenSymbol", "value"]
+            temp_df["tokenSymbol"].str.contains("-LP", na=False), ["tokenSymbol", "value"]
         ] = ""
         temp_df = pd.concat(
             [
                 temp_df[
                     np.logical_and(
-                        ~temp_df["tokenName"].str.contains("LPs"),
+                        ~temp_df["tokenName"].str.contains("-LP", na=False),
                         temp_df["functionName"] == "withdrawAll",
                     )
                 ],
@@ -5249,6 +5257,7 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
             ]
         )
 
+        temp_df[["value","tokenDecimal"]] = temp_df[["value","tokenDecimal"]].fillna(0)
         temp_df["value"] = [
             int(x) / 10 ** int(y) if x != "" else None
             for x, y in zip(temp_df["value"], temp_df["tokenDecimal"])
@@ -6708,10 +6717,10 @@ def get_transactions_df(address, chain, scan_key=None, return_nfts=False):
     final_df.loc[final_df["To Coin"] == "Blur Pool", "To Coin"] = None
 
     final_df.loc[
-        final_df["From Coin"].str.contains(r"*", na=False), ["From Coin", "From Amount"]
+        final_df["From Coin"].str.contains("\*", na=False), ["From Coin", "From Amount"]
     ] = None
     final_df.loc[
-        final_df["To Coin"].str.contains(r"*", na=False), ["To Coin", "To Amount"]
+        final_df["To Coin"].str.contains("\*", na=False), ["To Coin", "To Amount"]
     ] = None
 
     if chain == "cro-mainnet":
