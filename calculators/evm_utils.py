@@ -474,3 +474,22 @@ def weth(weth_df, gas_coin, columns_keep):
         return weth_df
     else:
         return pd.DataFrame()
+
+
+def ens(df, columns_keep):
+    df.index = df['timeStamp_normal']
+    df['Fee'] = calculate_gas(df.gasPrice, df.gasUsed_normal)
+    df['value_normal'] = calculate_value_eth(df['value_normal'])
+
+    df['From Coin'] = 'ETH'
+    df['From Amount'] = -df['value_normal']
+    df['To Coin'] = df['erc1155_complete_name']
+    df.loc[~pd.isna(df['To Coin']), 'To Amount'] = 1
+
+    df['Tag'] = 'ENS'
+    df['Notes'] = df['functionName']
+
+    df = df[[x for x in df.columns if x in columns_keep]]
+    df = df.sort_index()
+
+    return df

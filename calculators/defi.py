@@ -17,7 +17,6 @@ def uniswap(df, address, columns_out):
         multicall['value_normal'] = eu.calculate_value_eth(multicall.value_normal)
         multicall['value_internal'] = eu.calculate_value_eth(multicall.value_internal)
         multicall['value_normal'] += multicall['value_internal']
-        multicall['value'] = eu.calculate_value_token(multicall.value, multicall.tokenDecimal)
 
         multicall['from_internal'] = multicall['from_internal'].apply(lambda x: x.lower())
         multicall['to_internal'] = multicall['to_internal'].apply(lambda x: x.lower())

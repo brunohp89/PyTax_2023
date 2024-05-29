@@ -239,3 +239,28 @@ def LOTM(df, address, columns_out):
         print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI LOTM SONO INCLUSE")
 
     return lotm_out
+
+
+def the_sandbox(df, columns_out):
+    df.index = df.timeStamp_normal
+    df['Fee'] = eu.calculate_gas(df.gasPrice, df.gasUsed_normal)
+    df['To Coin'] = df['erc1155_complete_name']
+    df['To Amount'] = df['tokenValue']
+
+    df['Notes'] = 'Claim Prizes'
+    df['Tag'] = 'The Sandbox'
+
+    df = df[[x for x in df.columns if x in columns_out]]
+    df = df.sort_index()
+
+    grouped = df.groupby(df.index).agg({'Tag': 'count', 'Fee': 'mean'}).reset_index()
+    grouped.loc[grouped['Tag'] > 1, 'Fee'] /= grouped.loc[grouped['Tag'] > 1, 'Tag']
+
+    grouped.index = grouped.timeStamp_normal
+    grouped = grouped.drop('timeStamp_normal', axis=1)
+
+    df['Fee'] = grouped['Fee']
+
+    df = df.drop_duplicates()
+
+    return df
