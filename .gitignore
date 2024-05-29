@@ -14,8 +14,6 @@ young_platform
 cryptodotorg
 solana
 vechain
-manual_binance.csv
-manual_cdc.csv
 Bybit.txt
 log.txt
 pdf_producer.py
@@ -29,11 +27,7 @@ calculators/cosmos.py
 .DS_Store
 venv
 plutus
-B6uMeViAU2eJgwcRFSrRzFChxNk1tExWD3v65hbxEqh6.csv
-ARcvcHzurmJwjNKeksaVyJb6Aoum23T2VXXvnjjh7e2Q.csv
-nft.csv
-transactions_*.csv
-trades_*.csv
+*.csv
 Transazioni_*.xlsx
 manual_*
 nft_prices*

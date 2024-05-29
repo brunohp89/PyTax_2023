@@ -143,7 +143,8 @@ def get_transactions_df(address, chain, scan_key=None):
     # Blur -------------------------------------------------------------------------------------------------------------
     blur_contracts = ["0x000000000000Ad05Ccc4F10045630fb830B95127".lower(),
                       "0x39da41747a83aeE658334415666f3EF92DD0D541".lower(),
-                      "0xb2ecfE4E4D61f8790bbb9DE2D1259B9e2410CEA5".lower()]
+                      "0xb2ecfE4E4D61f8790bbb9DE2D1259B9e2410CEA5".lower(),
+                      "0x0000000000a39bb272e79075ade125fd351887ac".lower()]
 
     blur_df = trx_df[trx_df["to_normal"].isin(blur_contracts)].copy()
     trx_df = pd.concat([blur_df, trx_df]).drop_duplicates(keep=False)
@@ -272,6 +273,9 @@ def get_transactions_df(address, chain, scan_key=None):
     vout['From Amount'] = vout['From Amount'].astype(float)
     vout['To Amount'] = vout['To Amount'].astype(float)
 
-    vout = vout.sort_index()
+    vout['Source'] = f'{gas_coin}-{address[0:10]}'
 
+    if f'{address}.csv' in os.listdir():
+        vout=pd.concat([pd.read_csv(f'{address}.csv', index_col='Timestamp', parse_dates=True), vout])
+    vout = vout.sort_index()
     return vout
