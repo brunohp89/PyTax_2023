@@ -56,6 +56,8 @@ class Prices:
             exc_rate = yf.Ticker("TIA22861-USD")
         elif symbol.upper() == 'JUP':
             exc_rate = yf.Ticker("JUP29210-USD")
+        elif symbol.upper() == 'LOVE':
+            exc_rate = yf.Ticker("LOVE26337-USD")
         else:
             exc_rate = yf.Ticker(f"{symbol.upper()}-USD")
         exc_rate_history = exc_rate.history(period="max")

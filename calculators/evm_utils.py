@@ -3,7 +3,7 @@ import requests
 import utils
 
 scam = ['Gods and Titans Mint Pass Original', 'Valorant Mint Pass Official', 'Walking Mushroom Mint Box Limited',
-        'KRDH Official', 'Crypto Diverse Items', 'YUGA: Gucci Merch PASS', 'Overwatch SZN1 Mint Pass Limited']
+        'KRDH Official', 'Crypto Diverse Items', 'YUGA: Gucci Merch PASS', 'Overwatch SZN1 Mint Pass Limited', 'FCKIT']
 
 
 def calculate_value_eth(values_df):
@@ -399,7 +399,7 @@ def erc721_transfer(df, address, columns_keep):
     df.loc[df['To'] == address, 'To Coin'] = df.loc[
         df['To'] == address, 'erc721_complete_name']
     df.loc[df['From'] == address, 'From Coin'] = df.loc[
-        df['To'] == address, 'erc721_complete_name']
+        df['From'] == address, 'erc721_complete_name']
 
     df = df[[x for x in df.columns if x in columns_keep]]
     df = df.sort_index()

@@ -8,6 +8,9 @@ def opensea(df, address, columns_keep):
     df.tokenDecimal = df.tokenDecimal.infer_objects(copy=False).fillna(1)
     df['value'] = eu.calculate_value_token(df.value, df.tokenDecimal)
 
+    # Mints
+    df.loc[df['functionName'].str.contains('mint'), 'Tag2'] = 'Mint'
+
     df.index = df['timeStamp_normal']
     df.loc[pd.isna(df['tokenSymbol']), 'tokenSymbol'] = 'ETH'
     df['value_normal'] = eu.calculate_value_eth(df.value_normal)
@@ -45,7 +48,7 @@ def opensea(df, address, columns_keep):
     df['Notes'] = 'NFT'
     df['Tag'] = 'OpenSea'
 
-    df = df[[x for x in df.columns if x in columns_keep]]
+    df = df[[x for x in df.columns if x in columns_keep or x == 'Tag2']]
     df = df.sort_index()
 
     grouped = df.groupby(df.index).agg({'From Amount': 'sum', 'From': 'count', 'Fee': 'mean'}).reset_index()
@@ -57,6 +60,15 @@ def opensea(df, address, columns_keep):
     df['From Amount'] = grouped['From Amount']
     df['Fee'] = grouped['Fee']
     df = df.drop_duplicates()
+
+    for x in df[df['Tag2'] == 'Mint'].index.unique():
+        if df[df.index == x].shape[0] == 0:
+            continue
+        else:
+            df.loc[df.index == x, 'From Amount'] /= df.loc[df.index == x, 'From Amount'].shape[0] * 4
+
+    df = df.drop('Tag2', axis=1)
+
     return df
 
 
@@ -185,10 +197,13 @@ def LOTM(df, address, columns_out):
     df = pd.concat([df, ship_df]).drop_duplicates(keep=False)
 
     ship_df['Fee'] = eu.calculate_gas(ship_df.gasPrice, ship_df.gasUsed_normal)
+    ship_df.loc[ship_df['functionName'].str.contains('claimcatalysts'), 'erc1155_complete_name'] = ship_df.loc[
+        ship_df['functionName'].str.contains('claimcatalysts'), 'erc721_complete_name']
+    ship_df.loc[ship_df['functionName'].str.contains('claimcatalysts'), 'tokenValue'] = 1
     ship_df['To Coin'] = ship_df['erc1155_complete_name']
     ship_df['To Amount'] = ship_df['tokenValue']
 
-    ship_df['Notes'] = 'Claim Ship Parts / Loot'
+    ship_df['Notes'] = 'Claim Ship Parts / Loot / Catalyst'
     ship_df['Tag'] = 'LOTM'
 
     ship_df = ship_df[[x for x in ship_df.columns if x in columns_out]]
