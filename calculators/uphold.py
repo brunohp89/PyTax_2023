@@ -19,10 +19,8 @@ def get_transactions_df(raw=False):
             df_loop = pd.read_csv(filename, index_col=None, header=0)
             df_list.append(df_loop)
         final_df = pd.concat(df_list, axis=0, ignore_index=True)
-        final_df.drop_duplicates(
-            subset=["Date", "Destination Amount", "Destination Currency"], inplace=True
-        )
         final_df.reset_index(inplace=True, drop=True)
+        final_df = final_df.drop_duplicates()
         if raw:
             return final_df
         for i in range(final_df.shape[0]):

@@ -5,7 +5,7 @@ import tax_library as tx
 from PricesClass import Prices
 from blockfrost import BlockFrostApi
 from utils import date_from_timestamp
-
+import os
 
 def get_transactions_df(address, blockfrost_api):
 
@@ -242,6 +242,10 @@ def get_transactions_df(address, blockfrost_api):
 
     vout = vout[vout["To Coin"] != "NEWM"]
     vout = vout[vout["From Coin"] != "NEWM"]
+
+    if "cardano.csv" in os.listdir():
+        manual = pd.read_csv("cardano.csv", parse_dates=True, index_col="Timestamp")
+        vout = pd.concat([manual, vout])
 
     vout = tx.price_transactions_df(vout, Prices())
 

@@ -185,6 +185,10 @@ def get_transactions_df(raw=False, card_transactions=False):
             final_df["Operation"] == "Launchpool Earnings Withdrawal", "Operation"
         ] = "Rewards Distribution"
 
+        final_df.loc[
+            final_df["Operation"] == "Launchpool Airdrop", "Operation"
+        ] = "Rewards Distribution"
+
         final_df.loc[final_df["Operation"] == "Transaction Sold", "Operation"] = "Sell"
 
         operations_col = [
@@ -233,7 +237,8 @@ def get_transactions_df(raw=False, card_transactions=False):
             "Staking Purchase",
             "Staking Redemption",
             "Binance Card Cashback",
-            "Launchpool Subscription / Redemption"
+            "Launchpool Subscription / Redemption",
+            "Launchpool Airdrop"
         ]
 
         not_considered = [
