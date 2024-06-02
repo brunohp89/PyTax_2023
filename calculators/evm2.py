@@ -16,8 +16,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
     # Getting all transactions
     trx_df = eu.get_transactions_raw(address, chain, scan_key)
-    if trx_df[1].shape[0] == 0:
-        return trx_df[1]
+   # if trx_df[1].shape[0] == 0:
+        #return trx_df[1]
     trx_df[1][columns_out] = None
 
     gas_coin = trx_df[0]
@@ -62,6 +62,84 @@ def get_transactions_df(address, chain, scan_key=None):
     vout = pd.concat([vout, love_df])
     # LOVE END ---------------------------------------------------------------------------------------------------------
     del love_df
+
+    # STARGATE ---------------------------------------------------------------------------------------------------------
+    stargate_contracts = [
+        "0x3052A0F6ab15b4AE1df39962d5DdEFacA86DaB47".lower(),  # Stargate Staking BSC
+        "0x4a364f8c717cAAD9A442737Eb7b8A55cc6cf18D8".lower(),  # Stargate Router BSC
+        "0xD4888870C8686c748232719051b677791dBDa26D".lower(),  # Stargate veSTG BSC
+        "0xAF667811A7eDcD5B0066CD4cA0da51637DB76D09".lower(),  # Fee distributor BSC
+        "0xbf22f0f184bccbea268df387a49ff5238dd23e40".lower(),  # Router ETH Arbitrum
+        "0xea8dfee1898a7e0a59f7527f076106d7e44c2176".lower(),  # Stargate Staking  Arbitrum
+        "0x53bf833a5d6c4dda888f69c22c88c9f356a41614".lower(),  # Stargate Router Arbitrum
+        "0xb0d502e938ed5f4df2e681fe6e419ff29631d62b".lower(),  # Optimism
+        "0x4dea9e918c6289a52cd469cac652727b7b412cd2".lower(),  # Optimism
+        "0xe93685f3bba03016f02bd1828badd6195988d950".lower(),  # Optimism
+        "0x81e792e5a9003cc1c8bf5569a00f34b65d75b017".lower(),  # Optimism
+        "0xb49c4e680174e331cb0a7ff3ab58afc9738d5f8b".lower(),  # Optimism
+        "0x86bb63148d17d445ed5398ef26aa05bf76dd5b59".lower(),  # Optimism
+        "0x45A01E4e04F14f7A4a6702c74187c5F6222033cd".lower(),  # Polygon router
+        "0x75dC8e5F50C8221a82CA6aF64aF811caA983B65f".lower(),  # Polygon relayer v2
+        "0xce16F69375520ab01377ce7B88f5BA8C48F8D666".lower(),  # Base
+        "0x50b6ebc2103bfec165949cc946d739d5650d7ae4".lower(),
+        "0x06eb48763f117c7be887296cdcdfad2e4092739c".lower(),
+        "0x2Eb9ea9dF49BeBB97e7750f231A32129a89b82ee".lower(),
+        "0xA27A2cA24DD28Ce14Fb5f5844b59851F03DCf182".lower(),
+        "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower()
+    ]
+
+    stargate_df = trx_df[trx_df["to_normal"].isin(stargate_contracts)].copy()
+    trx_df = pd.concat([stargate_df, trx_df]).drop_duplicates(keep=False)
+    if stargate_df.shape[0] > 0:
+        stargate_df = defi.stargate(stargate_df,address, gas_coin, columns_out)
+        vout = pd.concat([vout, stargate_df])
+        del stargate_df
+    # Contract interactions Layer Zero (relayer V2)
+    stargate_v2 = trx_df[trx_df["from_internal"].isin(stargate_contracts)]
+    trx_df = pd.concat([trx_df, stargate_v2]).drop_duplicates(keep=False)
+    if stargate_v2.shape[0] > 0:
+        stargate_v2 = defi.layer_zero_v2(stargate_v2, gas_coin, columns_out)
+        vout = pd.concat([vout, stargate_v2])
+        del stargate_v2
+    # STARGATE END -----------------------------------------------------------------------------------------------------
+    # PANCAKE ---------------------------------------------------------------------------------------------------------
+    pancake_contracts = [
+        "0x45c54210128a065de780C4B0Df3d16664f7f859e".lower(),
+        "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4".lower(),
+        "0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB".lower(),
+        "0x10ED43C718714eb63d5aA57B78B54704E256024E".lower(),
+        "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC".lower()
+    ]
+    pancake_df = trx_df[trx_df["to_normal"].isin(pancake_contracts)].copy()
+    trx_df = pd.concat([pancake_df, trx_df]).drop_duplicates(keep=False)
+
+    pancake_out = pd.DataFrame()
+    if pancake_df.shape[0] > 0:
+        pancake_df["value_normal"] = eu.calculate_value_eth(
+            pancake_df["value_normal"]
+        )
+        pancake_df["value_internal"] = eu.calculate_value_eth(
+            pancake_df["value_internal"].fillna(0)
+        )
+        pancake_df["value"] = eu.calculate_value_token(
+            pancake_df["value"].fillna(0), pancake_df["tokenDecimal"].fillna(1)
+        )
+        pancake_df["Fee"] = eu.calculate_gas(
+            pancake_df["gasPrice"], pancake_df["gasUsed_normal"]
+        )
+        pancake_df.index = pancake_df["timeStamp_normal"]
+
+        # Add/Remove Liquidity ERC20 or ETH
+        liquidity = pancake_df.loc[np.logical_or(pancake_df["functionName"].str.contains("deposit"), pancake_df["functionName"].str.contains("withdrawAll"))].copy()
+        pancake_df = pd.concat([pancake_df, liquidity]).drop_duplicates(keep=False)
+
+        liquidity = liquidity[~liquidity["tokenSymbol"].str.contains("\*", na=False)]
+        liquidity["Tag"] = "Movement"
+        liquidity["Notes"] = "Stargate Add Liquidity"
+
+        stargate_out = pd.concat([stargate_out, liquidity])
+
+
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
     erc20_transfers_df = erc20_transfers_df[
