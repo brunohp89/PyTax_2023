@@ -372,7 +372,7 @@ def get_transactions_df(address, chain, scan_key=None):
 
     vout['Source'] = f'{gas_coin}-{address[0:10]}'
 
-    if f'{address}.csv' in os.listdir():
-        vout = pd.concat([pd.read_csv(f'{address}.csv', index_col='Timestamp', parse_dates=True), vout])
+    if f'{chain}_{address}.csv' in os.listdir():
+        vout = pd.concat([pd.read_csv(f'{chain}_{address}.csv', index_col='Timestamp', parse_dates=True), vout])
     vout = vout.sort_index()
     return vout

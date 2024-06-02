@@ -18,9 +18,11 @@ def get_transactions_df(raw=False):
         df_list = []
         for filename in coinbase_files:
             df_loop = pd.read_csv(filename, index_col=None, header=0)
+            if 'ID' in df_loop.columns:
+                df_loop = df_loop.drop('ID', axis=1)
             df_list.append(df_loop)
         final_df = pd.concat(df_list, axis=0, ignore_index=True)
-        final_df['Notes'] = [k.replace('.', '').replace(',', '.').replace(' €', '') for k in final_df['Notes']]
+        final_df['Notes'] = [k.replace('.', '').replace(',', '.').replace(' €', '') if ',' in k else k.replace(' €', '') for k in final_df['Notes']]
 
         final_df.index = [
             tx.str_to_datetime(j.replace(" UTC", "").replace("T", " ").replace("Z", ""))

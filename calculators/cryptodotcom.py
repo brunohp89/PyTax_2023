@@ -51,10 +51,7 @@ def get_transactions_df(raw=False, return_fiat=False):
         super_charger = final_df[final_df['Transaction Description'] == 'Supercharger Reward']
         final_df = final_df[final_df['Transaction Description'] != 'Supercharger Reward']
 
-        final_df.drop_duplicates(
-            inplace=True,
-            subset=["Timestamp (UTC)", "Amount", "Transaction Description", "Currency"],
-        )
+        final_df.drop_duplicates()
 
         final_df = pd.concat([final_df,super_charger])
 
@@ -208,6 +205,11 @@ def get_transactions_df(raw=False, return_fiat=False):
 
         final_df.loc[final_df["Tag"] == 'Trade', 'From Amount'] = [-abs(c) for c in
                                                                final_df.loc[final_df["Tag"] == 'Trade', 'From Amount']]
+
+        if "cryptodotcom.csv" in os.listdir():
+            manual = pd.read_csv("cryptodotcom.csv", parse_dates=True, index_col="Timestamp")
+            final_df = pd.concat([manual, final_df])
+        final_df = final_df.sort_index()
 
         return final_df
 
