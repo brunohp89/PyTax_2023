@@ -118,7 +118,8 @@ def uniswap(df, address, columns_out, gas_coin):
         uniswap_out = pd.concat([uniswap_out, liquidity_df])
 
         # Function EXECUTE
-        multicall = df[df['functionName'].str.contains('execute')].copy()
+        multicall = df[np.logical_or(df['functionName'].str.contains('execute'),
+                                     df['functionName'].str.contains('swapExactTokensForETH'.lower()))].copy()
         df = pd.concat([df, multicall]).drop_duplicates(keep=False)
 
         multicall['value'] = eu.calculate_value_token(multicall.value, multicall.tokenDecimal)

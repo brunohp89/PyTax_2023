@@ -9,10 +9,6 @@ import calculators.evm_utils as eu
 import calculators.nft_utils as nu
 import calculators.defi as defi
 
-address, chain, scan_key = (
-    '0xB8c8A93168Bb610428c85EB9c9e253768C36e67D', 'eth-mainnet', 'GFID2HN2QCS6UR4K1CX13F946P2V1S7Q7X')
-
-
 def get_transactions_df(address, chain, scan_key=None):
     address = address.lower()
     columns_out = ['From', 'To', 'From Coin', 'To Coin', 'From Amount', 'To Amount', 'Fee', 'Fee Coin', 'Fee Fiat',
@@ -20,6 +16,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
     # Getting all transactions
     trx_df = eu.get_transactions_raw(address, chain, scan_key)
+    if trx_df[1].shape[0] == 0:
+        return trx_df[1]
     trx_df[1][columns_out] = None
 
     gas_coin = trx_df[0]
@@ -150,12 +148,13 @@ def get_transactions_df(address, chain, scan_key=None):
                          "0x00005ea00ac477b1030ce78506496e8c2de24bf5".lower()]
 
     opensea_df = trx_df[trx_df["to_normal"].isin(opensea_contracts)].copy()
-    trx_df = pd.concat([opensea_df, trx_df]).drop_duplicates(keep=False)
-    opensea_df = nu.opensea(opensea_df, address, columns_out)
+    if opensea_df.shape[0] > 0:
+        trx_df = pd.concat([opensea_df, trx_df]).drop_duplicates(keep=False)
+        opensea_df = nu.opensea(opensea_df, address, columns_out)
 
-    vout = pd.concat([vout, opensea_df])
+        vout = pd.concat([vout, opensea_df])
     # END Opensea-------------------------------------------------------------------------------------------------------
-    del opensea_df
+        del opensea_df
     # Blur -------------------------------------------------------------------------------------------------------------
     blur_contracts = ["0x000000000000Ad05Ccc4F10045630fb830B95127".lower(),
                       "0x39da41747a83aeE658334415666f3EF92DD0D541".lower(),
@@ -163,10 +162,11 @@ def get_transactions_df(address, chain, scan_key=None):
                       "0x0000000000a39bb272e79075ade125fd351887ac".lower()]
 
     blur_df = trx_df[trx_df["to_normal"].isin(blur_contracts)].copy()
-    trx_df = pd.concat([blur_df, trx_df]).drop_duplicates(keep=False)
-    blur_df = nu.blur(blur_df, address, columns_out)
+    if blur_df.shape[0] > 0:
+        trx_df = pd.concat([blur_df, trx_df]).drop_duplicates(keep=False)
+        blur_df = nu.blur(blur_df, address, columns_out)
 
-    vout = pd.concat([vout, blur_df])
+        vout = pd.concat([vout, blur_df])
 
     # X2Y2 -------------------------------------------------------------------------------------------------------------
     x2y2 = trx_df[trx_df["to_normal"] == '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3'.lower()].copy()
@@ -179,7 +179,7 @@ def get_transactions_df(address, chain, scan_key=None):
 
         vout = pd.concat([vout, x2y2])
     # X2Y2 END ---------------------------------------------------------------------------------------------------------
-    del x2y2
+        del x2y2
     # UNISWAP ----------------------------------------------------------------------------------------------------------
 
     uniswap_contracts = [
@@ -207,7 +207,7 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, uniswap_df])
 
     # UNISWAP END ------------------------------------------------------------------------------------------------------
-    del uniswap_df
+        del uniswap_df
 
     # Bridge --------------------------------------------------------------------------------------------------
     arb_df = trx_df[trx_df['to_normal'].isin(
