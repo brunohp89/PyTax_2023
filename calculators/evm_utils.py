@@ -5,7 +5,7 @@ from calculators.scam import scam
 
 
 def calculate_value_eth(values_df):
-    return [int(x) / 10**18 for x in values_df]
+    return [int(x) / 10 ** 18 for x in values_df]
 
 
 def calculate_value_token(values_df, decimals_df):
@@ -14,12 +14,13 @@ def calculate_value_token(values_df, decimals_df):
 
 def calculate_gas(gasprice_df, gasused_df, decimals=18):
     return [
-        -(int(x) * int(y)) / 10**decimals
+        -(int(x) * int(y)) / 10 ** decimals
         for x, y in zip(list(gasprice_df), list(gasused_df))
     ]
 
 
-def get_transactions_raw(address, chain, scan_key=None):
+def get_transactions_raw(address, chain, scan_key=None, return_full_names=False):
+    full_names = []
     address = address.lower()
     if chain != "zksync-mainnet" and scan_key is None:
         raise ValueError(f"API key for chain {chain} is missing")
@@ -93,16 +94,17 @@ def get_transactions_raw(address, chain, scan_key=None):
     if erc721.shape[0] > 0:
         if "tokenName" not in erc721.columns:
             erc721["erc721_complete_name"] = (
-                "ZKSYNC_NFT - " + erc721["tokenID"] + " -> " + erc721["contractAddress"]
+                    "ZKSYNC_NFT - " + erc721["tokenID"] + " -> " + erc721["contractAddress"]
             )
         else:
             erc721["erc721_complete_name"] = (
-                erc721["tokenName"]
-                + " - "
-                + erc721["tokenID"]
-                + " -> "
-                + erc721["contractAddress"]
+                    erc721["tokenName"]
+                    + " - "
+                    + erc721["tokenID"]
+                    + " -> "
+                    + erc721["contractAddress"]
             )
+        full_names.extend(list(set(erc721['tokenName_erc721'])))
 
     erc1155 = pd.DataFrame()
     if chain not in ["arb-mainnet", "zksync-mainnet"]:
@@ -111,12 +113,13 @@ def get_transactions_raw(address, chain, scan_key=None):
         erc1155 = pd.DataFrame(response.json().get("result"))
         if erc1155.shape[0] > 0:
             erc1155["erc1155_complete_name"] = (
-                erc1155["tokenName"]
-                + " - "
-                + erc1155["tokenID"]
-                + " -> "
-                + erc1155["contractAddress"]
+                    erc1155["tokenName"]
+                    + " - "
+                    + erc1155["tokenID"]
+                    + " -> "
+                    + erc1155["contractAddress"]
             )
+            full_names.extend(list(set(erc1155['tokenName_erc1155'])))
     if chain in ["arb-mainnet", "zksync-mainnet"]:
         erc1155 = pd.DataFrame()
 
@@ -133,8 +136,8 @@ def get_transactions_raw(address, chain, scan_key=None):
         erc20["from"] = [k.lower() for k in erc20["from"]]
         for timestamp in erc20["timeStamp"].unique():
             if (
-                list(erc20.loc[erc20["timeStamp"] == timestamp, "from"])[0]
-                == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18"
+                    list(erc20.loc[erc20["timeStamp"] == timestamp, "from"])[0]
+                    == "0x4aef1fd68c9d0b17d85e0f4e90604f6c92883f18"
             ):
                 erc20.loc[erc20["timeStamp"] == timestamp, "value"] = str(
                     int(list(erc20.loc[erc20["timeStamp"] == timestamp, "value"])[0])
@@ -142,6 +145,7 @@ def get_transactions_raw(address, chain, scan_key=None):
                 )
         erc20 = erc20.drop_duplicates()
         erc20 = erc20[erc20.tokenSymbol.str.len() < 10].copy()
+        full_names.extend(list(set(erc20['tokenName'])))
     if erc20.shape[0] == 1000 or erc20.shape[0] >= 10000:  # API limits
         print("WARNING, API limit reached. Transactions are probably missing.")
 
@@ -258,6 +262,9 @@ def get_transactions_raw(address, chain, scan_key=None):
             ]
         )
     ]
+
+    if return_full_names:
+        return full_names
 
     trx_df = pd.merge(
         pd.merge(

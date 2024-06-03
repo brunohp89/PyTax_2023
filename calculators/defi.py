@@ -34,12 +34,12 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["from"] = multicall["from"].apply(lambda x: x.lower())
         multicall["to"] = multicall["to"].apply(lambda x: x.lower())
 
-        multicall.loc[multicall["from_internal"] == address, "From Coin"] = "ETH"
+        multicall.loc[multicall["from_internal"] == address, "From Coin"] = gas_coin
         multicall.loc[multicall["from_internal"] == address, "To Coin"] = multicall.loc[
             multicall["from_internal"] == address, "tokenSymbol"
         ]
 
-        multicall.loc[multicall["to_internal"] == address, "To Coin"] = "ETH"
+        multicall.loc[multicall["to_internal"] == address, "To Coin"] = gas_coin
         multicall.loc[multicall["to_internal"] == address, "From Coin"] = multicall.loc[
             multicall["to_internal"] == address, "tokenSymbol"
         ]
@@ -223,12 +223,12 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["from"] = multicall["from"].apply(lambda x: x.lower())
         multicall["to"] = multicall["to"].apply(lambda x: x.lower())
 
-        multicall.loc[multicall["from_internal"] == address, "From Coin"] = "ETH"
+        multicall.loc[multicall["from_internal"] == address, "From Coin"] = gas_coin
         multicall.loc[multicall["from_internal"] == address, "To Coin"] = multicall.loc[
             multicall["from_internal"] == address, "tokenSymbol"
         ]
 
-        multicall.loc[multicall["to_internal"] == address, "To Coin"] = "ETH"
+        multicall.loc[multicall["to_internal"] == address, "To Coin"] = gas_coin
         multicall.loc[multicall["to_internal"] == address, "From Coin"] = multicall.loc[
             multicall["to_internal"] == address, "tokenSymbol"
         ]
@@ -333,6 +333,10 @@ def stargate(df, address, gas_coin, columns_out):
             df["functionName"] == "callBridgeCall", "functionName"
         ] = "swap"
 
+        df.loc[
+            df["functionName"] == "sendFrom", "functionName"
+        ] = "swap"
+
         # Add Liquidity ERC20 or ETH
         liquidity = df.loc[
             df["functionName"].isin(["addLiquidityETH", "addLiquidity"])
@@ -410,7 +414,7 @@ def stargate(df, address, gas_coin, columns_out):
         temp_df = df.loc[df["functionName"] == "swapETH"].copy()
         if temp_df.shape[0] > 0:
             print("swapETH FOUND!!")
-        temp_df["value_normal"] = [-int(x) / 10**18 for x in temp_df["value_normal"]]
+        temp_df["value_normal"] = [-int(x) / 10 ** 18 for x in temp_df["value_normal"]]
         temp_df = temp_df[
             [
                 "timeStamp_normal",
@@ -436,7 +440,7 @@ def stargate(df, address, gas_coin, columns_out):
         for i in set(temp_df["Timestamp"]):
             temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
                 temp_df["Timestamp"] == i
-            ].shape[0]
+                ].shape[0]
 
         # Bridging ERC20
         bridge_erc = df.loc[
@@ -530,3 +534,325 @@ def layer_zero_v2(df, gas_coin, columns_out):
     df = df.sort_index()
 
     return df
+
+
+def pancake(df, address, columns_out, gas_coin):
+    pancake_out = pd.DataFrame()
+    if df.shape[0] > 0:
+        df["value_normal"] = eu.calculate_value_eth(
+            df["value_normal"]
+        )
+        df["value_internal"] = eu.calculate_value_eth(
+            df["value_internal"].fillna(0)
+        )
+        df["value"] = eu.calculate_value_token(
+            df["value"].fillna(0), df["tokenDecimal"].fillna(1)
+        )
+        df["Fee"] = eu.calculate_gas(
+            df["gasPrice"], df["gasUsed_normal"]
+        )
+        df.index = df["timeStamp_normal"]
+        df["value_normal"] += df["value_internal"]
+
+        # Add/Remove Cake into Cake Pools
+        liquidity = df.loc[np.logical_or(df["functionName"].str.contains("deposit"),
+                                         df["functionName"].str.contains("withdrawAll"))].copy()
+        liquidity = liquidity[liquidity['tokenSymbol'] == 'Cake'].copy()
+        df = pd.concat([df, liquidity]).drop_duplicates(keep=False)
+
+        liquidity = liquidity.sort_index()
+
+        liquidity.loc[liquidity['functionName'].str.contains("deposit"), 'value'] *= -1
+        liquidity['value'] = liquidity['value'].cumsum()
+        liquidity.loc[liquidity['value'] > 0, 'To Amount'] = liquidity.loc[liquidity['value'] > 0, 'value']
+        liquidity.loc[liquidity['value'] > 0, 'To Coin'] = 'Cake'
+        liquidity.loc[liquidity['value'] > 0, ['Tag', 'Notes']] = ['Reward', 'Pancake Swap - Cake Withdrawal']
+        liquidity.loc[liquidity['value'] < 0, ['Tag', 'Notes']] = ['Movement', 'Pancake Swap - Cake Deposit']
+
+        pancake_out = pd.concat([pancake_out, liquidity])
+
+        # Migrate Cake Liquidity
+        migration = df[df["functionName"].str.contains("migrateFromCakePool")].copy()
+        df = pd.concat([df, migration]).drop_duplicates(keep=False)
+        migration[['Tag', 'Notes']] = ['Movement', 'Pancake Swap - Liquidity Migration']
+        pancake_out = pd.concat([pancake_out, migration])
+
+        # Calling function multicall
+        multicall = df[df["functionName"].str.contains("multicall")].copy()
+        df = pd.concat([df, multicall]).drop_duplicates(keep=False)
+
+        multicall["from_internal"] = multicall["from_internal"].fillna('').apply(lambda x: x.lower())
+        multicall["to_internal"] = multicall["to_internal"].fillna('').apply(lambda x: x.lower())
+
+        multicall["from"] = multicall["from"].fillna('').apply(lambda x: x.lower())
+        multicall["to"] = multicall["to"].fillna('').apply(lambda x: x.lower())
+
+        multicall.loc[multicall["from_internal"] == address, "From Coin"] = gas_coin
+        multicall.loc[multicall["from_internal"] == address, "To Coin"] = multicall.loc[
+            multicall["from_internal"] == address, "tokenSymbol"]
+
+        multicall.loc[multicall["to_internal"] == address, "To Coin"] = gas_coin
+        multicall.loc[multicall["to_internal"] == address, "From Coin"] = multicall.loc[
+            multicall["to_internal"] == address, "tokenSymbol"
+        ]
+
+        multicall.loc[
+            multicall["from_internal"] == address, "From Amount"
+        ] = -multicall.loc[multicall["from_normal"] == address, "value_normal"].values
+        multicall.loc[
+            multicall["from_internal"] == address, "To Amount"
+        ] = multicall.loc[multicall["from_internal"] == address, "value"]
+
+        multicall.loc[multicall["to_internal"] == address, "To Amount"] = multicall.loc[
+            multicall["to_internal"] == address, "value_normal"
+        ]
+        multicall.loc[
+            multicall["to_internal"] == address, "From Amount"
+        ] = -multicall.loc[multicall["to_internal"] == address, "value"]
+
+        # From ERC20 to ERC20
+        multicall.loc[pd.isna(multicall['blockNumber_internal']), 'Fee'] /= 2
+        multicall.loc[
+            np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] != address), 'From Amount'] = - \
+            multicall.loc[
+                np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] != address), 'value'].values
+        multicall.loc[
+            np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] == address), 'To Amount'] = \
+            multicall.loc[
+                np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] == address), 'value'].values
+        multicall.loc[
+            np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] != address), 'From Coin'] = \
+            multicall.loc[np.logical_and(pd.isna(multicall['blockNumber_internal']),
+                                         multicall['to'] != address), 'tokenSymbol'].values
+        multicall.loc[
+            np.logical_and(pd.isna(multicall['blockNumber_internal']), multicall['to'] == address), 'To Coin'] = \
+            multicall.loc[np.logical_and(pd.isna(multicall['blockNumber_internal']),
+                                         multicall['to'] == address), 'tokenSymbol'].values
+        multicall = multicall.ffill().infer_objects(copy=False).bfill().infer_objects(copy=False)
+        multicall = multicall.drop_duplicates(subset=columns_out)
+        multicall["Tag"] = "Trade"
+        multicall["Notes"] = "Pancake Swap - Swap"
+
+        pancake_out = pd.concat([pancake_out, multicall])
+
+        # Calling function swapExactTokensForTokens
+        swaptokens = df[df["functionName"].str.contains("swapExactTokensForTokens")].copy()
+        df = pd.concat([df, swaptokens]).drop_duplicates(keep=False)
+
+        swaptokens["from_internal"] = swaptokens["from_internal"].fillna('').apply(lambda x: x.lower())
+        swaptokens["to_internal"] = swaptokens["to_internal"].fillna('').apply(lambda x: x.lower())
+
+        swaptokens["from"] = swaptokens["from"].fillna('').apply(lambda x: x.lower())
+        swaptokens["to"] = swaptokens["to"].fillna('').apply(lambda x: x.lower())
+
+        swaptokens.loc[pd.isna(swaptokens['blockNumber_internal']), 'Fee'] /= 2
+        swaptokens.loc[
+            np.logical_and(pd.isna(swaptokens['blockNumber_internal']), swaptokens['to'] != address), 'From Amount'] = - \
+            swaptokens.loc[
+                np.logical_and(pd.isna(swaptokens['blockNumber_internal']),
+                               swaptokens['to'] != address), 'value'].values
+        swaptokens.loc[
+            np.logical_and(pd.isna(swaptokens['blockNumber_internal']), swaptokens['to'] == address), 'To Amount'] = \
+            swaptokens.loc[
+                np.logical_and(pd.isna(swaptokens['blockNumber_internal']),
+                               swaptokens['to'] == address), 'value'].values
+        swaptokens.loc[
+            np.logical_and(pd.isna(swaptokens['blockNumber_internal']), swaptokens['to'] != address), 'From Coin'] = \
+            swaptokens.loc[np.logical_and(pd.isna(swaptokens['blockNumber_internal']),
+                                          swaptokens['to'] != address), 'tokenSymbol'].values
+        swaptokens.loc[
+            np.logical_and(pd.isna(swaptokens['blockNumber_internal']), swaptokens['to'] == address), 'To Coin'] = \
+            swaptokens.loc[np.logical_and(pd.isna(swaptokens['blockNumber_internal']),
+                                          swaptokens['to'] == address), 'tokenSymbol'].values
+        swaptokens[['From Coin', 'From Amount']] = swaptokens[['From Coin', 'From Amount']].infer_objects(
+            copy=False).ffill()
+        swaptokens[['To Coin', 'To Amount']] = swaptokens[['To Coin', 'To Amount']].infer_objects(copy=False).bfill()
+        swaptokens = swaptokens.drop_duplicates(subset=columns_out)
+        swaptokens["Tag"] = "Trade"
+        swaptokens["Notes"] = "Pancake Swap - swapExactTokensForTokens"
+
+        pancake_out = pd.concat([pancake_out, swaptokens])
+
+        # Calling function swapETHForExactTokens
+        swapeth = df[np.logical_or(df["functionName"].str.contains("swapETHForExactTokens"),
+                                   df["functionName"].str.contains("swapExactETHForTokens"))].copy()
+        df = pd.concat([df, swapeth]).drop_duplicates(keep=False)
+
+        swapeth["from_internal"] = swapeth["from_internal"].fillna('').apply(lambda x: x.lower())
+        swapeth["to_internal"] = swapeth["to_internal"].fillna('').apply(lambda x: x.lower())
+
+        swapeth["from"] = swapeth["from"].fillna('').apply(lambda x: x.lower())
+        swapeth["to"] = swapeth["to"].fillna('').apply(lambda x: x.lower())
+
+        swapeth.loc[swapeth["from_normal"] == address, "From Coin"] = gas_coin
+        swapeth.loc[swapeth["from_normal"] == address, "To Coin"] = swapeth.loc[
+            swapeth["from_normal"] == address, "tokenSymbol"]
+
+        swapeth.loc[swapeth["to_normal"] == address, "To Coin"] = gas_coin
+        swapeth.loc[swapeth["to_normal"] == address, "From Coin"] = swapeth.loc[
+            swapeth["to_normal"] == address, "tokenSymbol"
+        ]
+
+        swapeth["value_normal"] -= swapeth["value_internal"]
+
+        swapeth.loc[
+            swapeth["from_normal"] == address, "From Amount"
+        ] = -swapeth.loc[swapeth["from_normal"] == address, "value_normal"].values
+        swapeth.loc[
+            swapeth["from_normal"] == address, "To Amount"
+        ] = swapeth.loc[swapeth["from_normal"] == address, "value"]
+
+        swapeth.loc[swapeth["to_normal"] == address, "To Amount"] = swapeth.loc[
+            swapeth["to_normal"] == address, "value_normal"
+        ]
+        swapeth.loc[
+            swapeth["to_normal"] == address, "From Amount"
+        ] = -swapeth.loc[swapeth["to_normal"] == address, "value"]
+
+        swapeth["Tag"] = "Trade"
+        swapeth["Notes"] = "Pancake Swap - swapETHForExactTokens"
+
+        pancake_out = pd.concat([pancake_out, swapeth])
+
+        # Calling swapExactTokensForETH
+        swaptokens = df[df["functionName"].str.contains("swapExactTokensForETH")].copy()
+        df = pd.concat([df, swaptokens]).drop_duplicates(keep=False)
+
+        swaptokens["from_internal"] = swaptokens["from_internal"].fillna('').apply(lambda x: x.lower())
+        swaptokens["to_internal"] = swaptokens["to_internal"].fillna('').apply(lambda x: x.lower())
+
+        swaptokens["from"] = swaptokens["from"].fillna('').apply(lambda x: x.lower())
+        swaptokens["to"] = swaptokens["to"].fillna('').apply(lambda x: x.lower())
+
+        swaptokens.loc[swaptokens["from_internal"] == address, "From Coin"] = gas_coin
+        swaptokens.loc[swaptokens["from_internal"] == address, "To Coin"] = swaptokens.loc[
+            swaptokens["from_internal"] == address, "tokenSymbol"]
+
+        swaptokens.loc[swaptokens["to_internal"] == address, "To Coin"] = gas_coin
+        swaptokens.loc[swaptokens["to_internal"] == address, "From Coin"] = swaptokens.loc[
+            swaptokens["to_internal"] == address, "tokenSymbol"
+        ]
+
+        swaptokens.loc[
+            swaptokens["from_internal"] == address, "From Amount"
+        ] = -swaptokens.loc[swaptokens["from_normal"] == address, "value_normal"].values
+        swaptokens.loc[
+            swaptokens["from_internal"] == address, "To Amount"
+        ] = swaptokens.loc[swaptokens["from_internal"] == address, "value"]
+
+        swaptokens.loc[swaptokens["to_internal"] == address, "To Amount"] = swaptokens.loc[
+            swaptokens["to_internal"] == address, "value_normal"
+        ]
+        swaptokens.loc[
+            swaptokens["to_internal"] == address, "From Amount"
+        ] = -swaptokens.loc[swaptokens["to_internal"] == address, "value"]
+
+        swaptokens[['Tag', 'Notes']] = ['Trade', 'Pancake Swap - swapExactTokensForETH']
+
+        pancake_out = pd.concat([pancake_out, swaptokens])
+
+        # Harvest Cake from syrup pool
+        harvest = df[df["functionName"].str.contains("harvest")].copy()
+        df = pd.concat([df, harvest]).drop_duplicates(keep=False)
+        harvest[['Tag', 'Notes']] = ['Reward', 'Pancake Swap - Harvest Syrup Pool']
+        harvest[['To Amount', 'To Coin']] = harvest[['value', 'tokenSymbol']]
+
+        pancake_out = pd.concat([pancake_out, harvest])
+
+        # Adding and removing liquidity in other pools
+        liquidity = df[np.logical_or(df["functionName"].str.contains("addLiquidityETH"),
+                                     df["functionName"].str.contains("removeLiquidityETH"))].copy()
+        df = pd.concat([df, liquidity]).drop_duplicates(keep=False)
+
+        liquidity = liquidity[liquidity['tokenSymbol'] != 'Cake-LP']
+        liquidity.loc[liquidity["functionName"].str.contains("addLiquidityETH"), 'value_normal'] *= -1
+        liquidity.loc[liquidity["functionName"].str.contains("addLiquidityETH"), 'value'] *= -1
+
+        liquidity_out = pd.DataFrame()
+        for token in liquidity['tokenSymbol'].unique():
+            temp_df = liquidity[liquidity['tokenSymbol'] == token].copy()
+            temp_df = temp_df.sort_index()
+            temp_df['value_normal'] = temp_df['value_normal'].cumsum()
+            temp_df['value'] = temp_df['value'].cumsum()
+            temp_df.loc[temp_df["functionName"].str.contains("addLiquidityETH"), 'value_normal'] = None
+            temp_df.loc[temp_df["functionName"].str.contains("addLiquidityETH"), 'value'] = None
+            temp_df.loc[temp_df["functionName"].str.contains("removeLiquidityETH"), 'Fee'] /= 2
+            temp_df = pd.concat([temp_df, temp_df.iloc[[-1], :]])
+
+            if temp_df.iloc[-1, 40] > 0:
+                temp_df.iloc[-1, 94] = temp_df.iloc[-1, 40]
+                temp_df.iloc[-1, 92] = temp_df.iloc[-1, 42]
+            elif temp_df.iloc[-1, 40] < 0:
+                temp_df.iloc[-1, 93] = temp_df.iloc[-1, 40]
+                temp_df.iloc[-1, 91] = temp_df.iloc[-1, 42]
+
+            if temp_df.iloc[-2, 8] > 0:
+                temp_df.iloc[-2, 94] = temp_df.iloc[-2, 8]
+                temp_df.iloc[-2, 92] = 'BNB'
+            elif temp_df.iloc[-2, 8] < 0:
+                temp_df.iloc[-2, 93] = temp_df.iloc[-2, 8]
+                temp_df.iloc[-2, 91] = 'BNB'
+
+            temp_df.loc[temp_df['functionName'].str.contains("removeLiquidityETH"), ['Tag', 'Notes']] = ['Reward',
+                                                                                                         'Pancake Swap - Remove liquidity']
+            temp_df.loc[temp_df['functionName'].str.contains("addLiquidityETH"), ['Tag', 'Notes']] = ['Movement',
+                                                                                                      'Pancake Swap - Add liquidity']
+
+            liquidity_out = pd.concat([liquidity_out, temp_df])
+
+    if df.shape[0] > 0:
+        print("PANCAKE SWAP: TRANSAZIONI MANCANTI")
+
+    pancake_out = pancake_out[[x for x in pancake_out.columns if x in columns_out]]
+    pancake_out = pancake_out.sort_index()
+
+    return pancake_out
+
+
+def sushi(df, columns_out, gas_coin):
+    sushi_out = pd.DataFrame()
+    if df.shape[0] >= 0:
+        df["value_normal"] = eu.calculate_value_eth(
+            df["value_normal"]
+        )
+        df["value_internal"] = eu.calculate_value_eth(
+            df["value_internal"].fillna(0)
+        )
+        df["value"] = eu.calculate_value_token(
+            df["value"].fillna(0), df["tokenDecimal"].fillna(1)
+        )
+        df["Fee"] = eu.calculate_gas(
+            df["gasPrice"], df["gasUsed_normal"]
+        )
+        df.index = df["timeStamp_normal"]
+        df["value_normal"] += df["value_internal"]
+
+        # Calling function cook Bridge
+        cook = df.loc[df["functionName"].str.contains("cook")].copy()
+        df = pd.concat([df, cook]).drop_duplicates(keep=False)
+
+        cook_temp = cook.copy()
+        cook_temp["value_normal"] = None
+        cook["value"] = None
+
+        cook["From Amount"] = -cook["value_normal"]
+        cook["From Coin"] = gas_coin
+
+        cook_temp["From Amount"] = -cook_temp["value"]
+        cook_temp["From Coin"] = cook_temp["tokenSymbol"]
+
+        cook = pd.concat([cook_temp, cook]).sort_index()
+        cook["Fee"] /= 2
+
+        cook["Noted"] = "Sushi - Cook Bridging"
+        cook["Tag"] = "Movement"
+
+        sushi_out = pd.concat([sushi_out, cook])
+
+    if df.shape[0] > 0:
+        print("PANCAKE SWAP: TRANSAZIONI MANCANTI")
+
+    sushi_out = sushi_out[[x for x in sushi_out.columns if x in columns_out]]
+    sushi_out = sushi_out.sort_index()
+
+    return sushi_out
