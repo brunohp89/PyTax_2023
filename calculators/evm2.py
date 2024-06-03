@@ -24,6 +24,8 @@ def get_transactions_df(address, chain, scan_key=None):
     gas_coin = trx_df[0]
     trx_df = trx_df[1]
 
+    trx_df['timeStamp_normal'] = trx_df['timeStamp_normal'].combine_first(trx_df['timeStamp']).combine_first(trx_df['timeStamp_internal'])
+
     trx_df[['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']] = trx_df[
         ['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']].fillna(0)
 
@@ -33,13 +35,11 @@ def get_transactions_df(address, chain, scan_key=None):
 
     # ------------------------------------------------------------------------------------------------------------------
     # Normal ETH transfers ---------------------------------------------------------------------------------------------
-    eth_transfers_df = eu.eth_transfers(trx_df[
-                                            np.logical_or(trx_df['functionName'].str.contains('transferOut', na=False),
-                                                          trx_df['input_normal'] == '0x')].copy(), address, gas_coin,
-                                        columns_out)
-    trx_df = trx_df[trx_df['input_normal'] != '0x']
-    trx_df = trx_df[~trx_df['functionName'].str.contains('transferOut', na=False)]
-    trx_df = trx_df[~trx_df['functionName'].str.contains('transferout', na=False)]
+    eth_transfers_df = trx_df[np.logical_or(trx_df['functionName'].str.contains('transferOut', na=False),
+                                            trx_df['input_normal'] == '0x')].copy()
+    eth_transfers_df = pd.concat([eth_transfers_df, trx_df[trx_df['functionName'].str.contains('anySwapOutNative', na=False)]]).drop_duplicates()
+    trx_df = pd.concat([trx_df, eth_transfers_df]).drop_duplicates(keep=False)
+    eth_transfers_df = eu.eth_transfers(eth_transfers_df, address, gas_coin, columns_out)
 
     vout = pd.concat([vout, eth_transfers_df])
     # END Normal ETH transfers -----------------------------------------------------------------------------------------
@@ -91,8 +91,10 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x06eb48763f117c7be887296cdcdfad2e4092739c".lower(),
         "0x2Eb9ea9dF49BeBB97e7750f231A32129a89b82ee".lower(),
         "0xA27A2cA24DD28Ce14Fb5f5844b59851F03DCf182".lower(),
+        "0x6c33a7b29c8b012d060f3a5046f3ee5ac48f4780".lower(),
         "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower(),
-        "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower()  # Harmony Bridge BSC
+        "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(), # Harmony Bridge BSC
+        "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower()
     ]
 
     stargate_df = trx_df[np.logical_and(trx_df["to_normal"].isin(stargate_contracts),
@@ -137,6 +139,51 @@ def get_transactions_df(address, chain, scan_key=None):
         sushi_df = defi.sushi(sushi_df, columns_out, gas_coin)
         vout = pd.concat([vout, sushi_df])
         del sushi_df
+
+
+    # ONE INCH ---------------------------------------------------------------------------------------------------------
+    one_contracts = [
+        "0x1111111254eeb25477b68fb85ed929f73a960582".lower(),
+        "0x2eb393fbac8aaa16047d4242033a25486e14f345".lower(),
+        "0x9d4eb7189cd57693c3d01f35168715e1e589cea8".lower(),
+        "0x95e2769aca43a1d4febcfa153022259fc1e49548".lower(),
+        "0x4bc3e539aaa5b18a82f6cd88dc9ab0e113c63377".lower()
+    ]
+    one_df = trx_df[np.logical_or(trx_df['to'].isin(one_contracts), trx_df["to_normal"].isin(one_contracts))].copy()
+    one_df = pd.concat([one_df,trx_df[trx_df['from'].isin(one_contracts)]])
+    one_df = one_df.drop_duplicates()
+    trx_df = pd.concat([one_df, trx_df]).drop_duplicates(keep=False)
+    if one_df.shape[0] > 0:
+        one_df = defi.one_inch(one_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, one_df])
+        del one_df
+
+    # UNISWAP ----------------------------------------------------------------------------------------------------------
+
+    uniswap_contracts = [
+        "0x5e325eda8064b456f4781070c0738d849c824258".lower(),
+        "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff".lower(),
+        "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45".lower(),
+        "0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5".lower(),
+        "0xec8b0f7ffe3ae75d7ffab09429e3675bb63503e4".lower(),
+        "0x7a250d5630b4cf539739df2c5dacb4c659f2488d".lower(),
+        "0xc36442b4a4522e871399cd717abdd847ab11fe88".lower(),
+        "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower()
+
+    ]
+
+    uniswap_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(uniswap_contracts),
+            trx_df["to_normal"].isin(uniswap_contracts),
+        )
+    ]
+
+    if uniswap_df.shape[0] > 0:
+        trx_df = pd.concat([uniswap_df, trx_df]).drop_duplicates(keep=False)
+        uniswap_df = defi.uniswap(uniswap_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, uniswap_df])
+        del uniswap_df
 
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
@@ -256,35 +303,6 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, x2y2])
         del x2y2
     # X2Y2 END ---------------------------------------------------------------------------------------------------------
-    # UNISWAP ----------------------------------------------------------------------------------------------------------
-
-    uniswap_contracts = [
-        "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff".lower(),
-        "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45".lower(),
-        "0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5".lower(),
-        "0xec8b0f7ffe3ae75d7ffab09429e3675bb63503e4".lower(),
-        "0x7a250d5630b4cf539739df2c5dacb4c659f2488d".lower(),
-        "0xc36442b4a4522e871399cd717abdd847ab11fe88".lower(),
-        "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower()
-
-    ]
-
-    uniswap_df = trx_df[
-        np.logical_or(
-            trx_df["from_normal"].isin(uniswap_contracts),
-            trx_df["to_normal"].isin(uniswap_contracts),
-        )
-    ]
-
-    if uniswap_df.shape[0] > 0:
-        trx_df = pd.concat([uniswap_df, trx_df]).drop_duplicates(keep=False)
-        uniswap_df = defi.uniswap(uniswap_df, address, columns_out, gas_coin)
-
-        vout = pd.concat([vout, uniswap_df])
-
-        # UNISWAP END ------------------------------------------------------------------------------------------------------
-        del uniswap_df
-
     # Bridge --------------------------------------------------------------------------------------------------
     arb_df = trx_df[trx_df['to_normal'].isin(
         ['0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f'.lower(),

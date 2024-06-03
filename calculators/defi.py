@@ -412,35 +412,12 @@ def stargate(df, address, gas_coin, columns_out):
 
         # Bridging ETH
         temp_df = df.loc[df["functionName"] == "swapETH"].copy()
-        if temp_df.shape[0] > 0:
-            print("swapETH FOUND!!")
-        temp_df["value_normal"] = [-int(x) / 10 ** 18 for x in temp_df["value_normal"]]
-        temp_df = temp_df[
-            [
-                "timeStamp_normal",
-                "from_normal",
-                "to_normal",
-                "gasUsed_normal",
-                "gasPrice",
-                "value_normal",
-            ]
-        ]
-        temp_df.columns = [
-            "Timestamp",
-            "From",
-            "To",
-            "Gasused",
-            "Gasprice",
-            "From Amount",
-        ]
-        temp_df["From Coin"] = gas_coin
-        temp_df["Kind"] = "Stargate - Bridge ETH"
+        df = pd.concat([df, temp_df]).drop_duplicates(keep=False)
+        temp_df['From Amount'] = -temp_df['value_normal']
+        temp_df['From Coin'] = gas_coin
+        temp_df[['Tag', 'Notes']] = ['Movement', 'Stargate - Bridging swapETH']
 
-        temp_df["Gasused"] = [int(x) for x in temp_df["Gasused"]]
-        for i in set(temp_df["Timestamp"]):
-            temp_df.loc[temp_df["Timestamp"] == i, "Gasused"] /= temp_df[
-                temp_df["Timestamp"] == i
-                ].shape[0]
+        stargate_out = pd.concat([stargate_out, temp_df])
 
         # Bridging ERC20
         bridge_erc = df.loc[
@@ -856,3 +833,61 @@ def sushi(df, columns_out, gas_coin):
     sushi_out = sushi_out.sort_index()
 
     return sushi_out
+
+def one_inch(df, address, columns_out, gas_coin):
+    one_out = pd.DataFrame()
+    if df.shape[0] > 0:
+        df.index = df['timeStamp']
+        df["value_normal"] = eu.calculate_value_eth(
+            df["value_normal"]
+        )
+        df["value_internal"] = eu.calculate_value_eth(
+            df["value_internal"].fillna(0)
+        )
+        df["value"] = eu.calculate_value_token(
+            df["value"].fillna(0), df["tokenDecimal"].fillna(1)
+        )
+        df["Fee"] = eu.calculate_gas(
+            df["gasPrice"], df["gasUsed_normal"]
+        )
+        df.index = df["timeStamp_normal"]
+        df["value_normal"] += df["value_internal"]
+
+        df.loc[df['from_normal'] == address, 'From Coin'] = gas_coin
+        df.loc[df['from_normal'] == address, 'To Coin'] = df.loc[
+            df['from_normal'] == address, 'tokenSymbol']
+        df.loc[df['from_normal'] == address, 'From Amount'] = -df.loc[
+            df['from_normal'] == address, 'value_normal']
+        df.loc[df['from_normal'] == address, 'To Amount'] = df.loc[
+            df['from_normal'] == address, 'value']
+
+        df.loc[df['to_normal'] == address, 'From Coin'] = df.loc[
+            df['to_normal'] == address, 'tokenSymbol']
+        df.loc[df['to_normal'] == address, 'To Coin'] = gas_coin
+        df.loc[df['to_normal'] == address, 'From Amount'] = -df.loc[df['to_normal'] == address, 'value']
+        df.loc[df['to_normal'] == address, 'To Amount'] = df.loc[
+            df['to_normal'] == address, 'value_normal']
+
+        one_out = pd.concat([one_out, df[~pd.isna(df['blockHash'])]])
+        # Execute orders
+        df = df[pd.isna(df['blockHash'])]
+        if df.shape[0] > 0:
+            df.loc[df['from'] == address, 'From Coin'] = df.loc[df['from'] == address, 'tokenSymbol']
+            df.loc[df['from'] == address, 'From Amount'] = -df.loc[df['from'] == address, 'value']
+
+            df.loc[df['to'] == address, 'To Coin'] = df.loc[df['to'] == address, 'tokenSymbol']
+            df.loc[df['to'] == address, 'To Amount'] = df.loc[df['to'] == address, 'value']
+            df['Fee'] = eu.calculate_gas(df['gasPrice_erc20'], df['gasUsed'])
+            df['Fee'] /= 2
+
+            df[['From Coin', 'From Amount']] = df[['From Coin', 'From Amount']].infer_objects(
+                copy=False).ffill()
+            df[['To Coin', 'To Amount']] = df[['To Coin', 'To Amount']].infer_objects(copy=False).bfill()
+            df = df.drop_duplicates(subset=columns_out)
+
+            one_out = pd.concat([one_out, df])
+
+        one_out = one_out[[x for x in one_out.columns if x in columns_out]]
+        one_out = one_out.sort_index()
+
+        return one_out
