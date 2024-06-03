@@ -452,7 +452,7 @@ def get_transactions_df(address):
                 [final_df, response_pd[response_pd["data"] == transaction]]
             )
             response_pd = response_pd[response_pd["data"] != transaction]
-        elif  "STEPN" in str(transaction)  and "Program log: Instruction: Transfer" in str(transaction):
+        elif "STEPN" in str(transaction) and "Program log: Instruction: Transfer" in str(transaction):
             tokens = calculate_tokens_balances(transaction, address)
             token = (
                 requests.get(f"https://api.solana.fm/v0/tokens/{tokens.tokens[0]}")
@@ -562,13 +562,35 @@ def get_transactions_df(address):
         final_df = pd.concat([manual, final_df])
     final_df = final_df.sort_index()
     final_df["Fee Coin"] = "SOL"
-    final_df.loc[final_df['To Coin'] == 0, 'To Coin'] = 'WATErpZ2ZBjgAxyttoEjckuTuCe9pEckSabCeENLTYq'
 
     final_df.loc[np.logical_and(final_df['Notes'] == "Stepn Transfers", final_df['To Amount'] > 0), 'Tag'] = 'Reward'
-
     final_df['Tag'] = final_df['Tag'].fillna('Movement')
 
     sol_prices = Prices()
+
+    temp_nft = final_df[np.logical_or(final_df['From Coin'].str.contains('->', na=False),
+                                      final_df['To Coin'].str.contains('->', na=False))].copy()
+    final_df.loc[np.logical_or(final_df['From Coin'].str.contains('->', na=False),
+                               final_df['To Coin'].str.contains('->', na=False)), 'New Tag'] = '!'
+
+    final_df.loc[final_df['From Coin'].str.contains('->', na=False), ['From Coin', 'From Amount']] = None
+    final_df.loc[final_df['To Coin'].str.contains('->', na=False), ['To Coin', 'To Amount']] = None
+
     final_df = tx.price_transactions_df(final_df, sol_prices)
+
+    final_df.loc[final_df['New Tag'] == '!', ['From Coin', 'From Amount', 'To Coin', 'To Amount']] = temp_nft[
+        ['From Coin', 'From Amount', 'To Coin', 'To Amount']].values
+    final_df['Fee'] = final_df['Fee'].infer_objects(copy=False).fillna(0)
+    final_df['Fee Fiat'] = final_df['Fee Fiat'].infer_objects(copy=False).fillna(0)
+
+    final_df = final_df.drop('New Tag', axis=1)
+
+    final_df['Fee'] = final_df['Fee'].astype(float)
+    final_df['From Amount'] = final_df['From Amount'].astype(float)
+    final_df['To Amount'] = final_df['To Amount'].astype(float)
+
+    final_df['Source'] = f'SOL-{address[0:10]}'
+
+    final_df = final_df.sort_index()
 
     return final_df
