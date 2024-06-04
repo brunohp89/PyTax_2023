@@ -104,7 +104,7 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
                     + " -> "
                     + erc721["contractAddress"]
             )
-        full_names.extend(list(set(erc721['tokenName_erc721'])))
+        full_names.extend(list(set(erc721['tokenName'])))
 
     erc1155 = pd.DataFrame()
     if chain not in ["arb-mainnet", "zksync-mainnet"]:
@@ -119,7 +119,7 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
                     + " -> "
                     + erc1155["contractAddress"]
             )
-            full_names.extend(list(set(erc1155['tokenName_erc1155'])))
+            full_names.extend(list(set(erc1155['tokenName'])))
     if chain in ["arb-mainnet", "zksync-mainnet"]:
         erc1155 = pd.DataFrame()
 
