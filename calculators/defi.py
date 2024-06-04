@@ -834,6 +834,7 @@ def sushi(df, columns_out, gas_coin):
 
     return sushi_out
 
+
 def one_inch(df, address, columns_out, gas_coin):
     one_out = pd.DataFrame()
     if df.shape[0] > 0:
@@ -891,3 +892,64 @@ def one_inch(df, address, columns_out, gas_coin):
         one_out = one_out.sort_index()
 
         return one_out
+
+
+def graph(df, columns_out):
+    graph_out = pd.DataFrame()
+    if df.shape[0] > 0:
+        df["value_normal"] = eu.calculate_value_eth(
+            df["value_normal"]
+        )
+        df["value_internal"] = eu.calculate_value_eth(
+            df["value_internal"].fillna(0)
+        )
+        df["value"] = eu.calculate_value_token(
+            df["value"].fillna(0), df["tokenDecimal"].fillna(1)
+        )
+        df["Fee"] = eu.calculate_gas(
+            df["gasPrice"], df["gasUsed_normal"]
+        )
+        df.index = df["timeStamp_normal"]
+        df["value_normal"] += df["value_internal"]
+
+        # Multicall function
+        multicall = df[df['functionName'].str.contains('multicall')].copy()
+        df = pd.concat([df, multicall]).drop_duplicates(keep=False)
+
+        multicall.loc[multicall['functionName'].str.contains('multicall'), ['Tag', 'Notes']] = ['Movement',
+                                                                                                'The Graph - multicall']
+        graph_out = pd.concat([graph_out, multicall])
+
+        # Deposit/Withdraw from subgraphs
+        subgraph = df[np.logical_or(df['functionName'].str.contains('delegate'),
+                                    df['functionName'].str.contains('withdraw'))].copy()
+        df = pd.concat([df, subgraph]).drop_duplicates(keep=False)
+        subgraph = subgraph.sort_index()
+        subgraph.loc[np.logical_and(subgraph['functionName'].str.contains('delegate'),
+                                    ~subgraph['functionName'].str.contains('withdraw')), 'value'] *= -1
+        subgraph['value'] = subgraph['value'].cumsum()
+
+        subgraph.loc[np.logical_and(subgraph['functionName'].str.contains('delegate'),
+                                    ~subgraph['functionName'].str.contains('withdraw')), ['Tag', 'Notes']] = [
+            'Movement', 'The Graph - Delegate']
+
+        subgraph.loc[
+            np.logical_and(subgraph['functionName'].str.contains('withdraw'), subgraph['value'] > 0), 'To Amount'] = \
+            subgraph.loc[
+                np.logical_and(subgraph['functionName'].str.contains('withdraw'), subgraph['value'] > 0), 'value']
+        subgraph.loc[np.logical_and(subgraph['functionName'].str.contains('withdraw'),
+                                    subgraph['value'] > 0), 'To Coin'] = 'GRT'
+        subgraph.loc[
+            np.logical_and(subgraph['functionName'].str.contains('withdraw'), subgraph['value'] > 0), ['Tag',
+                                                                                                       'Notes']] = [
+            'Reward', 'The Graph - Withdraw Delegate']
+
+        graph_out = pd.concat([graph_out, subgraph])
+
+    if df.shape[0] > 0:
+        print("THE GRAPH: TRANSAZIONI MANCANTI")
+
+    graph_out = graph_out[[x for x in graph_out.columns if x in columns_out]]
+    graph_out = graph_out.sort_index()
+
+    return graph_out

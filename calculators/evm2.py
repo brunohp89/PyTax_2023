@@ -24,7 +24,8 @@ def get_transactions_df(address, chain, scan_key=None):
     gas_coin = trx_df[0]
     trx_df = trx_df[1]
 
-    trx_df['timeStamp_normal'] = trx_df['timeStamp_normal'].combine_first(trx_df['timeStamp']).combine_first(trx_df['timeStamp_internal'])
+    trx_df['timeStamp_normal'] = trx_df['timeStamp_normal'].combine_first(trx_df['timeStamp']).combine_first(
+        trx_df['timeStamp_internal'])
 
     trx_df[['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']] = trx_df[
         ['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']].fillna(0)
@@ -37,7 +38,8 @@ def get_transactions_df(address, chain, scan_key=None):
     # Normal ETH transfers ---------------------------------------------------------------------------------------------
     eth_transfers_df = trx_df[np.logical_or(trx_df['functionName'].str.contains('transferOut', na=False),
                                             trx_df['input_normal'] == '0x')].copy()
-    eth_transfers_df = pd.concat([eth_transfers_df, trx_df[trx_df['functionName'].str.contains('anySwapOutNative', na=False)]]).drop_duplicates()
+    eth_transfers_df = pd.concat(
+        [eth_transfers_df, trx_df[trx_df['functionName'].str.contains('anySwapOutNative', na=False)]]).drop_duplicates()
     trx_df = pd.concat([trx_df, eth_transfers_df]).drop_duplicates(keep=False)
     eth_transfers_df = eu.eth_transfers(eth_transfers_df, address, gas_coin, columns_out)
 
@@ -93,7 +95,7 @@ def get_transactions_df(address, chain, scan_key=None):
         "0xA27A2cA24DD28Ce14Fb5f5844b59851F03DCf182".lower(),
         "0x6c33a7b29c8b012d060f3a5046f3ee5ac48f4780".lower(),
         "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower(),
-        "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(), # Harmony Bridge BSC
+        "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(),  # Harmony Bridge BSC
         "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower()
     ]
 
@@ -140,7 +142,6 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, sushi_df])
         del sushi_df
 
-
     # ONE INCH ---------------------------------------------------------------------------------------------------------
     one_contracts = [
         "0x1111111254eeb25477b68fb85ed929f73a960582".lower(),
@@ -150,7 +151,7 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x4bc3e539aaa5b18a82f6cd88dc9ab0e113c63377".lower()
     ]
     one_df = trx_df[np.logical_or(trx_df['to'].isin(one_contracts), trx_df["to_normal"].isin(one_contracts))].copy()
-    one_df = pd.concat([one_df,trx_df[trx_df['from'].isin(one_contracts)]])
+    one_df = pd.concat([one_df, trx_df[trx_df['from'].isin(one_contracts)]])
     one_df = one_df.drop_duplicates()
     trx_df = pd.concat([one_df, trx_df]).drop_duplicates(keep=False)
     if one_df.shape[0] > 0:
@@ -177,13 +178,30 @@ def get_transactions_df(address, chain, scan_key=None):
             trx_df["from_normal"].isin(uniswap_contracts),
             trx_df["to_normal"].isin(uniswap_contracts),
         )
-    ]
+    ].copy()
 
     if uniswap_df.shape[0] > 0:
         trx_df = pd.concat([uniswap_df, trx_df]).drop_duplicates(keep=False)
         uniswap_df = defi.uniswap(uniswap_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, uniswap_df])
         del uniswap_df
+
+    # THE GRAPH --------------------------------------------------------------------------------------------------------
+
+    graph_contracts = [
+        "0x00669a4cf01450b64e8a2a20e9b1fcb71e61ef03".lower()
+    ]
+
+    graph_df = trx_df[np.logical_or(
+        trx_df["from_normal"].isin(graph_contracts),
+        trx_df["to_normal"].isin(graph_contracts),
+    )].copy()
+
+    if graph_df.shape[0] > 0:
+        trx_df = pd.concat([graph_df, trx_df]).drop_duplicates(keep=False)
+        graph_df = defi.graph(graph_df, columns_out)
+        vout = pd.concat([vout, graph_df])
+        del graph_df
 
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
