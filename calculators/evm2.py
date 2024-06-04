@@ -9,6 +9,8 @@ import calculators.evm_utils as eu
 import calculators.nft_utils as nu
 import calculators.defi as defi
 
+pd.set_option('future.no_silent_downcasting', True)
+
 
 def get_transactions_df(address, chain, scan_key=None):
     address = address.lower()
@@ -30,6 +32,10 @@ def get_transactions_df(address, chain, scan_key=None):
     trx_df[['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']] = trx_df[
         ['value_normal', 'gas_normal', 'gasUsed_normal', 'gasPrice']].fillna(0)
 
+    trx_df['value_internal'] = trx_df['value_internal'].fillna(0)
+    trx_df[['from_internal', 'from', 'to', 'to_internal', 'from_normal', 'to_normal']] = trx_df[
+        ['from_internal', 'from', 'to', 'to_internal', 'from_normal', 'to_normal']].fillna('')
+
     trx_df_raw = trx_df.copy()
 
     vout = pd.DataFrame()
@@ -49,8 +55,9 @@ def get_transactions_df(address, chain, scan_key=None):
     # Normal Internal ETH transfers ------------------------------------------------------------------------------------
     internal_df = trx_df[
         np.logical_and(pd.isna(trx_df['blockNumber_normal']), ~pd.isna(trx_df['blockNumber_internal']))]
-    internal_df = internal_df[np.logical_and(pd.isna(internal_df['from']), pd.isna(internal_df['from_erc721']))]
-    internal_df = internal_df[pd.isna(internal_df['from_erc1155'])]
+    internal_df = internal_df[
+        np.logical_and(pd.isna(internal_df['blockNumber']), pd.isna(internal_df['blockNumber_erc721']))]
+    internal_df = internal_df[pd.isna(internal_df['blockNumber_erc1155'])]
     trx_df = pd.concat([trx_df, internal_df]).drop_duplicates(keep=False)
 
     internal_df[['timeStamp_normal', 'from_normal', 'to_normal', 'value_normal', 'gas_normal', 'gasUsed_normal']] = \
@@ -94,6 +101,7 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x2Eb9ea9dF49BeBB97e7750f231A32129a89b82ee".lower(),
         "0xA27A2cA24DD28Ce14Fb5f5844b59851F03DCf182".lower(),
         "0x6c33a7b29c8b012d060f3a5046f3ee5ac48f4780".lower(),
+        "0x0A9f824C05A74F577A536A8A0c673183a872Dff4".lower(),
         "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower(),
         "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(),  # Harmony Bridge BSC
         "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower()
@@ -142,25 +150,7 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, sushi_df])
         del sushi_df
 
-    # ONE INCH ---------------------------------------------------------------------------------------------------------
-    one_contracts = [
-        "0x1111111254eeb25477b68fb85ed929f73a960582".lower(),
-        "0x2eb393fbac8aaa16047d4242033a25486e14f345".lower(),
-        "0x9d4eb7189cd57693c3d01f35168715e1e589cea8".lower(),
-        "0x95e2769aca43a1d4febcfa153022259fc1e49548".lower(),
-        "0x4bc3e539aaa5b18a82f6cd88dc9ab0e113c63377".lower()
-    ]
-    one_df = trx_df[np.logical_or(trx_df['to'].isin(one_contracts), trx_df["to_normal"].isin(one_contracts))].copy()
-    one_df = pd.concat([one_df, trx_df[trx_df['from'].isin(one_contracts)]])
-    one_df = one_df.drop_duplicates()
-    trx_df = pd.concat([one_df, trx_df]).drop_duplicates(keep=False)
-    if one_df.shape[0] > 0:
-        one_df = defi.one_inch(one_df, address, columns_out, gas_coin)
-        vout = pd.concat([vout, one_df])
-        del one_df
-
     # UNISWAP ----------------------------------------------------------------------------------------------------------
-
     uniswap_contracts = [
         "0x5e325eda8064b456f4781070c0738d849c824258".lower(),
         "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff".lower(),
@@ -169,8 +159,8 @@ def get_transactions_df(address, chain, scan_key=None):
         "0xec8b0f7ffe3ae75d7ffab09429e3675bb63503e4".lower(),
         "0x7a250d5630b4cf539739df2c5dacb4c659f2488d".lower(),
         "0xc36442b4a4522e871399cd717abdd847ab11fe88".lower(),
-        "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower()
-
+        "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower(),
+        "0xb555edF5dcF85f42cEeF1f3630a52A108E55A654".lower()
     ]
 
     uniswap_df = trx_df[
@@ -203,76 +193,34 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, graph_df])
         del graph_df
 
-    # Normal ERC20 transfers -------------------------------------------------------------------------------------------
-    erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
-    erc20_transfers_df = erc20_transfers_df[
-        np.logical_or(pd.isna(erc20_transfers_df['blockNumber_normal']), erc20_transfers_df['value_normal'] == '0')]
-    erc20_transfers_df = erc20_transfers_df[pd.isna(erc20_transfers_df['value_internal'])]
-    erc20_transfers_df = erc20_transfers_df[np.logical_and(pd.isna(erc20_transfers_df['blockNumber_erc721']),
-                                                           pd.isna(erc20_transfers_df['blockNumber_erc1155']))]
+    # Galxe Claims -----------------------------------------------------------------------------------------------------
+    galxe_contracts = ["0x2e42f214467f647Fe687Fd9a2bf3BAdDFA737465".lower()]
+    galxe_df = trx_df[
+        np.logical_and(trx_df['to_normal'].isin(galxe_contracts), trx_df['functionName'].str.contains('claim'))].copy()
+    if galxe_df.shape[0] > 0:
+        trx_df = pd.concat([galxe_df, trx_df]).drop_duplicates(keep=False)
+        galxe_df.index = galxe_df['timeStamp_normal']
+        galxe_df['To Coin'] = galxe_df['erc721_complete_name']
+        galxe_df['To Amount'] = 1
+        galxe_df[['Tag', 'Notes']] = ['Movement', 'NFT']
 
-    trx_df = pd.concat([erc20_transfers_df, trx_df]).drop_duplicates(keep=False)
+        galxe_df['Fee'] = eu.calculate_gas(galxe_df['gasPrice_erc721'], galxe_df['gasUsed_erc721'])
 
-    erc20_transfers_df = eu.erc20_transfer(erc20_transfers_df, address, columns_out)
-    vout = pd.concat([vout, erc20_transfers_df])
-    # END Normal ERC20 transfers ---------------------------------------------------------------------------------------
-    del erc20_transfers_df
-    # Normal ERC721 transfers ------------------------------------------------------------------------------------------
-    erc721_transfers_df = trx_df[
-        np.logical_and(~pd.isna(trx_df['blockNumber_erc721']), pd.isna(trx_df['blockNumber_erc1155']))].copy()
-    erc721_transfers_df = erc721_transfers_df[
-        np.logical_and(pd.isna(erc721_transfers_df['blockNumber_normal']), pd.isna(erc721_transfers_df['blockNumber']))]
-    erc721_transfers_df = pd.concat(
-        [erc721_transfers_df, trx_df[trx_df['functionName'].str.contains('safeTransferFrom', na=False)]])
-    trx_df = pd.concat([erc721_transfers_df, trx_df]).drop_duplicates(keep=False)
+        galxe_df = galxe_df[[x for x in galxe_df.columns if x in columns_out]]
+        galxe_df = galxe_df.sort_index()
 
-    erc721_transfers_df = eu.erc721_transfer(erc721_transfers_df, address, columns_out)
-    vout = pd.concat([vout, erc721_transfers_df])
-    # END Normal ERC721 transfers --------------------------------------------------------------------------------------
-    del erc721_transfers_df
-    # Normal ERC1155 transfers -----------------------------------------------------------------------------------------
-    erc1155_transfers_df = trx_df[
-        np.logical_and(~pd.isna(trx_df['blockNumber_erc1155']), pd.isna(trx_df['blockNumber_erc721']))].copy()
-    erc1155_transfers_df = erc1155_transfers_df[
-        np.logical_and(pd.isna(erc1155_transfers_df['blockNumber_normal']),
-                       pd.isna(erc1155_transfers_df['blockNumber']))]
+        vout = pd.concat([vout, galxe_df])
+        del galxe_df
 
-    trx_df = pd.concat([erc1155_transfers_df, trx_df]).drop_duplicates(keep=False)
-
-    erc1155_transfers_df = eu.erc1155_transfer(erc1155_transfers_df, address, columns_out)
-    vout = pd.concat([vout, erc1155_transfers_df])
-    # END Normal ER1155 transfers --------------------------------------------------------------------------------------
-    del erc1155_transfers_df
-    # Approvals --------------------------------------------------------------------------------------------------------
-    trx_df['functionName'] = trx_df['functionName'].apply(lambda x: str(x).lower())
-
-    approvals_df = trx_df[np.logical_and(trx_df['functionName'].str.contains('approv'), pd.isna(trx_df['blockNumber']))]
-    approvals_df.index = approvals_df['timeStamp_normal']
-    approvals_df = approvals_df[
-        np.logical_and(pd.isna(approvals_df['blockNumber_internal']), pd.isna(approvals_df['blockNumber_erc721']))]
-    approvals_df = approvals_df[pd.isna(approvals_df['blockNumber_erc1155'])]
-
-    trx_df = pd.concat([approvals_df, trx_df]).drop_duplicates(keep=False)
-
-    approvals_df[['To', 'From']] = approvals_df[['to_normal', 'from_normal']]
-    approvals_df['Fee'] = eu.calculate_gas(approvals_df.gasPrice, approvals_df.gasUsed_normal)
-    approvals_df = approvals_df[[x for x in approvals_df.columns if x in columns_out]]
-    approvals_df = approvals_df.sort_index()
-
-    approvals_df['Tag'] = 'Set Approval'
-
-    vout = pd.concat([approvals_df, vout]).drop_duplicates(keep=False)
-    # END Approvals ----------------------------------------------------------------------------------------------------
-    del approvals_df
     # WETH -------------------------------------------------------------------------------------------------------------
-
     # WETH wrapping
     weth_contracts = [
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2".lower(),
         "0x82af49447d8a07e3bd95bd0d56f35241523fbab1".lower(),
         "0x5c7f8a570d578ed84e63fdfa7b1ee72deae1ae23".lower(),
         "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91".lower(),
-        "0x2E71597b779F50D6e070662F0F0b53c63504B60C".lower()
+        "0x2E71597b779F50D6e070662F0F0b53c63504B60C".lower(),
+        "0x4200000000000000000000000000000000000006".lower()
     ]
     weth_df = trx_df[trx_df["to_normal"].isin(weth_contracts)].copy()
     trx_df = pd.concat([weth_df, trx_df]).drop_duplicates(keep=False)
@@ -454,6 +402,109 @@ def get_transactions_df(address, chain, scan_key=None):
     vout = pd.concat([vout, serum_df])
 
     del serum_df
+    # ONE INCH ---------------------------------------------------------------------------------------------------------
+    one_contracts = [
+        "0x1111111254eeb25477b68fb85ed929f73a960582".lower(),
+        "0x2eb393fbac8aaa16047d4242033a25486e14f345".lower(),
+        "0x9d4eb7189cd57693c3d01f35168715e1e589cea8".lower(),
+        "0x95e2769aca43a1d4febcfa153022259fc1e49548".lower(),
+        "0x4bc3e539aaa5b18a82f6cd88dc9ab0e113c63377".lower(),
+        "0x1111111254760F7ab3F16433eea9304126DCd199".lower(),
+        "0xd89adc20c400b6c45086a7f6ab2dca19745b89c2".lower(),
+        "0xb63aae6c353636d66df13b89ba4425cfe13d10ba".lower()
+    ]
+    one_df = trx_df[np.logical_or(trx_df['to'].isin(one_contracts), trx_df["to_normal"].isin(one_contracts))].copy()
+    one_df = pd.concat([one_df, trx_df[trx_df['from'].isin(one_contracts)]])
+    one_df = one_df.drop_duplicates()
+    trx_df = pd.concat([one_df, trx_df]).drop_duplicates(keep=False)
+    if one_df.shape[0] > 0:
+        one_df = defi.one_inch(one_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, one_df])
+        del one_df
+
+    # Gitcoin Passport -------------------------------------------------------------------------------------------------
+    gitcoin_contracts = ["0xa8eD4d2C3f6f98A55cdDEd97C5aE9B932B0633A4".lower()]
+    gitcoin_df = trx_df[trx_df['to_normal'].isin(gitcoin_contracts)].copy()
+    trx_df = pd.concat([gitcoin_df, trx_df]).drop_duplicates(keep=False)
+    if gitcoin_df.shape[0] > 0:
+        gitcoin_df['From Amount'] = eu.calculate_value_eth(gitcoin_df['value_normal'])
+        gitcoin_df['From Amount'] *= -1
+        gitcoin_df['From Coin'] = gas_coin
+        gitcoin_df.index = gitcoin_df['timeStamp_normal']
+        gitcoin_df['Fee'] = eu.calculate_gas(gitcoin_df['gasPrice'], gitcoin_df['gasUsed_normal'])
+        gitcoin_df[['Tag', 'Notes']] = ['Movement', 'Gitcoin passport']
+        gitcoin_df = gitcoin_df[[x for x in gitcoin_df.columns if x in columns_out]]
+        gitcoin_df = gitcoin_df.sort_index()
+        vout = pd.concat([vout, gitcoin_df])
+        del gitcoin_df
+
+    # OP delegations ---------------------------------------------------------------------------------------------------
+    trx_df.loc[np.logical_and(trx_df['to_normal'] == '0x4200000000000000000000000000000000000042'.lower(),
+                              trx_df['functionName'].str.contains('delegate')), 'functionName'] = 'approv'
+
+    # Normal ERC20 transfers -------------------------------------------------------------------------------------------
+    erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
+    erc20_transfers_df = erc20_transfers_df[
+        np.logical_or(pd.isna(erc20_transfers_df['blockNumber_normal']),
+                      erc20_transfers_df['value_normal'].isin(['0', 0]))]
+    erc20_transfers_df = erc20_transfers_df[
+        np.logical_or(pd.isna(erc20_transfers_df['value_internal']), erc20_transfers_df['value_normal'].isin(['0', 0]))]
+    erc20_transfers_df = erc20_transfers_df[np.logical_and(pd.isna(erc20_transfers_df['blockNumber_erc721']),
+                                                           pd.isna(erc20_transfers_df['blockNumber_erc1155']))]
+
+    trx_df = pd.concat([erc20_transfers_df, trx_df]).drop_duplicates(keep=False)
+
+    erc20_transfers_df = eu.erc20_transfer(erc20_transfers_df, address, columns_out)
+    vout = pd.concat([vout, erc20_transfers_df])
+    # END Normal ERC20 transfers ---------------------------------------------------------------------------------------
+    del erc20_transfers_df
+    # Normal ERC721 transfers ------------------------------------------------------------------------------------------
+    erc721_transfers_df = trx_df[
+        np.logical_and(~pd.isna(trx_df['blockNumber_erc721']), pd.isna(trx_df['blockNumber_erc1155']))].copy()
+    erc721_transfers_df = erc721_transfers_df[
+        np.logical_and(pd.isna(erc721_transfers_df['blockNumber_normal']), pd.isna(erc721_transfers_df['blockNumber']))]
+    erc721_transfers_df = pd.concat(
+        [erc721_transfers_df, trx_df[trx_df['functionName'].str.contains('safeTransferFrom', na=False)]])
+    trx_df = pd.concat([erc721_transfers_df, trx_df]).drop_duplicates(keep=False)
+
+    erc721_transfers_df = eu.erc721_transfer(erc721_transfers_df, address, columns_out)
+    vout = pd.concat([vout, erc721_transfers_df])
+    # END Normal ERC721 transfers --------------------------------------------------------------------------------------
+    del erc721_transfers_df
+    # Normal ERC1155 transfers -----------------------------------------------------------------------------------------
+    erc1155_transfers_df = trx_df[
+        np.logical_and(~pd.isna(trx_df['blockNumber_erc1155']), pd.isna(trx_df['blockNumber_erc721']))].copy()
+    erc1155_transfers_df = erc1155_transfers_df[
+        np.logical_and(pd.isna(erc1155_transfers_df['blockNumber_normal']),
+                       pd.isna(erc1155_transfers_df['blockNumber']))]
+
+    trx_df = pd.concat([erc1155_transfers_df, trx_df]).drop_duplicates(keep=False)
+
+    erc1155_transfers_df = eu.erc1155_transfer(erc1155_transfers_df, address, columns_out)
+    vout = pd.concat([vout, erc1155_transfers_df])
+    # END Normal ER1155 transfers --------------------------------------------------------------------------------------
+    del erc1155_transfers_df
+    # Approvals --------------------------------------------------------------------------------------------------------
+    trx_df['functionName'] = trx_df['functionName'].apply(lambda x: str(x).lower())
+
+    approvals_df = trx_df[np.logical_and(trx_df['functionName'].str.contains('approv'), pd.isna(trx_df['blockNumber']))]
+    approvals_df.index = approvals_df['timeStamp_normal']
+    approvals_df = approvals_df[
+        np.logical_and(pd.isna(approvals_df['blockNumber_internal']), pd.isna(approvals_df['blockNumber_erc721']))]
+    approvals_df = approvals_df[pd.isna(approvals_df['blockNumber_erc1155'])]
+
+    trx_df = pd.concat([approvals_df, trx_df]).drop_duplicates(keep=False)
+
+    approvals_df[['To', 'From']] = approvals_df[['to_normal', 'from_normal']]
+    approvals_df['Fee'] = eu.calculate_gas(approvals_df.gasPrice, approvals_df.gasUsed_normal)
+    approvals_df = approvals_df[[x for x in approvals_df.columns if x in columns_out]]
+    approvals_df = approvals_df.sort_index()
+
+    approvals_df['Tag'] = 'Set Approval'
+
+    vout = pd.concat([approvals_df, vout]).drop_duplicates(keep=False)
+    # END Approvals ----------------------------------------------------------------------------------------------------
+    del approvals_df
 
     if trx_df.shape[0] > 0:
         print("ATTENZIONE: TRANSAZIONI MANCANTI")

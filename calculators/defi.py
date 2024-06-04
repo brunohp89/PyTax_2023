@@ -8,7 +8,8 @@ def uniswap(df, address, columns_out, gas_coin):
     uniswap_out = pd.DataFrame()
 
     df.index = df["timeStamp_normal"]
-
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
     if df.shape[0] > 0:
         # Function multicall V2
         multicall = df[
@@ -26,9 +27,10 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["value_internal"] = eu.calculate_value_eth(multicall.value_internal)
         multicall["value_normal"] += multicall["value_internal"]
 
-        multicall["from_internal"] = multicall["from_internal"].apply(
-            lambda x: x.lower()
-        )
+        multicall["from_internal"] = multicall["from_internal"].combine_first(multicall["from_normal"].apply(lambda x: x.lower()))
+        multicall["to_internal"] = multicall["to_internal"].combine_first(multicall["to_normal"].apply(lambda x: x.lower()))
+
+        multicall["from_internal"] = multicall["from_internal"].apply(lambda x: x.lower())
         multicall["to_internal"] = multicall["to_internal"].apply(lambda x: x.lower())
 
         multicall["from"] = multicall["from"].apply(lambda x: x.lower())
@@ -261,6 +263,8 @@ def uniswap(df, address, columns_out, gas_coin):
     uniswap_out = uniswap_out[[x for x in uniswap_out.columns if x in columns_out]]
     uniswap_out = uniswap_out.sort_index()
 
+    uniswap_out = uniswap_out.drop_duplicates()
+
     return uniswap_out
 
 
@@ -335,6 +339,10 @@ def stargate(df, address, gas_coin, columns_out):
 
         df.loc[
             df["functionName"] == "sendFrom", "functionName"
+        ] = "swap"
+
+        df.loc[
+            df["functionName"] == "swapAndBridge", "functionName"
         ] = "swap"
 
         # Add Liquidity ERC20 or ETH
@@ -869,6 +877,7 @@ def one_inch(df, address, columns_out, gas_coin):
         df.loc[df['to_normal'] == address, 'To Amount'] = df.loc[
             df['to_normal'] == address, 'value_normal']
 
+        df[['Tag','Notes']] = ['Trade', '1inch - Trade']
         one_out = pd.concat([one_out, df[~pd.isna(df['blockHash'])]])
         # Execute orders
         df = df[pd.isna(df['blockHash'])]
@@ -885,7 +894,7 @@ def one_inch(df, address, columns_out, gas_coin):
                 copy=False).ffill()
             df[['To Coin', 'To Amount']] = df[['To Coin', 'To Amount']].infer_objects(copy=False).bfill()
             df = df.drop_duplicates(subset=columns_out)
-
+            df[['Tag', 'Notes']] = ['Trade', '1inch - Execute']
             one_out = pd.concat([one_out, df])
 
         one_out = one_out[[x for x in one_out.columns if x in columns_out]]

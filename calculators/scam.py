@@ -21,6 +21,7 @@ scam = [
     '$1000 REWARDS - 0',
     '$1000 Rewards - 0',
     'BSC',
+    'OPTOPUS',
     'TheSandBox.PRO',
     '1 stETH - 0',
     '$ELO Coin Launch Party - 0',
