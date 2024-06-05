@@ -15,9 +15,8 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall = df[
             np.logical_and(
                 df["functionName"].str.contains("multicall"),
-                df["to_normal"] == "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
-            )
-        ].copy()
+                df["to_normal"].isin(["0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+                                      "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45"]))].copy()
         df = pd.concat([df, multicall]).drop_duplicates(keep=False)
 
         multicall["value"] = eu.calculate_value_token(
@@ -27,8 +26,24 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["value_internal"] = eu.calculate_value_eth(multicall.value_internal)
         multicall["value_normal"] += multicall["value_internal"]
 
-        multicall["from_internal"] = multicall["from_internal"].combine_first(multicall["from_normal"].apply(lambda x: x.lower()))
-        multicall["to_internal"] = multicall["to_internal"].combine_first(multicall["to_normal"].apply(lambda x: x.lower()))
+
+        count_df = multicall.groupby(multicall.index).agg({'hash':'count'}).reset_index()
+        if any(count_df['hash'] == 2):
+            count_df.index = count_df['timeStamp_normal']
+            count_df = count_df.drop('timeStamp_normal', axis=1)
+            multicall = pd.merge(count_df, multicall, left_on='timeStamp_normal', right_index=True)
+            for indexl in multicall[multicall['hash_x']==2].index.unique():
+                if multicall[multicall.index==indexl]['value_internal'].iloc[0]!=multicall[multicall.index==indexl]['value_internal'].iloc[1]:
+                    multicall.loc[multicall.index == indexl,'value_internal'] = multicall.loc[multicall.index==indexl,'value_internal'].sum()
+
+                if multicall[multicall.index==indexl]['value'].iloc[0]!=multicall[multicall.index==indexl]['value'].iloc[1]:
+                    multicall.loc[multicall.index == indexl, 'value'] = multicall.loc[multicall.index==indexl, 'value'].sum()
+
+
+        multicall["from_internal"] = multicall["from_internal"].combine_first(
+            multicall["from_normal"].apply(lambda x: x.lower()))
+        multicall["to_internal"] = multicall["to_internal"].combine_first(
+            multicall["to_normal"].apply(lambda x: x.lower()))
 
         multicall["from_internal"] = multicall["from_internal"].apply(lambda x: x.lower())
         multicall["to_internal"] = multicall["to_internal"].apply(lambda x: x.lower())
@@ -65,7 +80,11 @@ def uniswap(df, address, columns_out, gas_coin):
         )
 
         multicall["Tag"] = "Uniswap"
-        multicall["Notes"] = "Swap"
+        multicall["Notes"] = "Trade"
+
+        if any(count_df['hash'] == 2):
+            multicall = multicall.drop_duplicates(subset=columns_out)
+            multicall = multicall.drop('hash_x', axis=1)
 
         uniswap_out = pd.concat([uniswap_out, multicall])
 
@@ -225,6 +244,22 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["from"] = multicall["from"].apply(lambda x: x.lower())
         multicall["to"] = multicall["to"].apply(lambda x: x.lower())
 
+        count_df = multicall.groupby(multicall.index).agg({'hash': 'count'}).reset_index()
+        if any(count_df['hash'] == 2):
+            count_df.index = count_df['timeStamp_normal']
+            count_df = count_df.drop('timeStamp_normal', axis=1)
+            multicall = pd.merge(count_df, multicall, left_on='timeStamp_normal', right_index=True)
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'To Amount'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'value']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to'] == address), 'To Coin'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'tokenSymbol']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'From Amount'] = -multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'value']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'From Coin'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'tokenSymbol']
+            multicall.loc[multicall['hash_x'] == 2, ['To Coin', 'To Amount']] = multicall.loc[multicall['hash_x'] == 2, ['To Coin', 'To Amount']].ffill()
+            multicall.loc[multicall['hash_x'] == 2, ['From Coin', 'From Amount']] = multicall.loc[multicall['hash_x'] == 2, ['From Coin', 'From Amount']].bfill()
+            temp1 = multicall[multicall['hash_x'] == 2].drop_duplicates(subset=columns_out)
+            multicall = multicall[multicall['hash_x'] != 2]
+            multicall = pd.concat([multicall, temp1])
+            multicall = multicall.drop('hash_x', axis=1)
+
         multicall.loc[multicall["from_internal"] == address, "From Coin"] = gas_coin
         multicall.loc[multicall["from_internal"] == address, "To Coin"] = multicall.loc[
             multicall["from_internal"] == address, "tokenSymbol"
@@ -253,8 +288,8 @@ def uniswap(df, address, columns_out, gas_coin):
             multicall.gasPrice, multicall.gasUsed_normal
         )
 
-        multicall["Tag"] = "Uniswap"
-        multicall["Notes"] = "Swap"
+        multicall["Tag"] = "Uniswap - Execute"
+        multicall["Notes"] = "Trade"
 
         uniswap_out = pd.concat([uniswap_out, multicall])
     if df.shape[0] > 0:
@@ -877,7 +912,7 @@ def one_inch(df, address, columns_out, gas_coin):
         df.loc[df['to_normal'] == address, 'To Amount'] = df.loc[
             df['to_normal'] == address, 'value_normal']
 
-        df[['Tag','Notes']] = ['Trade', '1inch - Trade']
+        df[['Tag', 'Notes']] = ['Trade', '1inch - Trade']
         one_out = pd.concat([one_out, df[~pd.isna(df['blockHash'])]])
         # Execute orders
         df = df[pd.isna(df['blockHash'])]
@@ -962,3 +997,272 @@ def graph(df, columns_out):
     graph_out = graph_out.sort_index()
 
     return graph_out
+
+
+def yearn(df, columns_out):
+    df = df[~df['tokenSymbol'].str.contains('yv', na=False)]
+    df.index = df['timeStamp_normal']
+    df = df.sort_index()
+
+    df['value'] = eu.calculate_value_token(df['value'].fillna(0), df['tokenDecimal'].fillna(0))
+    df.loc[df['value'] == 0, 'value'] = None
+
+    df.loc[df['functionName'].str.contains('deposit'), 'value'] *= -1
+    df['value'] = df['value'].cumsum()
+    df.loc[df['value'] > 0, 'To Amount'] = df.loc[df['value'] > 0, 'value']
+    df.loc[df['value'] > 0, 'To Coin'] = df.loc[df['value'] > 0, 'tokenSymbol']
+    df.loc[df['value'] > 0, ['Tag', 'Notes']] = ['Reward', 'Yearn Finance - Withdraw']
+    df['Tag'] = df['Tag'].fillna('Movement')
+    df['Notes'] = df['Notes'].fillna('Yearn Finance - Deposit')
+
+    df = df[[x for x in df.columns if x in columns_out]]
+    df = df.sort_index()
+
+    return df
+
+
+def zerox(df, address, gas_coin, columns_out):
+    zero_out = pd.DataFrame()
+    df["value"] = eu.calculate_value_token(df.value, df.tokenDecimal)
+    df["value_normal"] = eu.calculate_value_eth(df.value_normal)
+    df["value_internal"] = eu.calculate_value_eth(df.value_internal)
+    df["value_normal"] += df["value_internal"]
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
+    df['to_internal'] = df['to_internal'].combine_first(df['to_normal'])
+    df['from_internal'] = df['from_internal'].combine_first(df['from_normal'])
+    df.index = df['timeStamp_normal']
+
+    # Transform ERC20 function
+    transform = df[df['functionName'].str.contains('transformERC20')].copy()
+    df = pd.concat([transform, df]).drop_duplicates(keep=False)
+
+    transform.loc[transform['to_internal'] == address, 'To Coin'] = gas_coin
+    transform.loc[transform['to_internal'] == address, 'To Amount'] = transform.loc[
+        transform['to_internal'] == address, 'value_normal']
+    transform.loc[transform['to_internal'] == address, 'From Coin'] = transform.loc[
+        transform['to_internal'] == address, 'tokenSymbol']
+    transform.loc[transform['to_internal'] == address, 'From Amount'] = -transform.loc[
+        transform['to_internal'] == address, 'value']
+
+    transform.loc[transform['from_internal'] == address, 'From Coin'] = gas_coin
+    transform.loc[transform['from_internal'] == address, 'From Amount'] = -transform.loc[
+        transform['from_internal'] == address, 'value_normal']
+    transform.loc[transform['from_internal'] == address, 'To Coin'] = transform.loc[
+        transform['from_internal'] == address, 'tokenSymbol']
+    transform.loc[transform['from_internal'] == address, 'To Amount'] = transform.loc[
+        transform['from_internal'] == address, 'value']
+
+    zero_out = pd.concat([zero_out, transform])
+
+    if df.shape[0] > 0:
+        print("0x - TRANSAZIONI MANCANTI")
+    zero_out['Tag'] = zero_out['Tag'].fillna('Trade')
+    zero_out['Notes'] = zero_out['Notes'].fillna('0x - Transform ERC20')
+
+    zero_out = zero_out[[x for x in zero_out.columns if x in columns_out]]
+    zero_out = zero_out.sort_index()
+
+    return zero_out
+
+
+
+
+def quick_swap(df, address, columns_out, gas_coin):
+    quick_out = pd.DataFrame()
+
+    df.index = df["timeStamp_normal"]
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
+    df['functionName'] = df['functionName'].apply(lambda x: x.lower())
+    if df.shape[0] > 0:
+        # Adding and removing liquidity with ETH
+        liquidity_df = df[
+            np.logical_or(
+                df["functionName"].str.contains("addliquidityeth"),
+                df["functionName"].str.contains("removeliquidity"),
+            )
+        ].copy()
+        df = pd.concat([df, liquidity_df]).drop_duplicates(keep=False)
+
+        liquidity_df = liquidity_df[liquidity_df["tokenSymbol"] != "UNI-V2"]
+
+        liquidity_df["Fee"] = eu.calculate_gas(
+            liquidity_df.gasPrice, liquidity_df.gasUsed_normal
+        )
+
+        liquidity_df["value"] = eu.calculate_value_token(
+            liquidity_df.value, liquidity_df.tokenDecimal
+        )
+        liquidity_df["value_normal"] = eu.calculate_value_eth(
+            liquidity_df.value_normal.fillna(0)
+        )
+        liquidity_df["value_internal"] = eu.calculate_value_eth(
+            liquidity_df.value_internal.fillna(0)
+        )
+        liquidity_df["value_normal"] += liquidity_df["value_internal"]
+
+        liquidity_df.loc[
+            pd.isna(liquidity_df["to_internal"]), "to_internal"
+        ] = liquidity_df.loc[pd.isna(liquidity_df["to_internal"]), "to_normal"]
+
+        liquidity_df.loc[
+            liquidity_df["functionName"].str.contains("addliquidityeth"),
+            ["value_normal", "value"],
+        ] *= -1
+        liquidity_df = liquidity_df.sort_index()
+
+        for token in liquidity_df["tokenSymbol"].unique():
+            temp_df = liquidity_df[liquidity_df["tokenSymbol"] == token]
+            temp_df["value"] = temp_df["value"].cumsum()
+            temp_df["value_normal"] = temp_df["value_normal"].cumsum()
+            temp_df.loc[
+                temp_df["functionName"].str.contains("addliquidityeth"),
+                ["value_normal", "value"],
+            ] = None
+            temp_df = pd.concat(
+                [
+                    temp_df,
+                    temp_df[temp_df["functionName"].str.contains("removeliquidity")],
+                ]
+            )
+            temp_df.loc[
+                temp_df["functionName"].str.contains("removeliquidity"), "value"
+            ] *= [1, 0]
+            temp_df.loc[
+                temp_df["functionName"].str.contains("removeliquidity"), "value_normal"
+            ] *= [0, 1]
+            temp_df.loc[
+                temp_df["functionName"].str.contains("removeliquidity"), "Fee"
+            ] /= len(
+                temp_df.loc[
+                    temp_df["functionName"].str.contains("removeliquidity"), "Fee"
+                ]
+            )
+            liquidity_df = liquidity_df.drop(temp_df.index, axis=0)
+            liquidity_df = pd.concat([liquidity_df, temp_df])
+
+        liquidity_df.loc[
+            liquidity_df["functionName"].str.contains("addliquidityeth"),
+            ["Tag", "Notes"],
+        ] = ["Movement", "Quick Swap-V2 Deposit"]
+        liquidity_df.loc[
+            liquidity_df["functionName"].str.contains("removeliquidity"),
+            ["Tag", "Notes"],
+        ] = ["Reward", "Quick Swap-V2 Withdraw"]
+
+        liquidity_df.loc[
+            liquidity_df["value_normal"] < 0, "From Amount"
+        ] = liquidity_df.loc[liquidity_df["value_normal"] < 0, "value_normal"]
+        liquidity_df.loc[
+            liquidity_df["value_normal"] > 0, "To Amount"
+        ] = liquidity_df.loc[liquidity_df["value_normal"] > 0, "value_normal"]
+        liquidity_df.loc[liquidity_df["value_normal"] < 0, "From Coin"] = gas_coin
+        liquidity_df.loc[liquidity_df["value_normal"] > 0, "To Coin"] = gas_coin
+
+        liquidity_df.loc[liquidity_df["value"] < 0, "From Amount"] = liquidity_df.loc[
+            liquidity_df["value"] < 0, "value"
+        ]
+        liquidity_df.loc[liquidity_df["value"] > 0, "To Amount"] = liquidity_df.loc[
+            liquidity_df["value"] > 0, "value"
+        ]
+        liquidity_df.loc[liquidity_df["value"] < 0, "From Coin"] = liquidity_df.loc[
+            liquidity_df["value"] < 0, "tokenSymbol"
+        ]
+        liquidity_df.loc[liquidity_df["value"] > 0, "To Coin"] = liquidity_df.loc[
+            liquidity_df["value"] > 0, "tokenSymbol"
+        ]
+
+        quick_out = pd.concat([quick_out, liquidity_df])
+
+        # Function swap
+        multicall = df[
+            np.logical_or(
+                df["functionName"].str.contains("execute"),
+                df["functionName"].str.contains("swapexactethfortokens"),
+            )
+        ].copy()
+        df = pd.concat([df, multicall]).drop_duplicates(keep=False)
+
+        multicall["value"] = eu.calculate_value_token(
+            multicall.value, multicall.tokenDecimal
+        )
+        multicall["value_normal"] = eu.calculate_value_eth(
+            multicall.value_normal.fillna(0)
+        )
+        multicall["value_internal"] = eu.calculate_value_eth(
+            multicall.value_internal.fillna(0)
+        )
+        multicall["value_normal"] += multicall["value_internal"]
+
+        multicall["from_internal"] = (
+            multicall["from_internal"]
+            .combine_first(multicall["from_normal"])
+            .apply(lambda x: x.lower())
+        )
+        multicall["to_internal"] = (
+            multicall["to_internal"]
+            .combine_first(multicall["to_normal"])
+            .apply(lambda x: x.lower())
+        )
+
+        multicall["from"] = multicall["from"].apply(lambda x: x.lower())
+        multicall["to"] = multicall["to"].apply(lambda x: x.lower())
+
+        count_df = multicall.groupby(multicall.index).agg({'hash': 'count'}).reset_index()
+        if any(count_df['hash'] == 2):
+            count_df.index = count_df['timeStamp_normal']
+            count_df = count_df.drop('timeStamp_normal', axis=1)
+            multicall = pd.merge(count_df, multicall, left_on='timeStamp_normal', right_index=True)
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'To Amount'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'value']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to'] == address), 'To Coin'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['to']==address), 'tokenSymbol']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'From Amount'] = -multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'value']
+            multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'From Coin'] = multicall.loc[np.logical_and(multicall['hash_x'] == 2, multicall['from'] == address), 'tokenSymbol']
+            multicall.loc[multicall['hash_x'] == 2, ['To Coin', 'To Amount']] = multicall.loc[multicall['hash_x'] == 2, ['To Coin', 'To Amount']].ffill()
+            multicall.loc[multicall['hash_x'] == 2, ['From Coin', 'From Amount']] = multicall.loc[multicall['hash_x'] == 2, ['From Coin', 'From Amount']].bfill()
+            temp1 = multicall[multicall['hash_x'] == 2].drop_duplicates(subset=columns_out)
+            multicall = multicall[multicall['hash_x'] != 2]
+            multicall = pd.concat([multicall, temp1])
+            multicall = multicall.drop('hash_x', axis=1)
+
+        multicall.loc[multicall["from_internal"] == address, "From Coin"] = gas_coin
+        multicall.loc[multicall["from_internal"] == address, "To Coin"] = multicall.loc[
+            multicall["from_internal"] == address, "tokenSymbol"
+        ]
+
+        multicall.loc[multicall["to_internal"] == address, "To Coin"] = gas_coin
+        multicall.loc[multicall["to_internal"] == address, "From Coin"] = multicall.loc[
+            multicall["to_internal"] == address, "tokenSymbol"
+        ]
+
+        multicall.loc[
+            multicall["from_internal"] == address, "From Amount"
+        ] = -multicall.loc[multicall["from_internal"] == address, "value_normal"]
+        multicall.loc[
+            multicall["from_internal"] == address, "To Amount"
+        ] = multicall.loc[multicall["from_internal"] == address, "value"]
+
+        multicall.loc[multicall["to_internal"] == address, "To Amount"] = multicall.loc[
+            multicall["to_internal"] == address, "value_normal"
+        ]
+        multicall.loc[
+            multicall["to_internal"] == address, "From Amount"
+        ] = -multicall.loc[multicall["to_internal"] == address, "value"]
+
+        multicall["Fee"] = eu.calculate_gas(
+            multicall.gasPrice, multicall.gasUsed_normal
+        )
+
+        multicall["Tag"] = "Quick Swap - Execute"
+        multicall["Notes"] = "Trade"
+
+        quick_out = pd.concat([quick_out, multicall])
+    if df.shape[0] > 0:
+        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI UNISWAP SONO INCLUSE")
+
+    quick_out = quick_out[[x for x in quick_out.columns if x in columns_out]]
+    quick_out = quick_out.sort_index()
+
+    quick_out = quick_out.drop_duplicates()
+
+    return quick_out

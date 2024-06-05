@@ -7,11 +7,80 @@ def opensea(df, address, columns_keep):
     df.value = df.value.infer_objects(copy=False).fillna(0)
     df.tokenDecimal = df.tokenDecimal.infer_objects(copy=False).fillna(1)
     df['value'] = eu.calculate_value_token(df.value, df.tokenDecimal)
+    df.index = df['timeStamp_normal']
+    df['Tag2'] = None
+
+    vout = pd.DataFrame()
+    # bulk transfers
+    bulk = df[df['functionName'].str.contains('bulkTransfer', na=False)].copy()
+    if bulk.shape[0] > 0:
+        df = pd.concat([bulk, df]).drop_duplicates(keep=False)
+        bulk = pd.merge(bulk, bulk.groupby(bulk.index).agg({'hash': 'count'}).reset_index(), left_index=True,
+                        right_on='timeStamp_normal')
+        bulk['Fee'] = eu.calculate_gas(bulk['gasPrice'], bulk['gasUsed_normal'])
+        bulk['Fee'] /= bulk['hash_y']
+        bulk['Tag'] = 'Movement'
+        bulk['Notes'] = 'NFT'
+        bulk = bulk.drop('hash_y', axis=1)
+        bulk1155 = bulk.copy()
+
+        bulk.loc[bulk['from_erc721'] == address, 'From Coin'] = bulk.loc[
+            bulk['from_erc721'] == address, 'erc721_complete_name']
+        bulk.loc[bulk['from_erc721'] == address, 'From Amount'] = -1
+        bulk.loc[bulk['to_erc721'] == address, 'To Coin'] = bulk.loc[
+            bulk['to_erc721'] == address, 'erc721_complete_name']
+        bulk.loc[bulk['to_erc721'] == address, 'To Amount'] = 1
+        bulk = bulk.drop_duplicates(subset=['From Coin', 'From Amount', 'To Coin', 'To Amount'])
+        bulk['From'] = bulk['from_erc721']
+        bulk['To'] = bulk['to_erc721']
+        bulk = bulk[~pd.isna(bulk['to_erc721'])]
+
+        bulk1155.loc[bulk1155['from_erc1155'] == address, 'From Coin'] = bulk1155.loc[
+            bulk1155['from_erc1155'] == address, 'erc1155_complete_name']
+        bulk1155.loc[bulk1155['from_erc1155'] == address, 'From Amount'] = [int(x) for x in bulk1155.loc[
+            bulk1155['from_erc1155'] == address, 'tokenValue'].values]
+        bulk1155.loc[bulk1155['from_erc1155'] == address, 'From Amount'] *= -1
+        bulk1155.loc[bulk1155['to_erc1155'] == address, 'To Coin'] = bulk1155.loc[
+            bulk1155['to_erc1155'] == address, 'erc1155_complete_name']
+        bulk1155.loc[bulk1155['to_erc1155'] == address, 'To Amount'] = bulk1155.loc[
+            bulk1155['to_erc1155'] == address, 'tokenValue'].values
+        bulk1155 = bulk1155.drop_duplicates(subset=['From Coin', 'From Amount', 'To Coin', 'To Amount'])
+        bulk1155['From'] = bulk1155['from_erc1155']
+        bulk1155['To'] = bulk1155['to_erc1155']
+        bulk1155 = bulk1155[~pd.isna(bulk1155['to_erc1155'])]
+
+        vout = pd.concat([vout, bulk, bulk1155])
+
+    # Buy and free
+    buy_and_free = df[df['functionName'].str.contains('buyAndFree22457070633', na=False)].copy()
+    df = pd.concat([buy_and_free, df]).drop_duplicates(keep=False)
+    if buy_and_free.shape[0] > 0:
+        for hash in buy_and_free.hash.unique():
+            buy_and_free.loc[buy_and_free['hash'] == hash, 'value'] = buy_and_free.loc[
+                buy_and_free['hash'] == hash, 'value'].sum()
+        buy_and_free['Fee'] = eu.calculate_gas(buy_and_free['gasPrice_erc721'], buy_and_free['gasUsed_erc721'])
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Coin'] = buy_and_free.loc[
+            buy_and_free['from_erc721'] == address, 'erc721_complete_name']
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Amount'] = -1
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Coin'] = buy_and_free.loc[
+            buy_and_free['from_erc721'] == address, 'tokenSymbol']
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Amount'] = buy_and_free.loc[
+            buy_and_free['from_erc721'] == address, 'value']
+
+        buy_and_free.loc[buy_and_free['to_erc721'] == address, 'To Coin'] = buy_and_free.loc[
+            buy_and_free['to_erc721'] == address, 'erc721_complete_name']
+        buy_and_free.loc[buy_and_free['to_erc721'] == address, 'To Amount'] = 1
+        buy_and_free.loc[buy_and_free['to_erc721'] == address, 'From Coin'] = buy_and_free.loc[
+            buy_and_free['to_erc721'] == address, 'tokenSymbol']
+        buy_and_free.loc[buy_and_free['to_erc721'] == address, 'From Amount'] = buy_and_free.loc[
+            buy_and_free['to_erc721'] == address, 'value']
+        buy_and_free['From Amount'] *= -1
+        buy_and_free = buy_and_free.drop_duplicates(subset=columns_keep)
+        vout = pd.concat([vout, buy_and_free])
 
     # Mints
     df.loc[df['functionName'].str.contains('mint'), 'Tag2'] = 'Mint'
 
-    df.index = df['timeStamp_normal']
     df.loc[pd.isna(df['tokenSymbol']), 'tokenSymbol'] = 'ETH'
     df['value_normal'] = eu.calculate_value_eth(df.value_normal)
     df.loc[np.logical_or(pd.isna(df['value']), df['value'] == 0), 'value'] = df.loc[
@@ -48,9 +117,6 @@ def opensea(df, address, columns_keep):
     df['Notes'] = 'NFT'
     df['Tag'] = 'OpenSea'
 
-    df = df[[x for x in df.columns if x in columns_keep or x == 'Tag2']]
-    df = df.sort_index()
-
     grouped = df.groupby(df.index).agg({'From Amount': 'sum', 'From': 'count', 'Fee': 'mean'}).reset_index()
     grouped.loc[grouped['From'] > 1, 'Fee'] /= grouped.loc[grouped['From'] > 1, 'From']
 
@@ -67,6 +133,11 @@ def opensea(df, address, columns_keep):
         else:
             df.loc[df.index == x, 'From Amount'] /= df.loc[df.index == x, 'From Amount'].shape[0] * 4
 
+    df = pd.concat([df, vout])
+
+    df.index = df['timeStamp_normal']
+    df = df[[x for x in df.columns if x in columns_keep or x == 'Tag2']]
+    df = df.sort_index()
     df = df.drop('Tag2', axis=1)
 
     return df
@@ -259,23 +330,82 @@ def LOTM(df, address, columns_out):
 def the_sandbox(df, columns_out):
     df.index = df.timeStamp_normal
     df['Fee'] = eu.calculate_gas(df.gasPrice, df.gasUsed_normal)
-    df['To Coin'] = df['erc1155_complete_name']
-    df['To Amount'] = df['tokenValue']
 
-    df['Notes'] = 'Claim Prizes'
-    df['Tag'] = 'The Sandbox'
+    tsb_out = pd.DataFrame()
+
+    tsb_1155 = df[~pd.isna(df['erc1155_complete_name'])].copy()
+    df = pd.concat([df, tsb_1155]).drop_duplicates(keep=False)
+    if tsb_1155.shape[0] > 0:
+        tsb_1155['To Coin'] = tsb_1155['erc1155_complete_name']
+        tsb_1155['To Amount'] = tsb_1155['tokenValue']
+
+        tsb_1155['Notes'] = 'Movement'
+        tsb_1155['Tag'] = 'The Sandbox - NFT'
+
+        grouped = tsb_1155.groupby(tsb_1155.index).agg({'Tag': 'count', 'Fee': 'mean'}).reset_index()
+        grouped.loc[grouped['Tag'] > 1, 'Fee'] /= grouped.loc[grouped['Tag'] > 1, 'Tag']
+
+        grouped.index = grouped.timeStamp_normal
+        grouped = grouped.drop('timeStamp_normal', axis=1)
+
+        tsb_1155['Fee'] = grouped['Fee']
+
+        tsb_1155 = tsb_1155.drop_duplicates()
+        tsb_out = pd.concat([tsb_out, tsb_1155])
+
+    rewards = df[pd.isna(df['blockNumber_normal'])].copy()
+    df = pd.concat([df, rewards]).drop_duplicates(keep=False)
+    if rewards.shape[0] > 0:
+        rewards['To Amount'] = eu.calculate_value_token(rewards['value'], rewards['tokenDecimal'])
+        rewards[['Tag', 'Notes']] = ['Reward', 'The Sandbox - Claim']
+        rewards['To Coin'] = 'SAND'
+        rewards['Fee'] = eu.calculate_gas(rewards.gasPrice_erc20, rewards.gasUsed)
+
+        tsb_out = pd.concat([tsb_out, rewards])
+
+    staking = df[
+        np.logical_or(df['functionName'].str.contains('exit'), df['functionName'].str.contains('stake'))].copy()
+    df = pd.concat([df, staking]).drop_duplicates(keep=False)
+    if staking.shape[0] > 0:
+        staking = pd.concat([staking[staking['functionName'].str.contains('stake')],
+                             staking[np.logical_and(staking['functionName'].str.contains('exit'),
+                                                    staking['tokenSymbol'] != 'UNI-V2')]])
+
+        staking['value'] = eu.calculate_value_token(staking['value'], staking['tokenDecimal'])
+        staking.loc[staking['functionName'].str.contains('exit'), 'To Amount'] = staking.loc[
+            staking['functionName'].str.contains('exit'), 'value']
+        staking.loc[staking['functionName'].str.contains('exit'), 'To Coin'] = 'SAND'
+
+        staking.loc[staking['functionName'].str.contains('exit'), ['Tag', 'Notes']] = ['Reward',
+                                                                                       'The Sandbox - Staking']
+        staking['Tag'] = staking['Tag'].fillna('Movements')
+        staking['Notes'] = staking['Notes'].fillna('The Sandbox - Staking')
+
+        tsb_out = pd.concat([tsb_out, staking])
+    if df.shape[0] > 0:
+        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI THE SANDBOX SONO INCLUSE")
+
+    tsb_out = tsb_out[[x for x in tsb_out.columns if x in columns_out]]
+    tsb_out = tsb_out.sort_index()
+    return tsb_out
+
+
+def optimism_quests(df, gas_coin, columns_out):
+    df.index = df['timeStamp_normal']
+    df['To Coin'] = df['erc721_complete_name'].combine_first(df['erc1155_complete_name'])
+    df['To Amount'] = 1
+    df[['Tag', 'Notes']] = ['Movement', 'NFT']
+
+    df['From Amount'] = eu.calculate_value_eth(df['value_normal'])
+    df['From Amount'] *= -1
+    df.loc[df['From Amount'] == 0, 'From Amount'] = None
+
+    df.loc[df['From Amount'] < 0, 'From Coin'] = gas_coin
+
+    df['Fee'] = eu.calculate_gas(df['gasPrice_erc721'].combine_first(df['gasPrice_erc1155']),
+                                 df['gasUsed_erc721'].combine_first(df['gasUsed_erc1155']))
 
     df = df[[x for x in df.columns if x in columns_out]]
     df = df.sort_index()
-
-    grouped = df.groupby(df.index).agg({'Tag': 'count', 'Fee': 'mean'}).reset_index()
-    grouped.loc[grouped['Tag'] > 1, 'Fee'] /= grouped.loc[grouped['Tag'] > 1, 'Tag']
-
-    grouped.index = grouped.timeStamp_normal
-    grouped = grouped.drop('timeStamp_normal', axis=1)
-
-    df['Fee'] = grouped['Fee']
-
-    df = df.drop_duplicates()
 
     return df
