@@ -227,8 +227,8 @@ def uniswap(df, address, columns_out, gas_coin):
         # Function EXECUTE
         multicall = df[
             np.logical_or(
-                df["functionName"].str.contains("execute"),
-                df["functionName"].str.contains("swapExactTokensForETH".lower()),
+                df["functionName"].apply(lambda x: x.lower()).str.contains("execute"),
+                df["functionName"].apply(lambda x: x.lower()).str.contains("swapExactTokensForETH".lower()),
             )
         ].copy()
         df = pd.concat([df, multicall]).drop_duplicates(keep=False)

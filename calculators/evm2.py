@@ -19,8 +19,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
     # Getting all transactions
     trx_df = eu.get_transactions_raw(address, chain, scan_key)
-    # if trx_df[1].shape[0] == 0:
-    #    return trx_df[1]
+    if trx_df[1].shape[0] == 0:
+        return trx_df[1]
     trx_df[1][columns_out] = None
 
     gas_coin = trx_df[0]

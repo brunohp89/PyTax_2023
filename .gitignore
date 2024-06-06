@@ -27,6 +27,7 @@ calculators/cosmos.py
 venv
 plutus
 *.xlsx
+*.txt
 *.csv
 Transazioni_*.xlsx
 manual_*
