@@ -26,6 +26,7 @@ calculators/cosmos.py
 .DS_Store
 venv
 plutus
+*.xlsx
 *.csv
 Transazioni_*.xlsx
 manual_*

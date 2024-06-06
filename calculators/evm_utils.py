@@ -112,6 +112,10 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
         response = requests.get(url)
         erc1155 = pd.DataFrame(response.json().get("result"))
         if erc1155.shape[0] > 0:
+            erc1155.loc[erc1155['contractAddress'] == '0x0dfc1bc020e2d6a7cf234894e79686a88fbe2b2a', 'tokenName'] = 'Winged Helmet'
+            erc1155.loc[erc1155['contractAddress'] == '0xda98cf8b3c6c4e05d568e6d38752cb6097414ab0', 'tokenName'] = 'LOTM Ship Parts'
+            erc1155.loc[erc1155['contractAddress'] == '0x307b00dd72a29e0828b52947a2adcd9e899167c9', 'tokenName'] = 'LOTM Partner Loot SC Box'
+
             erc1155["erc1155_complete_name"] = (
                     erc1155["tokenName"]
                     + " - "
@@ -350,7 +354,8 @@ def eth_transfers(df, address, gas_coin, columns_keep):
     df["From"] = df["from_normal"].apply(lambda x: x.lower())
     df["To"] = df["to_normal"].apply(lambda x: x.lower())
 
-    df["Tag"] = "ETH transfer"
+    df["Tag"] = "Movement"
+    df["Notes"] = "ETH transfer"
 
     df.loc[df["From"] == address, "value_normal"] *= -1
 
@@ -382,7 +387,8 @@ def erc20_transfer(df, address, columns_keep):
     df["From"] = df["from"].apply(lambda x: x.lower())
     df["To"] = df["to"].apply(lambda x: x.lower())
 
-    df["Tag"] = "ERC20 transfer"
+    df["Notes"] = "ERC20 transfer"
+    df["Tag"] = "Movement"
 
     df.loc[df["From"] == address, "value_normal"] *= -1
 
@@ -418,7 +424,8 @@ def erc721_transfer(df, address, columns_keep):
     df.loc[df["From"] == address, "From Amount"] = -1
 
     df["Fee"] = calculate_gas(df.gasPrice_erc721, df.gasUsed_erc721)
-    df["Tag"] = "ERC721 transfer"
+    df["Tag"] = "Movement"
+    df["Notes"] = "ERC721 transfer"
 
     df.loc[df["To"] == address, "Fee"] = None
 
@@ -445,7 +452,8 @@ def erc1155_transfer(df, address, columns_keep):
     df["From"] = df["from_erc1155"].apply(lambda x: x.lower())
     df["To"] = df["to_erc1155"].apply(lambda x: x.lower())
 
-    df["Tag"] = "ERC1155 transfer"
+    df["Notes"] = "ERC1155 transfer"
+    df["Tag"] = "Movement"
 
     df.loc[df["From"] == address, "tokenValue"] *= -1
 
@@ -506,7 +514,8 @@ def weth(weth_df, gas_coin, columns_keep):
         weth_df.loc[weth_df["value_normal"] > 0, "To Coin"] = f"W{gas_coin}"
         weth_df.loc[weth_df["value_normal"] > 0, "From Coin"] = gas_coin
 
-        weth_df["Tag"] = "WETH contract"
+        weth_df["Notes"] = "WETH contract"
+        weth_df["Tag"] = "Trade"
 
         weth_df = weth_df[[x for x in weth_df.columns if x in columns_keep]]
         weth_df = weth_df.sort_index()

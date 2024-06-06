@@ -58,23 +58,33 @@ def opensea(df, address, columns_keep):
         for hash in buy_and_free.hash.unique():
             buy_and_free.loc[buy_and_free['hash'] == hash, 'value'] = buy_and_free.loc[
                 buy_and_free['hash'] == hash, 'value'].sum()
-        buy_and_free['Fee'] = eu.calculate_gas(buy_and_free['gasPrice_erc721'], buy_and_free['gasUsed_erc721'])
-        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Coin'] = buy_and_free.loc[
-            buy_and_free['from_erc721'] == address, 'erc721_complete_name']
-        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Amount'] = -1
-        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Coin'] = buy_and_free.loc[
-            buy_and_free['from_erc721'] == address, 'tokenSymbol']
-        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Amount'] = buy_and_free.loc[
-            buy_and_free['from_erc721'] == address, 'value']
+        buy_and_free['Fee'] = eu.calculate_gas(buy_and_free['gasPrice_erc721'].combine_first(buy_and_free['gasPrice_erc1155']), buy_and_free['gasUsed_erc721'].combine_first(buy_and_free['gasUsed_erc1155']))
+
+        buy_and_free['from_erc721']  =buy_and_free['from_erc721'].combine_first(buy_and_free['from_erc1155'])
+        buy_and_free['to_erc721'] = buy_and_free['to_erc721'].combine_first(buy_and_free['to_erc1155'])
+        buy_and_free['erc721_complete_name'] = buy_and_free['erc721_complete_name'].combine_first(buy_and_free['erc1155_complete_name'])
+
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Coin'] = buy_and_free.loc[buy_and_free['from_erc721'] == address, 'erc721_complete_name']
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'From Amount'] = 1
+
+        # Paid with ETH instead of ERC20
+        buy_and_free.loc[pd.isna(buy_and_free['tokenSymbol']), 'value'] = eu.calculate_value_eth(buy_and_free['value_normal'])
+        buy_and_free.loc[pd.isna(buy_and_free['tokenSymbol']), 'tokenSymbol'] = 'ETH'
+
+
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Coin'] = buy_and_free.loc[buy_and_free['from_erc721'] == address, 'tokenSymbol']
+        buy_and_free.loc[buy_and_free['from_erc721'] == address, 'To Amount'] = buy_and_free.loc[buy_and_free['from_erc721'] == address, 'value'].values
 
         buy_and_free.loc[buy_and_free['to_erc721'] == address, 'To Coin'] = buy_and_free.loc[
             buy_and_free['to_erc721'] == address, 'erc721_complete_name']
+
         buy_and_free.loc[buy_and_free['to_erc721'] == address, 'To Amount'] = 1
         buy_and_free.loc[buy_and_free['to_erc721'] == address, 'From Coin'] = buy_and_free.loc[
             buy_and_free['to_erc721'] == address, 'tokenSymbol']
         buy_and_free.loc[buy_and_free['to_erc721'] == address, 'From Amount'] = buy_and_free.loc[
-            buy_and_free['to_erc721'] == address, 'value']
+            buy_and_free['to_erc721'] == address, 'value'].values
         buy_and_free['From Amount'] *= -1
+        buy_and_free[['Tag','Notes']] = ['Trade', 'NFT']
         buy_and_free = buy_and_free.drop_duplicates(subset=columns_keep)
         vout = pd.concat([vout, buy_and_free])
 
@@ -115,7 +125,7 @@ def opensea(df, address, columns_keep):
     df.loc[df['To'] == address, 'From Amount'] = -df.loc[df['To'] == address, 'value']
 
     df['Notes'] = 'NFT'
-    df['Tag'] = 'OpenSea'
+    df['Tag'] = 'Trade'
 
     grouped = df.groupby(df.index).agg({'From Amount': 'sum', 'From': 'count', 'Fee': 'mean'}).reset_index()
     grouped.loc[grouped['From'] > 1, 'Fee'] /= grouped.loc[grouped['From'] > 1, 'From']
@@ -188,7 +198,11 @@ def blur(df, address, columns_keep):
     df.loc[df['To'] == address, 'From Amount'] = -df.loc[df['To'] == address, 'value']
 
     df['Notes'] = 'NFT'
-    df['Tag'] = 'Blur'
+    df['Tag'] = 'Trade'
+
+    df.loc[df['functionName'].str.contains('withdraw'), 'To Coin'] = 'ETH'
+    df.loc[df['functionName'].str.contains('withdraw'), 'To Amount'] = eu.calculate_value_eth(df.loc[df['functionName'].str.contains('withdraw'), 'value_internal'])
+    df.loc[df['functionName'].str.contains('withdraw'), ['Tag', 'Notes']] = ['Movement', 'Blur Pool']
 
     df = df[[x for x in df.columns if x in columns_keep]]
     df = df.sort_index()
@@ -199,6 +213,8 @@ def blur(df, address, columns_keep):
 def LOTM(df, address, columns_out):
     df.index = df['timeStamp_normal']
     lotm_out = pd.DataFrame()
+
+    df['functionName'] = [x.lower() for x in df['functionName']]
 
     # Claiming Vessels
     vessels_df = df[df['functionName'].str.contains('vessels')].copy()
@@ -353,6 +369,26 @@ def the_sandbox(df, columns_out):
         tsb_1155 = tsb_1155.drop_duplicates()
         tsb_out = pd.concat([tsb_out, tsb_1155])
 
+    tsb_721 = df[~pd.isna(df['erc721_complete_name'])].copy()
+    df = pd.concat([df, tsb_721]).drop_duplicates(keep=False)
+    if tsb_721.shape[0] > 0:
+        tsb_721['To Coin'] = tsb_721['erc721_complete_name']
+        tsb_721['To Amount'] = 1
+
+        tsb_721['Notes'] = 'Movement'
+        tsb_721['Tag'] = 'The Sandbox - NFT'
+
+        grouped = tsb_721.groupby(tsb_721.index).agg({'Tag': 'count', 'Fee': 'mean'}).reset_index()
+        grouped.loc[grouped['Tag'] > 1, 'Fee'] /= grouped.loc[grouped['Tag'] > 1, 'Tag']
+
+        grouped.index = grouped.timeStamp_normal
+        grouped = grouped.drop('timeStamp_normal', axis=1)
+
+        tsb_721['Fee'] = grouped['Fee']
+
+        tsb_721 = tsb_721.drop_duplicates()
+        tsb_out = pd.concat([tsb_out, tsb_721])
+
     rewards = df[pd.isna(df['blockNumber_normal'])].copy()
     df = pd.concat([df, rewards]).drop_duplicates(keep=False)
     if rewards.shape[0] > 0:
@@ -394,7 +430,7 @@ def optimism_quests(df, gas_coin, columns_out):
     df.index = df['timeStamp_normal']
     df['To Coin'] = df['erc721_complete_name'].combine_first(df['erc1155_complete_name'])
     df['To Amount'] = 1
-    df[['Tag', 'Notes']] = ['Movement', 'NFT']
+    df[['Tag', 'Notes']] = ['Trade', 'NFT']
 
     df['From Amount'] = eu.calculate_value_eth(df['value_normal'])
     df['From Amount'] *= -1
@@ -407,5 +443,38 @@ def optimism_quests(df, gas_coin, columns_out):
 
     df = df[[x for x in df.columns if x in columns_out]]
     df = df.sort_index()
+
+    return df
+
+
+def decentraland_marketplace(df, columns_out):
+    df.index = df['timeStamp_normal']
+
+    create_orders = df[df['functionName'].str.contains('create')].copy()
+    if create_orders.shape[0] > 0:
+        df = pd.concat([df, create_orders]).drop_duplicates(keep=False)
+
+    df['From Amount'] = eu.calculate_value_token(df['value'].fillna(0), df['tokenDecimal'].fillna(0))
+    df['From Amount'] *= -1
+    df['From Coin'] = 'MANA'
+    df['To Coin'] = df['erc721_complete_name']
+    df['To Amount'] = 1
+    df['Fee'] = eu.calculate_gas(df['gasPrice_erc721'], df['gasUsed_erc721'])
+    df[['Tag', 'Notes']] = ['Trade', 'NFT']
+    if create_orders.shape[0] > 0:
+        create_orders['Fee'] = eu.calculate_gas(create_orders['gasPrice'], create_orders['gasUsed_normal'])
+        create_orders[['Tag', 'Notes']] = ['Movement', 'Decentraland - Create Order']
+        df = pd.concat([df, create_orders])
+
+    df = df[[x for x in df.columns if x in columns_out]]
+    df = df.sort_index()
+
+    mana_grouped = df.groupby([df.index]).agg({'From Amount': 'sum'}).reset_index()
+
+    df = pd.merge(mana_grouped, df, left_on='timeStamp_normal', right_index=True, suffixes=('-', ''))
+    df['From Amount'] = df['From Amount-']
+    df.index = df['timeStamp_normal']
+    df = df.drop(['From Amount-', 'timeStamp_normal'], axis=1)
+    df = df.drop_duplicates()
 
     return df

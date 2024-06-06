@@ -20,7 +20,7 @@ def get_transactions_df(address, chain, scan_key=None):
     # Getting all transactions
     trx_df = eu.get_transactions_raw(address, chain, scan_key)
     # if trx_df[1].shape[0] == 0:
-    # return trx_df[1]
+    #    return trx_df[1]
     trx_df[1][columns_out] = None
 
     gas_coin = trx_df[0]
@@ -40,6 +40,16 @@ def get_transactions_df(address, chain, scan_key=None):
 
     vout = pd.DataFrame()
 
+    # ------------------------------------------------------------------------------------------------------------------
+    failed=trx_df[trx_df['isError_normal']=='1'].copy()
+    trx_df = pd.concat([trx_df, failed]).drop_duplicates(keep=False)
+    if failed.shape[0] > 0:
+        failed['Fee'] = eu.calculate_gas(failed['gasPrice'], failed['gasUsed_normal'])
+        failed.index = failed['timeStamp_normal']
+        failed = failed[[x for x in failed.columns if x in columns_out]]
+        failed = failed.sort_index()
+        failed['Tag'] = 'Failed'
+        vout = pd.concat([vout, failed])
     # ------------------------------------------------------------------------------------------------------------------
     # Normal ETH transfers ---------------------------------------------------------------------------------------------
     eth_transfers_df = trx_df[np.logical_or(trx_df['functionName'].str.contains('transferOut', na=False),
@@ -160,7 +170,8 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x7a250d5630b4cf539739df2c5dacb4c659f2488d".lower(),
         "0xc36442b4a4522e871399cd717abdd847ab11fe88".lower(),
         "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower(),
-        "0xb555edF5dcF85f42cEeF1f3630a52A108E55A654".lower()
+        "0xb555edF5dcF85f42cEeF1f3630a52A108E55A654".lower(),
+        "0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2".lower()
     ]
 
     uniswap_df = trx_df[
@@ -244,13 +255,14 @@ def get_transactions_df(address, chain, scan_key=None):
                          "0x00000000000000adc04c56bf30ac9d3c0aaf14dc".lower(),
                          "0x00000000000001ad428e4906ae43d8f9852d0dd6".lower(),
                          "0x00005ea00ac477b1030ce78506496e8c2de24bf5".lower(),
-                         "0x0000000000c2d145a2526bD8C716263bFeBe1A72".lower()]
+                         "0x0000000000c2d145a2526bD8C716263bFeBe1A72".lower()
+                         ]
 
     opensea_df = trx_df[trx_df["to_normal"].isin(opensea_contracts)].copy()
     if opensea_df.shape[0] > 0:
         trx_df = pd.concat([opensea_df, trx_df]).drop_duplicates(keep=False)
         opensea_df = nu.opensea(opensea_df, address, columns_out)
-
+        opensea_df = opensea_df.drop_duplicates()
         vout = pd.concat([vout, opensea_df])
         del opensea_df
     # END Opensea-------------------------------------------------------------------------------------------------------
@@ -306,18 +318,25 @@ def get_transactions_df(address, chain, scan_key=None):
                       "0x41e4a828630dD4729fC010E9483CD900bb37FC79".lower()]
 
     lotm_df = trx_df[trx_df['to_normal'].isin(lotm_contracts)].copy()
-    trx_df = pd.concat([lotm_df, trx_df]).drop_duplicates(keep=False)
-
-    lotm_df = nu.LOTM(lotm_df, address, columns_out)
-    vout = pd.concat([vout, lotm_df])
+    lotm_df = lotm_df[np.logical_and(~lotm_df['functionName'].str.contains('Approval'),
+                                     ~lotm_df['functionName'].str.contains('Transfer'))]
+    if lotm_df.shape[0] > 0:
+        trx_df = pd.concat([lotm_df, trx_df]).drop_duplicates(keep=False)
+        lotm_df = nu.LOTM(lotm_df, address, columns_out)
+        vout = pd.concat([vout, lotm_df])
+        del lotm_df
     # END LOTM ---------------------------------------------------------------------------------------------------------
-    del lotm_df
     # SANDBOX claim prizes ---------------------------------------------------------------------------------------------
     sandbox_contracts = ["0xa21342f796996954284b8dc6aae7ecbf8f83a9e4".lower(),
                          "0x4AB071C42C28c4858C4BAc171F06b13586b20F30".lower(),
                          "0x214d52880b1e4E17d020908cd8EAa988FfDD4020".lower()]
 
-    tsb_df = trx_df[np.logical_or(trx_df['to_normal'].isin(sandbox_contracts), trx_df['from'].isin(sandbox_contracts))].copy()
+    tsb_df = trx_df[
+        np.logical_or(trx_df['to_normal'].isin(sandbox_contracts), trx_df['from'].isin(sandbox_contracts))].copy()
+    # Approve and call SAND
+    tsb_df = pd.concat([tsb_df, trx_df[np.logical_and(trx_df['functionName'].str.contains('approveAndCall'),
+                                                      trx_df[
+                                                          'to_normal'] == "0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683".lower())]])
     trx_df = pd.concat([tsb_df, trx_df]).drop_duplicates(keep=False)
 
     tsb_df = nu.the_sandbox(tsb_df, columns_out)
@@ -325,6 +344,23 @@ def get_transactions_df(address, chain, scan_key=None):
     vout = pd.concat([vout, tsb_df])
     # END SANDBOX claim prizes -----------------------------------------------------------------------------------------
     del tsb_df
+    # SANDBOX BRIDGE ---------------------------------------------------------------------------------------------------
+    tsb_df = trx_df[np.logical_and(trx_df['functionName'].str.contains('withdraw'),
+                                   trx_df['to_normal'] == "0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683".lower())]
+    trx_df = pd.concat([tsb_df, trx_df]).drop_duplicates(keep=False)
+
+    if tsb_df.shape[0] > 0:
+        tsb_df.index = tsb_df['timeStamp_normal']
+        tsb_df['From Amount'] = eu.calculate_value_token(tsb_df['value'], tsb_df['tokenDecimal'])
+        tsb_df['From Amount'] *= -1
+        tsb_df['From Coin'] = 'SAND'
+        tsb_df[['Tag', 'Notes']] = ['Movement', 'The Sandbox - Bridge']
+        tsb_df = tsb_df[[x for x in tsb_df.columns if x in columns_out]]
+        tsb_df = tsb_df.sort_index()
+        vout = pd.concat([vout, tsb_df])
+
+        del tsb_df
+
     # ENS NAME WRAPPER -------------------------------------------------------------------------------------------------
     ens_df = trx_df[trx_df['to_normal'] == '0x253553366da8546fc250f225fe3d25d0c782303b'].copy()
     trx_df = pd.concat([ens_df, trx_df]).drop_duplicates(keep=False)
@@ -355,7 +391,7 @@ def get_transactions_df(address, chain, scan_key=None):
                                        'contractAddress_erc721'] == '0xD4307E0acD12CF46fD6cf93BC264f5D5D1598792'.lower())].copy()
     trx_df = pd.concat([base_df, trx_df]).drop_duplicates(keep=False)
 
-    base_df.index = base_df['timeStamp_normal']
+    base_df.index = base_df['timeStamp_erc721']
     base_df['Fee'] = eu.calculate_gas(base_df.gasPrice, base_df.gasUsed_normal)
     base_df['To Coin'] = base_df['erc721_complete_name'].combine_first(base_df['erc1155_complete_name'])
     base_df['To Amount'] = 1
@@ -395,6 +431,8 @@ def get_transactions_df(address, chain, scan_key=None):
     fun_df['Fee'] = eu.calculate_gas(fun_df.gasPrice, fun_df.gasUsed_normal)
     fun_df['To Coin'] = fun_df['erc721_complete_name']
     fun_df['To Amount'] = 1
+    fun_df['From Amount'] = -0.00258211753700127
+    fun_df['From Coin'] = 'ETH'
 
     fun_df[['Tag', 'Notes']] = ['Movement', 'FunDrop NFT']
     fun_df = fun_df[[x for x in fun_df.columns if x in columns_out]]
@@ -486,32 +524,41 @@ def get_transactions_df(address, chain, scan_key=None):
         del op_df
 
     # DECENTRALAND MARKETPLACE -----------------------------------------------------------------------------------------
-    mana_contracts = ["0x214ffC0f0103735728dc66b61A22e4F163e275ae".lower()]
+    mana_contracts = ["0x214ffC0f0103735728dc66b61A22e4F163e275ae".lower(),
+                      "0x480a0f4e360E8964e68858Dd231c2922f1df45Ef".lower()]
     mana_df = trx_df[trx_df['to_normal'].isin(mana_contracts)].copy()
-    mana_df = mana_df[mana_df['functionName'].str.contains('buy')]
+    mana_df = mana_df[np.logical_or(mana_df['functionName'].str.contains('buy'),
+                                    mana_df['functionName'].str.contains('create'))]
     if mana_df.shape[0] > 0:
         trx_df = pd.concat([mana_df, trx_df]).drop_duplicates(keep=False)
-        mana_df.index = mana_df['timeStamp_normal']
-        mana_df['From Amount'] = eu.calculate_value_token(mana_df['value'].fillna(0), mana_df['tokenDecimal'].fillna(0))
-        mana_df['From Amount'] *= -1
-        mana_df['From Coin'] = 'MANA'
-        mana_df['To Coin'] = mana_df['erc721_complete_name']
-        mana_df['To Amount'] = 1
-        mana_df['Fee'] = eu.calculate_gas(mana_df['gasPrice_erc721'], mana_df['gasUsed_erc721'])
-
-        mana_df = mana_df[[x for x in mana_df.columns if x in columns_out]]
-        mana_df = mana_df.sort_index()
-
-        mana_grouped = mana_df.groupby([mana_df.index]).agg({'From Amount':'sum'}).reset_index()
-
-        mana_df = pd.merge(mana_grouped, mana_df, left_on='timeStamp_normal', right_index=True, suffixes=('-',''))
-        mana_df['From Amount'] = mana_df['From Amount-']
-        mana_df.index = mana_df['timeStamp_normal']
-        mana_df = mana_df.drop(['From Amount-', 'timeStamp_normal'], axis=1)
-        mana_df = mana_df.drop_duplicates()
-
+        mana_df = nu.decentraland_marketplace(mana_df, columns_out)
         vout = pd.concat([vout, mana_df])
         del mana_df
+
+    # METAMASK SWAPS ---------------------------------------------------------------------------------------------------
+    metamask_contracts = ["0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31".lower()]
+    metamask_df = trx_df[trx_df['to_normal'].isin(metamask_contracts)].copy()
+    if metamask_df.shape[0] > 0:
+        trx_df = pd.concat([metamask_df, trx_df]).drop_duplicates(keep=False)
+        metamask_df = defi.metamask(metamask_df, address, columns_out)
+        vout = pd.concat([vout, metamask_df])
+        del metamask_df
+
+    # Buying Lens Profile ----------------------------------------------------------------------------------------------
+    lens_contracts = ["0x0b5e6100243f793e480DE6088dE6bA70aA9f3872".lower()]
+    lens_df = trx_df[trx_df['to_normal'].isin(lens_contracts)].copy()
+    if lens_df.shape[0] > 0:
+        trx_df = pd.concat([lens_df, trx_df]).drop_duplicates(keep=False)
+        lens_df.index = lens_df['timeStamp_normal']
+        lens_df['Fee'] = [x / 2 for x in eu.calculate_gas(lens_df['gasPrice'], lens_df['gasUsed_normal'])]
+        lens_df['From Coin'] = gas_coin
+        lens_df['From Amount'] = [-x / 2 for x in eu.calculate_value_eth(lens_df['value_normal'])]
+        lens_df[['Tag', 'Notes']] = ['Trade', 'NFT']
+
+        lens_df = lens_df[[x for x in lens_df.columns if x in columns_out]]
+        vout = pd.concat([vout, lens_df])
+        del lens_df
+
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
     erc20_transfers_df = erc20_transfers_df[
@@ -585,6 +632,9 @@ def get_transactions_df(address, chain, scan_key=None):
     vout['Fee Coin'] = gas_coin
     vout['Fiat'] = 'EUR'
     vout = vout.sort_index()
+
+    vout.loc[vout[
+                 'To Coin'] == 'Steakumm Diploma', 'To Coin'] = 'Steakumm Diploma - 78068537175149303339275974498724216528870561790231264965564858097064072486720 -> 0x1134d0998f2c7b66cd661d3cdeda84b590c8f83e'
 
     eth_prices = Prices()
 
