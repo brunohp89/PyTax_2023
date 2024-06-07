@@ -2,6 +2,8 @@ import pandas as pd
 import requests
 import utils
 from calculators.scam import scam
+import os
+import tax_library as tx
 
 
 def calculate_value_eth(values_df):
@@ -112,9 +114,12 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
         response = requests.get(url)
         erc1155 = pd.DataFrame(response.json().get("result"))
         if erc1155.shape[0] > 0:
-            erc1155.loc[erc1155['contractAddress'] == '0x0dfc1bc020e2d6a7cf234894e79686a88fbe2b2a', 'tokenName'] = 'Winged Helmet'
-            erc1155.loc[erc1155['contractAddress'] == '0xda98cf8b3c6c4e05d568e6d38752cb6097414ab0', 'tokenName'] = 'LOTM Ship Parts'
-            erc1155.loc[erc1155['contractAddress'] == '0x307b00dd72a29e0828b52947a2adcd9e899167c9', 'tokenName'] = 'LOTM Partner Loot SC Box'
+            erc1155.loc[erc1155[
+                            'contractAddress'] == '0x0dfc1bc020e2d6a7cf234894e79686a88fbe2b2a', 'tokenName'] = 'Winged Helmet'
+            erc1155.loc[erc1155[
+                            'contractAddress'] == '0xda98cf8b3c6c4e05d568e6d38752cb6097414ab0', 'tokenName'] = 'LOTM Ship Parts'
+            erc1155.loc[erc1155[
+                            'contractAddress'] == '0x307b00dd72a29e0828b52947a2adcd9e899167c9', 'tokenName'] = 'LOTM Partner Loot SC Box'
 
             erc1155["erc1155_complete_name"] = (
                     erc1155["tokenName"]
@@ -445,7 +450,7 @@ def erc721_transfer(df, address, columns_keep):
 
 
 def erc1155_transfer(df, address, columns_keep):
-    df.index = df["timeStamp"]
+    df.index = df["timeStamp"].combine_first(df['timeStamp_erc1155'])
 
     df["Fee"] = calculate_gas(df.gasPrice_erc1155, df.gasUsed_erc1155)
 
@@ -542,3 +547,96 @@ def ens(df, columns_keep):
     df = df.sort_index()
 
     return df
+
+
+# The transactions on Crypto.org chain have to be extracted manually, refer to the example file
+def get_crypto_dot_org_transactions(address):
+    address = address.lower()
+    if address not in os.listdir("cryptodotorg"):
+        print("No files for crypto.org found")
+        return pd.DataFrame(
+            columns=[
+                "From",
+                "To",
+                "From Coin",
+                "To Coin",
+                "From Amount",
+                "To Amount",
+                "Fee",
+                "Fee Coin",
+                "Fee Fiat",
+                "Fiat",
+                "Fiat Price",
+                "Tag",
+                "Source",
+                "Notes",
+            ]
+        )
+    cronos_files = [
+        os.path.join(os.path.abspath(f"cryptodotorg/{address}"), x)
+        for x in os.listdir(os.path.abspath(f"cryptodotorg/{address}"))
+        if "automatico" not in x
+    ]
+    df_list = []
+    for filename in cronos_files:
+        df_loop = pd.read_csv(filename, index_col=None, header=0)
+        df_list.append(df_loop)
+    final_df = pd.concat(df_list, axis=0, ignore_index=True)
+    final_df.index = [
+        tx.str_to_datetime(x.replace(" UTC", ""))
+        for x in list(final_df["Timestamp"])
+    ]
+
+    final_df.drop(["Timestamp"], axis=1, inplace=True)
+
+    final_df["Fiat Price"] = None
+    final_df["Fiat"] = "EUR"
+    final_df["Fee Coin"] = "CRO"
+    final_df["To Coin"] = None
+    final_df["To Amount"] = None
+    final_df["Tag"] = "Movement"
+    final_df["Fee Fiat"] = None
+    final_df["Notes"] = None
+    final_df["Source"] = "Cronos Chain"
+
+    final_df["From"] = [k.lower() for k in final_df["From"]]
+    final_df["To"] = [k.lower() for k in final_df["To"]]
+
+    final_df.loc[final_df["To"] != address, "From Amount"] *= -1
+
+    final_df.loc[final_df["From Amount"] < 0, "From Amount"] = final_df.loc[
+        final_df["From Amount"] < 0, "From Amount"
+    ]
+    final_df.loc[final_df["From Amount"] > 0, "To Amount"] = final_df.loc[
+        final_df["From Amount"] > 0, "From Amount"
+    ]
+
+    final_df.loc[final_df["From Amount"] < 0, "From Coin"] = final_df.loc[
+        final_df["From Amount"] < 0, "From Coin"
+    ]
+    final_df.loc[final_df["From Amount"] > 0, "To Coin"] = final_df.loc[
+        final_df["From Amount"] > 0, "From Coin"
+    ]
+
+    final_df.loc[final_df["From Amount"] > 0, ["From Amount", "From Coin"]] = None
+
+    final_df = final_df[
+        [
+            "From",
+            "To",
+            "From Coin",
+            "To Coin",
+            "From Amount",
+            "To Amount",
+            "Fee",
+            "Fee Coin",
+            "Fee Fiat",
+            "Fiat",
+            "Fiat Price",
+            "Tag",
+            "Source",
+            "Notes",
+        ]
+    ]
+
+    return final_df

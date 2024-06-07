@@ -1,4 +1,3 @@
-import requests
 import pandas as pd
 import numpy as np
 from PricesClass import Prices
@@ -41,7 +40,7 @@ def get_transactions_df(address, chain, scan_key=None):
     vout = pd.DataFrame()
 
     # ------------------------------------------------------------------------------------------------------------------
-    failed=trx_df[trx_df['isError_normal']=='1'].copy()
+    failed = trx_df[trx_df['isError_normal'] == '1'].copy()
     trx_df = pd.concat([trx_df, failed]).drop_duplicates(keep=False)
     if failed.shape[0] > 0:
         failed['Fee'] = eu.calculate_gas(failed['gasPrice'], failed['gasUsed_normal'])
@@ -553,11 +552,120 @@ def get_transactions_df(address, chain, scan_key=None):
         lens_df['Fee'] = [x / 2 for x in eu.calculate_gas(lens_df['gasPrice'], lens_df['gasUsed_normal'])]
         lens_df['From Coin'] = gas_coin
         lens_df['From Amount'] = [-x / 2 for x in eu.calculate_value_eth(lens_df['value_normal'])]
+        lens_df['To Amount'] = 1
+        lens_df['To Coin'] = 'Lens Protocol -> Profile/Handle'
         lens_df[['Tag', 'Notes']] = ['Trade', 'NFT']
 
         lens_df = lens_df[[x for x in lens_df.columns if x in columns_out]]
         vout = pd.concat([vout, lens_df])
         del lens_df
+
+    # FERRO SWAP -------------------------------------------------------------------------------------------------------
+    ferro_contracts = [
+        "0x1578c5cf4f8f6064deb167d1eead15df43185afa".lower(),
+        "0xab50fb1117778f293cc33ac044b5579fb03029d0".lower(),
+    ]
+    ferro_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(ferro_contracts),
+            trx_df["to_normal"].isin(ferro_contracts),
+        )
+    ]
+
+    if ferro_df.shape[0] > 0:
+        trx_df = pd.concat([ferro_df, trx_df]).drop_duplicates(keep=False)
+        ferro_df = defi.ferro(ferro_df, address, columns_out)
+        vout = pd.concat([vout, ferro_df])
+        del ferro_df
+
+    # MM FINANCE -------------------------------------------------------------------------------------------------------
+    mm_contracts = [
+        "0x6be34986fdd1a91e4634eb6b9f8017439b7b5edc",
+        "0x145677fc4d9b8f19b5d56d1820c48e0443049a30",
+    ]
+    mm_df = trx_df[
+        np.logical_or(
+            trx_df["to_normal"].isin(mm_contracts),
+            trx_df["from_normal"].isin(mm_contracts),
+        )
+    ]
+
+    if mm_df.shape[0] > 0:
+        trx_df = pd.concat([mm_df, trx_df]).drop_duplicates(keep=False)
+        mm_df = defi.mm_finance(mm_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, mm_df])
+        del mm_df
+
+    # MM VAULTS --------------------------------------------------------------------------------------------------------
+    mm_vaults_contracts = ["0xff89646fe7ee62ea96050379a7a8c532dd431d10"]
+    mm_vaults_df = trx_df[
+        np.logical_or(
+            trx_df["to_normal"].isin(mm_vaults_contracts),
+            trx_df["from_normal"].isin(mm_vaults_contracts),
+        )
+    ].copy()
+
+    if mm_vaults_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, mm_vaults_df]).drop_duplicates(keep=False)
+        mm_vaults_df.index = mm_vaults_df["timeStamp_normal"]
+        mm_vaults_df['Fee'] = eu.calculate_gas(mm_vaults_df['gasPrice'].fillna(0), mm_vaults_df['gasUsed'].fillna(0))
+        mm_vaults_df['value'] = eu.calculate_value_token(mm_vaults_df['value'].fillna(0),
+                                                         mm_vaults_df['tokenDecimal'].fillna(0))
+
+        mm_vaults_df.loc[mm_vaults_df['functionName'].str.contains('deposit'), ['Tag', 'Movement']] = ['Movement',
+                                                                                                       'MM Vault - Deposit']
+        mm_vaults_df.loc[mm_vaults_df['functionName'].str.contains('withdraw'), ['Tag', 'Movement']] = ['Reward',
+                                                                                                        'MM Vault - Withdraw']
+
+        mm_vaults_df.loc[mm_vaults_df['functionName'].str.contains('withdraw'), 'To Coin'] = mm_vaults_df.loc[
+            mm_vaults_df['functionName'].str.contains('withdraw'), 'tokenSymbol']
+        mm_vaults_df.loc[mm_vaults_df['functionName'].str.contains('withdraw'), 'To Amount'] = mm_vaults_df.loc[
+            mm_vaults_df['functionName'].str.contains('withdraw'), 'value']
+        mm_vaults_df.loc[mm_vaults_df['functionName'].str.contains('withdraw'), 'Fee'] /= 2
+
+        mm_vaults_df = mm_vaults_df[[x for x in mm_vaults_df.columns if x in columns_out]]
+        mm_vaults_df = mm_vaults_df.sort_index()
+
+        mm_vaults_df = mm_vaults_df.drop_duplicates()
+        vout = pd.concat([vout, mm_vaults_df])
+
+        del mm_vaults_df
+
+    # ARGO LIQUID STAKING ----------------------------------------------------------------------------------------------
+    argo_contracts = [
+        "0x84bcb1eeacc7746ad37839815548d72efb86f37f".lower(),
+        "0xb7e2c7d79f0850aaec777f05d27c87d8c4aa32e8".lower(),
+    ]
+    argo_df = trx_df[
+        np.logical_or(
+            trx_df["to_normal"].isin(argo_contracts),
+            trx_df["from_normal"].isin(argo_contracts),
+        )
+    ].copy()
+
+    if argo_df.shape[0] > 0:
+        trx_df = pd.concat([argo_df, trx_df]).drop_duplicates(keep=False)
+        argo_df = defi.argo(argo_df, columns_out)
+        vout = pd.concat([vout, argo_df])
+        del argo_df
+
+    # VVS Finance ------------------------------------------------------------------------------------------------------
+    vvs_contracts = [
+        "0x145863eb42cf62847a6ca784e6416c1682b1b2ae",
+        "0xbc149c62efe8afc61728fc58b1b66a0661712e76",
+    ]
+    vvs_df = trx_df[
+        np.logical_or(
+            trx_df["to_normal"].isin(vvs_contracts),
+            trx_df["from_normal"].isin(vvs_contracts),
+        )
+    ].copy()
+
+    if vvs_df.shape[0] > 0:
+        trx_df = pd.concat([vvs_df, trx_df]).drop_duplicates(keep=False)
+        vvs_df = defi.vvs(vvs_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, vvs_df])
+        del vvs_df
 
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
@@ -617,9 +725,10 @@ def get_transactions_df(address, chain, scan_key=None):
     approvals_df = approvals_df[[x for x in approvals_df.columns if x in columns_out]]
     approvals_df = approvals_df.sort_index()
 
-    approvals_df['Tag'] = 'Set Approval'
+    approvals_df['Tag'] = 'Movement'
+    approvals_df['Notes'] = 'Set Approval'
 
-    vout = pd.concat([approvals_df, vout]).drop_duplicates(keep=False)
+    vout = pd.concat([approvals_df.drop_duplicates(keep=False), vout])
     # END Approvals ----------------------------------------------------------------------------------------------------
     del approvals_df
 
@@ -628,6 +737,10 @@ def get_transactions_df(address, chain, scan_key=None):
     # ------------------------------------------------------------------------------------------------------------------
     if f'{chain}_{address}.csv' in os.listdir():
         vout = pd.concat([pd.read_csv(f'{chain}_{address}.csv', index_col='Timestamp', parse_dates=True), vout])
+
+    if chain == "cro-mainnet":
+        cro_org = eu.get_crypto_dot_org_transactions(address)
+        vout = pd.concat([vout, cro_org]).sort_index()
 
     vout['Fee Coin'] = gas_coin
     vout['Fiat'] = 'EUR'

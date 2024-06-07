@@ -403,5 +403,6 @@ scam = [
     '!! Kuroro.io',
     'BITMAN TOKEN',
     'Wild Goat Coin',
-    '#HEXPool.net'
+    '#HEXPool.net',
+    '+$50 000 (BONUS-ETH.NET) 🎁'
 ]
