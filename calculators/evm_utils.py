@@ -120,7 +120,8 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
                             'contractAddress'] == '0xda98cf8b3c6c4e05d568e6d38752cb6097414ab0', 'tokenName'] = 'LOTM Ship Parts'
             erc1155.loc[erc1155[
                             'contractAddress'] == '0x307b00dd72a29e0828b52947a2adcd9e899167c9', 'tokenName'] = 'LOTM Partner Loot SC Box'
-
+            if chain == 'base-mainnet':
+                erc1155 = erc1155[erc1155['tokenName'] != 'Legends of the Mara']
             erc1155["erc1155_complete_name"] = (
                     erc1155["tokenName"]
                     + " - "

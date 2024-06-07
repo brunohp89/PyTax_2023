@@ -113,7 +113,8 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x0A9f824C05A74F577A536A8A0c673183a872Dff4".lower(),
         "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower(),
         "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(),  # Harmony Bridge BSC
-        "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower()
+        "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower(),
+        "0x45f1A95A4D3f3836523F5c83673c797f4d4d263B".lower()
     ]
 
     stargate_df = trx_df[np.logical_and(trx_df["to_normal"].isin(stargate_contracts),
@@ -170,7 +171,8 @@ def get_transactions_df(address, chain, scan_key=None):
         "0xc36442b4a4522e871399cd717abdd847ab11fe88".lower(),
         "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower(),
         "0xb555edF5dcF85f42cEeF1f3630a52A108E55A654".lower(),
-        "0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2".lower()
+        "0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2".lower(),
+        "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower()
     ]
 
     uniswap_df = trx_df[
@@ -182,6 +184,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
     if uniswap_df.shape[0] > 0:
         trx_df = pd.concat([uniswap_df, trx_df]).drop_duplicates(keep=False)
+        # Bitget wallet swap
+        uniswap_df.loc[uniswap_df['to_normal'] == "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower(), 'functionName'] = 'execute'
         uniswap_df = defi.uniswap(uniswap_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, uniswap_df])
         del uniswap_df
