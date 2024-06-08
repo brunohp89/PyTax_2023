@@ -430,5 +430,7 @@ scam = [
     'donotfomoew',
     'Young Peezy AKA Pepe',
     'Father Of Meme',
-    'BaseWif'
+    'BaseWif',
+    'PPBox.io',
+    'BASED USA'
 ]

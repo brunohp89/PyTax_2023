@@ -80,13 +80,11 @@ def get_transactions_df(address, chain, scan_key=None):
         ['0xFb063b1ae6471E6795d6ad1FC7f47c1cAb1f3422'.lower(),
          '0xb85EEb713b876A25f16604887cC6b8997ef1B9DD'.lower()])].copy()
     trx_df = pd.concat([trx_df, love_df]).drop_duplicates(keep=False)
-
-    love_df = defi.love(love_df, columns_out)
-
-    vout = pd.concat([vout, love_df])
+    if love_df.shape[0] > 0:
+        love_df = defi.love(love_df, columns_out)
+        vout = pd.concat([vout, love_df])
+        del love_df
     # LOVE END ---------------------------------------------------------------------------------------------------------
-    del love_df
-
     # STARGATE ---------------------------------------------------------------------------------------------------------
     stargate_contracts = [
         "0x3052A0F6ab15b4AE1df39962d5DdEFacA86DaB47".lower(),  # Stargate Staking BSC
@@ -506,7 +504,8 @@ def get_transactions_df(address, chain, scan_key=None):
         del yearn_df
 
     # 0x Exchange ------------------------------------------------------------------------------------------------------
-    zerox_contracts = ["0xDEF1ABE32c034e558Cdd535791643C58a13aCC10".lower()]
+    zerox_contracts = ["0xDEF1ABE32c034e558Cdd535791643C58a13aCC10".lower(),
+                       "0xDef1C0ded9bec7F1a1670819833240f027b25EfF".lower()]
     zerox_df = trx_df[trx_df['to_normal'].isin(zerox_contracts)].copy()
     trx_df = pd.concat([zerox_df, trx_df]).drop_duplicates(keep=False)
 
@@ -671,6 +670,16 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, vvs_df])
         del vvs_df
 
+    # SOFI SWAP --------------------------------------------------------------------------------------------------------
+    sofi_contracts = ["0xd55a4d54f39baf26da2f3ee7be9a6388c15f9831".lower()]
+
+    sofi_df = trx_df[trx_df["to_normal"].isin(sofi_contracts)].copy()
+    if sofi_df.shape[0] > 0:
+        trx_df = pd.concat([sofi_df, trx_df]).drop_duplicates(keep=False)
+        sofi_df = defi.sofi_swap(sofi_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, sofi_df])
+        del sofi_df
+
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
     erc20_transfers_df = erc20_transfers_df[
@@ -715,6 +724,7 @@ def get_transactions_df(address, chain, scan_key=None):
     del erc1155_transfers_df
     # Approvals --------------------------------------------------------------------------------------------------------
     trx_df['functionName'] = trx_df['functionName'].apply(lambda x: str(x).lower())
+    trx_df.loc[trx_df['to_normal'] == '0xBC097E42BF1E6531C32C5cEe945E0c014fA21964'.lower(), 'functionName'] = 'approv'
 
     approvals_df = trx_df[np.logical_and(trx_df['functionName'].str.contains('approv'), pd.isna(trx_df['blockNumber']))]
     approvals_df.index = approvals_df['timeStamp_normal']

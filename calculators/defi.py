@@ -1912,3 +1912,71 @@ def vvs(df, address, columns_out, gas_coin):
     vvs_out = vvs_out.sort_index()
 
     return vvs_out
+
+
+def sofi_swap(df, address, columns_out, gas_coin):
+    sofi_out = pd.DataFrame()
+
+    df.index = df["timeStamp_normal"]
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
+    df.loc[df['from_normal'] == '', 'from_normal'] = None
+    df.loc[df['to_normal'] == '', 'to_normal'] = None
+    df['Fee'] = eu.calculate_gas(df['gasPrice'], df['gasUsed_normal'])
+
+    # Function multicall V2
+    multicall = df[np.logical_or(df["functionName"].str.contains("swapETHForExactTokens"),
+                                 df["functionName"].str.contains("swapExactTokensForETH"))].copy()
+    df = pd.concat([df, multicall]).drop_duplicates(keep=False)
+
+    multicall["value"] = eu.calculate_value_token(multicall.value, multicall.tokenDecimal)
+    multicall["value_normal"] = eu.calculate_value_eth(multicall.value_normal)
+    multicall["value_internal"] = eu.calculate_value_eth(multicall.value_internal)
+
+    multicall.loc[multicall['from_internal'] == address, 'value_internal'] *= -1
+    multicall.loc[multicall['from_normal'] == address, 'value_normal'] *= -1
+
+    multicall["value_normal"] += multicall["value_internal"]
+    multicall["value_normal"] = multicall["value_normal"].abs()
+
+    multicall["from_normal"] = multicall["from_normal"].combine_first(
+        multicall["from_internal"].fillna('').apply(lambda x: x.lower()))
+    multicall["to_normal"] = multicall["to_normal"].combine_first(
+        multicall["to_internal"].fillna('').apply(lambda x: x.lower()))
+
+    multicall["from"] = multicall["from"].fillna('').apply(lambda x: x.lower())
+    multicall["to"] = multicall["to"].fillna('').apply(lambda x: x.lower())
+
+    multicall.loc[multicall["to"] == address, "From Coin"] = gas_coin
+    multicall.loc[multicall["to"] == address, "To Coin"] = multicall.loc[
+        multicall["to"] == address, "tokenSymbol"]
+
+    multicall.loc[multicall["from"] == address, "To Coin"] = gas_coin
+    multicall.loc[multicall["from"] == address, "From Coin"] = multicall.loc[
+        multicall["from"] == address, "tokenSymbol"]
+
+    multicall.loc[multicall["to"] == address, "From Amount"] = -multicall.loc[
+        multicall["to"] == address, "value_normal"]
+    multicall.loc[multicall["to"] == address, "To Amount"] = multicall.loc[multicall["to"] == address, "value"]
+
+    multicall.loc[multicall["from"] == address, "To Amount"] = multicall.loc[
+        multicall["from"] == address, "value_normal"]
+    multicall.loc[multicall["from"] == address, "From Amount"] = -multicall.loc[
+        multicall["from"] == address, "value"]
+
+    multicall["Fee"] = eu.calculate_gas(multicall.gasPrice, multicall.gasUsed_normal)
+
+    multicall["Tag"] = "Trade"
+    multicall["Notes"] = "Sofi Swap - swapExactTokensForETH"
+
+    sofi_out = pd.concat([sofi_out, multicall])
+
+    if df.shape[0] > 0:
+        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI SOFI SWAP SONO INCLUSE")
+
+    sofi_out = sofi_out[[x for x in sofi_out.columns if x in columns_out]]
+    sofi_out = sofi_out.sort_index()
+
+    sofi_out = sofi_out.drop_duplicates()
+
+    return sofi_out
