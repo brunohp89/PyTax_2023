@@ -106,8 +106,7 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
                     + " -> "
                     + erc721["contractAddress"]
             )
-        full_names.extend(list(set(erc721['tokenName'])))
-
+            full_names.extend(list(set(erc721['tokenName'])))
     erc1155 = pd.DataFrame()
     if chain not in ["arb-mainnet", "zksync-mainnet"]:
         url = f"{main_url}api?module=account&action=token1155tx&address={address}&startblock=0&endblock={end_block}&sort=asc&apikey={scan_key}{additional_piece}"
