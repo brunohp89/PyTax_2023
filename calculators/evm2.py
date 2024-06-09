@@ -83,7 +83,7 @@ def get_transactions_df(address, chain, scan_key=None):
     if love_df.shape[0] > 0:
         love_df = defi.love(love_df, columns_out)
         vout = pd.concat([vout, love_df])
-        del love_df
+    del love_df
     # LOVE END ---------------------------------------------------------------------------------------------------------
     # STARGATE ---------------------------------------------------------------------------------------------------------
     stargate_contracts = [
@@ -121,14 +121,14 @@ def get_transactions_df(address, chain, scan_key=None):
     if stargate_df.shape[0] > 0:
         stargate_df = defi.stargate(stargate_df, address, gas_coin, columns_out)
         vout = pd.concat([vout, stargate_df])
-        del stargate_df
+    del stargate_df
     # Contract interactions Layer Zero (relayer V2)
     stargate_v2 = trx_df[trx_df["from_internal"].isin(stargate_contracts)]
     trx_df = pd.concat([trx_df, stargate_v2]).drop_duplicates(keep=False)
     if stargate_v2.shape[0] > 0:
         stargate_v2 = defi.layer_zero_v2(stargate_v2, gas_coin, columns_out)
         vout = pd.concat([vout, stargate_v2])
-        del stargate_v2
+    del stargate_v2
     # STARGATE END -----------------------------------------------------------------------------------------------------
     # PANCAKE ---------------------------------------------------------------------------------------------------------
     pancake_contracts = [
@@ -145,7 +145,7 @@ def get_transactions_df(address, chain, scan_key=None):
     if pancake_df.shape[0] >= 0:
         pancake_df = defi.pancake(pancake_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, pancake_df])
-        del pancake_df
+    del pancake_df
 
     # SUSHI ---------------------------------------------------------------------------------------------------------
     sushi_contracts = [
@@ -157,7 +157,7 @@ def get_transactions_df(address, chain, scan_key=None):
     if sushi_df.shape[0] > 0:
         sushi_df = defi.sushi(sushi_df, columns_out, gas_coin)
         vout = pd.concat([vout, sushi_df])
-        del sushi_df
+    del sushi_df
 
     # UNISWAP ----------------------------------------------------------------------------------------------------------
     uniswap_contracts = [
@@ -186,7 +186,7 @@ def get_transactions_df(address, chain, scan_key=None):
         uniswap_df.loc[uniswap_df['to_normal'] == "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower(), 'functionName'] = 'execute'
         uniswap_df = defi.uniswap(uniswap_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, uniswap_df])
-        del uniswap_df
+    del uniswap_df
 
     # QUICK SWAP -------------------------------------------------------------------------------------------------------
     quick_contracts = ["0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff".lower()]
@@ -196,7 +196,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([quick_df, trx_df]).drop_duplicates(keep=False)
         quick_df = defi.quick_swap(quick_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, quick_df])
-        del quick_df
+    del quick_df
 
     # THE GRAPH --------------------------------------------------------------------------------------------------------
     graph_contracts = [
@@ -212,7 +212,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([graph_df, trx_df]).drop_duplicates(keep=False)
         graph_df = defi.graph(graph_df, columns_out)
         vout = pd.concat([vout, graph_df])
-        del graph_df
+    del graph_df
 
     # Galxe Claims -----------------------------------------------------------------------------------------------------
     galxe_contracts = ["0x2e42f214467f647Fe687Fd9a2bf3BAdDFA737465".lower()]
@@ -231,7 +231,7 @@ def get_transactions_df(address, chain, scan_key=None):
         galxe_df = galxe_df.sort_index()
 
         vout = pd.concat([vout, galxe_df])
-        del galxe_df
+    del galxe_df
 
     # WETH -------------------------------------------------------------------------------------------------------------
     # WETH wrapping
@@ -265,7 +265,7 @@ def get_transactions_df(address, chain, scan_key=None):
         opensea_df = nu.opensea(opensea_df, address, columns_out)
         opensea_df = opensea_df.drop_duplicates()
         vout = pd.concat([vout, opensea_df])
-        del opensea_df
+    del opensea_df
     # END Opensea-------------------------------------------------------------------------------------------------------
     # Blur -------------------------------------------------------------------------------------------------------------
     blur_contracts = ["0x000000000000Ad05Ccc4F10045630fb830B95127".lower(),
@@ -290,7 +290,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = trx_df[trx_df["to_normal"] != '0x74312363e45DCaBA76c59ec49a7Aa8A65a67EeD3'.lower()]
 
         vout = pd.concat([vout, x2y2])
-        del x2y2
+    del x2y2
     # X2Y2 END ---------------------------------------------------------------------------------------------------------
     # Bridge --------------------------------------------------------------------------------------------------
     arb_df = trx_df[trx_df['to_normal'].isin(
@@ -325,7 +325,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([lotm_df, trx_df]).drop_duplicates(keep=False)
         lotm_df = nu.LOTM(lotm_df, address, columns_out)
         vout = pd.concat([vout, lotm_df])
-        del lotm_df
+    del lotm_df
     # END LOTM ---------------------------------------------------------------------------------------------------------
     # SANDBOX claim prizes ---------------------------------------------------------------------------------------------
     sandbox_contracts = ["0xa21342f796996954284b8dc6aae7ecbf8f83a9e4".lower(),
@@ -360,7 +360,7 @@ def get_transactions_df(address, chain, scan_key=None):
         tsb_df = tsb_df.sort_index()
         vout = pd.concat([vout, tsb_df])
 
-        del tsb_df
+    del tsb_df
 
     # ENS NAME WRAPPER -------------------------------------------------------------------------------------------------
     ens_df = trx_df[trx_df['to_normal'] == '0x253553366da8546fc250f225fe3d25d0c782303b'].copy()
@@ -457,6 +457,7 @@ def get_transactions_df(address, chain, scan_key=None):
     one_contracts = [
         "0x1111111254eeb25477b68fb85ed929f73a960582".lower(),
         "0x2eb393fbac8aaa16047d4242033a25486e14f345".lower(),
+        "0x6e2B76966cbD9cF4cC2Fa0D76d24d5241E0ABC2F".lower(),
         "0x9d4eb7189cd57693c3d01f35168715e1e589cea8".lower(),
         "0x95e2769aca43a1d4febcfa153022259fc1e49548".lower(),
         "0x4bc3e539aaa5b18a82f6cd88dc9ab0e113c63377".lower(),
@@ -469,9 +470,11 @@ def get_transactions_df(address, chain, scan_key=None):
     one_df = one_df.drop_duplicates()
     trx_df = pd.concat([one_df, trx_df]).drop_duplicates(keep=False)
     if one_df.shape[0] > 0:
+        if chain == 'zksync-mainnet':
+            one_df.loc[one_df['methodId'] == "0x12aa3caf", 'functionName'] = 'swap'
         one_df = defi.one_inch(one_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, one_df])
-        del one_df
+    del one_df
 
     # Gitcoin Passport -------------------------------------------------------------------------------------------------
     gitcoin_contracts = ["0xa8eD4d2C3f6f98A55cdDEd97C5aE9B932B0633A4".lower()]
@@ -487,7 +490,7 @@ def get_transactions_df(address, chain, scan_key=None):
         gitcoin_df = gitcoin_df[[x for x in gitcoin_df.columns if x in columns_out]]
         gitcoin_df = gitcoin_df.sort_index()
         vout = pd.concat([vout, gitcoin_df])
-        del gitcoin_df
+    del gitcoin_df
 
     # OP delegations ---------------------------------------------------------------------------------------------------
     trx_df.loc[np.logical_and(trx_df['to_normal'] == '0x4200000000000000000000000000000000000042'.lower(),
@@ -501,7 +504,7 @@ def get_transactions_df(address, chain, scan_key=None):
     if yearn_df.shape[0] > 0:
         yearn_df = defi.yearn(yearn_df, columns_out)
         vout = pd.concat([vout, yearn_df])
-        del yearn_df
+    del yearn_df
 
     # 0x Exchange ------------------------------------------------------------------------------------------------------
     zerox_contracts = ["0xDEF1ABE32c034e558Cdd535791643C58a13aCC10".lower(),
@@ -512,7 +515,7 @@ def get_transactions_df(address, chain, scan_key=None):
     if zerox_df.shape[0] > 0:
         zerox_df = defi.zerox(zerox_df, address, gas_coin, columns_out)
         vout = pd.concat([vout, zerox_df])
-        del zerox_df
+    del zerox_df
 
     # Optimism tasks Claims --------------------------------------------------------------------------------------------
     op_contracts = ["0x04bA6cf3c5AA6D4946F5B7f7ADF111012a9fAC65".lower(),
@@ -523,7 +526,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([op_df, trx_df]).drop_duplicates(keep=False)
         op_df = nu.optimism_quests(op_df, gas_coin, columns_out)
         vout = pd.concat([vout, op_df])
-        del op_df
+    del op_df
 
     # DECENTRALAND MARKETPLACE -----------------------------------------------------------------------------------------
     mana_contracts = ["0x214ffC0f0103735728dc66b61A22e4F163e275ae".lower(),
@@ -535,7 +538,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([mana_df, trx_df]).drop_duplicates(keep=False)
         mana_df = nu.decentraland_marketplace(mana_df, columns_out)
         vout = pd.concat([vout, mana_df])
-        del mana_df
+    del mana_df
 
     # METAMASK SWAPS ---------------------------------------------------------------------------------------------------
     metamask_contracts = ["0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31".lower()]
@@ -561,7 +564,7 @@ def get_transactions_df(address, chain, scan_key=None):
 
         lens_df = lens_df[[x for x in lens_df.columns if x in columns_out]]
         vout = pd.concat([vout, lens_df])
-        del lens_df
+    del lens_df
 
     # FERRO SWAP -------------------------------------------------------------------------------------------------------
     ferro_contracts = [
@@ -579,7 +582,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([ferro_df, trx_df]).drop_duplicates(keep=False)
         ferro_df = defi.ferro(ferro_df, address, columns_out)
         vout = pd.concat([vout, ferro_df])
-        del ferro_df
+    del ferro_df
 
     # MM FINANCE -------------------------------------------------------------------------------------------------------
     mm_contracts = [
@@ -597,7 +600,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([mm_df, trx_df]).drop_duplicates(keep=False)
         mm_df = defi.mm_finance(mm_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, mm_df])
-        del mm_df
+    del mm_df
 
     # MM VAULTS --------------------------------------------------------------------------------------------------------
     mm_vaults_contracts = ["0xff89646fe7ee62ea96050379a7a8c532dd431d10"]
@@ -632,7 +635,7 @@ def get_transactions_df(address, chain, scan_key=None):
         mm_vaults_df = mm_vaults_df.drop_duplicates()
         vout = pd.concat([vout, mm_vaults_df])
 
-        del mm_vaults_df
+    del mm_vaults_df
 
     # ARGO LIQUID STAKING ----------------------------------------------------------------------------------------------
     argo_contracts = [
@@ -650,7 +653,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([argo_df, trx_df]).drop_duplicates(keep=False)
         argo_df = defi.argo(argo_df, columns_out)
         vout = pd.concat([vout, argo_df])
-        del argo_df
+    del argo_df
 
     # VVS Finance ------------------------------------------------------------------------------------------------------
     vvs_contracts = [
@@ -668,7 +671,7 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([vvs_df, trx_df]).drop_duplicates(keep=False)
         vvs_df = defi.vvs(vvs_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, vvs_df])
-        del vvs_df
+    del vvs_df
 
     # SOFI SWAP --------------------------------------------------------------------------------------------------------
     sofi_contracts = ["0xd55a4d54f39baf26da2f3ee7be9a6388c15f9831".lower()]
@@ -678,7 +681,157 @@ def get_transactions_df(address, chain, scan_key=None):
         trx_df = pd.concat([sofi_df, trx_df]).drop_duplicates(keep=False)
         sofi_df = defi.sofi_swap(sofi_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, sofi_df])
-        del sofi_df
+    del sofi_df
+
+    # SYNC SWAP --------------------------------------------------------------------------------------------------------
+    syncswap_contracts = ["0x2da10A1e27bF85cEdD8FFb1AbBe97e53391C0295".lower()]
+
+    sync_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(syncswap_contracts),
+            trx_df["to_normal"].isin(syncswap_contracts),
+        )
+    ].copy()
+
+    if sync_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, sync_df]).drop_duplicates(keep=False)
+        sync_df = defi.sync_swap(sync_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, sync_df])
+    del sync_df
+
+    # Spacefi ----------------------------------------------------------------------------------------------------------
+    spacefi_contracts = ["0xbE7D1FD1f6748bbDefC4fbaCafBb11C6Fc506d1d".lower()]
+
+    spacefi_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(spacefi_contracts),
+            trx_df["to_normal"].isin(spacefi_contracts),
+        )
+    ].copy()
+
+    if spacefi_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, spacefi_df]).drop_duplicates(keep=False)
+        spacefi_df = defi.spacefi(spacefi_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, spacefi_df])
+    del spacefi_df
+
+    # Koi finance ------------------------------------------------------------------------------------------------------
+
+    koi_contracts = ["0x8B791913eB07C32779a16750e3868aA8495F5964".lower(),
+                     "0xDFAaB828f5F515E104BaaBa4d8D554DA9096f0e4".lower()]
+
+    koi_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(koi_contracts),
+            trx_df["to_normal"].isin(koi_contracts),
+        )
+    ].copy()
+
+    if koi_df.shape[0] > 0:
+        koi_df = koi_df[koi_df['methodId'] != "0x095ea7b3"]
+        trx_df = pd.concat([trx_df, koi_df]).drop_duplicates(keep=False)
+        trx_df.loc[trx_df['methodId'] == "0x095ea7b3", 'functionName'] = 'approv'
+
+        koi_df = defi.koi(koi_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, koi_df])
+    del koi_df
+
+    # ERA LEND ---------------------------------------------------------------------------------------------------------
+    era_contracts = ["0x1BbD33384869b30A323e15868Ce46013C82B86FB".lower()]
+
+    era_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(era_contracts),
+            trx_df["to_normal"].isin(era_contracts),
+        )
+    ].copy()
+
+    if era_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, era_df]).drop_duplicates(keep=False)
+        era_df = defi.era_lend(era_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, era_df])
+
+    del era_df
+
+    # ON CHAIN Finance -------------------------------------------------------------------------------------------------
+    on_contracts = ["0x25588De56dDF3BDfb5589117321f4C92691fCeDd".lower()]
+
+    on_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(on_contracts),
+            trx_df["to_normal"].isin(on_contracts),
+        )
+    ].copy()
+
+    if on_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, on_df]).drop_duplicates(keep=False)
+        on_df = defi.on_finance(on_df, columns_out, gas_coin)
+        vout = pd.concat([vout, on_df])
+
+    del on_df
+
+    # iZUMi ------------------------------------------------------------------------------------------------------------
+    izumi_contracts = ["0x9606eC131EeC0F84c95D82c9a63959F2331cF2aC".lower(),
+                    "0x936c9A1B8f88BFDbd5066ad08e5d773BC82EB15F".lower()]
+
+    izumi_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(izumi_contracts),
+            trx_df["to_normal"].isin(izumi_contracts),
+        )
+    ].copy()
+
+    if izumi_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, izumi_df]).drop_duplicates(keep=False)
+        izumi_df = defi.izumi(izumi_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, izumi_df])
+
+    del izumi_df
+    # DERI finance -----------------------------------------------------------------------------------------------------
+    deri_contracts = ["0x9F63A5f24625d8be7a34e15477a7d6d66e99582e".lower(),
+                      "0x77a7f94b3469E814AD092B1c3f1Fa623B2e4DE3d".lower()]
+    deri_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(deri_contracts),
+            trx_df["to_normal"].isin(deri_contracts),
+        )
+    ].copy()
+
+    if deri_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, deri_df]).drop_duplicates(keep=False)
+        deri_df = defi.deri_finance(deri_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, deri_df])
+    del deri_df
+    # Maverick ---------------------------------------------------------------------------------------------------------
+    maverick_contracts = ["0x39E098A153Ad69834a9Dac32f0FCa92066aD03f4".lower()]
+
+    maverick_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(maverick_contracts),
+            trx_df["to_normal"].isin(maverick_contracts),
+        )
+    ].copy()
+
+    if maverick_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, maverick_df]).drop_duplicates(keep=False)
+        maverick_df = defi.maverick(maverick_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, maverick_df])
+    del maverick_df
+
+    # NFTS ZKSYNC ------------------------------------------------------------------------------------------------------
+    nft_era = ["0x6F6b9063097492CBb782EA8269cE11F411F03ee2".lower(),
+               "0x935442AF47F3dc1c11F006D551E13769F12eab13".lower(),
+               "0x9d11aA719CaBbEeFb3c975Ca7B136FEd5A7d4110".lower(),
+               "0xCBE2093030F485adAaf5b61deb4D9cA8ADEAE509".lower()]
+
+    nft_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(nft_era),
+            trx_df["to_normal"].isin(nft_era),
+        )
+    ].copy()
+
+
 
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()

@@ -344,7 +344,8 @@ def get_transactions_raw(address, chain, scan_key=None, return_full_names=False)
     ]
 
     trx_df = trx_df[~trx_df["tokenName"].isin(scam)]
-    trx_df = trx_df[~trx_df["tokenName_erc721"].isin(scam)]
+    if "tokenName_erc721" in trx_df.columns:
+        trx_df = trx_df[~trx_df["tokenName_erc721"].isin(scam)]
     trx_df = trx_df[~trx_df["tokenName_erc1155"].isin(scam)]
 
     return [gas_coin, trx_df]
