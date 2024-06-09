@@ -822,7 +822,9 @@ def get_transactions_df(address, chain, scan_key=None):
     nft_era = ["0x6F6b9063097492CBb782EA8269cE11F411F03ee2".lower(),
                "0x935442AF47F3dc1c11F006D551E13769F12eab13".lower(),
                "0x9d11aA719CaBbEeFb3c975Ca7B136FEd5A7d4110".lower(),
-               "0xCBE2093030F485adAaf5b61deb4D9cA8ADEAE509".lower()]
+               "0xCBE2093030F485adAaf5b61deb4D9cA8ADEAE509".lower(),
+               "0x808D59a747BfEDd9bcb11A63B7E5748D460b614D".lower(),
+               "0x64848EEfbC2921102A153b08fa64536AE1f8e937".lower()]
 
     nft_df = trx_df[
         np.logical_or(
@@ -831,7 +833,86 @@ def get_transactions_df(address, chain, scan_key=None):
         )
     ].copy()
 
+    nft_df = nft_df[nft_df["methodId"] != "0xa22cb465"]
+    trx_df.loc[trx_df["methodId"] == "0xa22cb465", "functionName"] = 'approv'
+    if nft_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, nft_df]).drop_duplicates(keep=False)
+        nft_df = nu.nft_zksync_era(nft_df, address, columns_out, gas_coin)
+        vout = pd.concat([vout, nft_df])
+    del nft_df
 
+    # TEVA ERA ---------------------------------------------------------------------------------------------------------
+    teva_contracts = ["0x5dE117628B5062F56f37d8fB6603524C7189D892".lower(),
+                      "0x50B2b7092bCC15fbB8ac74fE9796Cf24602897Ad".lower(),
+                      "0xd29aa7bdd3cbb32557973dad995a3219d307721f".lower()]
+
+    teva_df = trx_df[
+        np.logical_or(
+            trx_df["from_normal"].isin(teva_contracts),
+            trx_df["to_normal"].isin(teva_contracts),
+        )
+    ].copy()
+
+    if teva_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, teva_df]).drop_duplicates(keep=False)
+        teva_df['Fee'] = eu.calculate_gas(teva_df['gasPrice_erc721'],teva_df['gasUsed_erc721'])
+        teva_df.index = teva_df['timeStamp_normal']
+        teva_df['value_normal'] = eu.calculate_value_eth(teva_df['value_normal'])
+        teva_df.loc[teva_df['to_normal'] == "0x5dE117628B5062F56f37d8fB6603524C7189D892".lower(), 'Fee'] /= teva_df.loc[teva_df['to_normal'] == "0x5dE117628B5062F56f37d8fB6603524C7189D892".lower()].shape[0]
+        teva_df.loc[teva_df['to_normal'] == "0x5dE117628B5062F56f37d8fB6603524C7189D892".lower(), 'value_normal'] /= teva_df.loc[teva_df['to_normal'] == "0x5dE117628B5062F56f37d8fB6603524C7189D892".lower()].shape[0]
+
+        teva_df['From Coin'] = gas_coin
+        teva_df['From Amount'] = -teva_df['value_normal']
+        teva_df['To Amount'] = 1
+        teva_df['To Coin'] = teva_df['erc721_complete_name']
+
+        teva_df[['Tag', 'Notes']] = ['Trade', 'Tevaera - mint']
+
+        teva_df = teva_df[[x for x in teva_df.columns if x in columns_out]]
+        vout = pd.concat([vout, teva_df])
+    del teva_df
+
+    # AnySwap ----------------------------------------------------------------------------------------------------------
+    any_contracts = ["0xff7104537F33937c66Ac0a65609EB8364Be75c7A".lower()]
+    any_df = trx_df[
+        np.logical_or(
+            trx_df["to_internal"].isin(any_contracts),
+            trx_df["from_internal"].isin(any_contracts),
+        )
+    ].copy()
+
+    if any_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, any_df]).drop_duplicates(keep=False)
+        any_df = any_df.drop_duplicates(subset=['timeStamp_internal','from_internal', 'to_internal', 'value_internal'])
+        any_df['Fee'] = eu.calculate_gas(any_df['gasPrice_erc20'], any_df['gasUsed_internal'])
+        any_df.index = any_df['timeStamp_normal']
+        any_df['value_internal'] = eu.calculate_value_eth(any_df['value_internal'])
+
+        any_df.loc[any_df['to_internal'] == address, 'To Coin'] = gas_coin
+        any_df.loc[any_df['from_internal'] == address, 'From Coin'] = gas_coin
+
+        any_df.loc[any_df['to_internal'] == address, 'To Amount'] = any_df.loc[any_df['to_internal'] == address, 'value_internal']
+        any_df.loc[any_df['from_internal'] == address, 'From Amount'] = -any_df.loc[any_df['from_internal'] == address, 'value_internal']
+
+        any_df[['Tag', 'Notes']] = ['Movement', 'Any Swap - Bridge']
+
+        any_df = any_df[[x for x in any_df.columns if x in columns_out]]
+        vout = pd.concat([vout, any_df])
+
+    del any_df
+
+    # PANCAKE SWAP ZKSYNC ERA ------------------------------------------------------------------------------------------
+    pancake_zk_contracts = ["0xa815e2eD7f7d5B0c49fda367F249232a1B9D2883".lower(),
+                            "0x4c615E78c5fCA1Ad31e4d66eb0D8688d84307463".lower(),
+                            "0xf8b59f3c3Ab33200ec80a8A58b2aA5F5D2a8944C".lower()]
+    pancake_zk_df = trx_df[
+        np.logical_or(
+            trx_df["to_normal"].isin(pancake_zk_contracts),
+            trx_df["from_normal"].isin(pancake_zk_contracts),
+        )
+    ].copy()
+    if pancake_zk_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, pancake_zk_df]).drop_duplicates(keep=False)
 
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()

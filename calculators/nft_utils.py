@@ -478,3 +478,44 @@ def decentraland_marketplace(df, columns_out):
     df = df.drop_duplicates()
 
     return df
+
+
+def nft_zksync_era(df, address, columns_out, gas_coin):
+    df.index = df["timeStamp_normal"]
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
+    df.loc[df['from_normal'] == '', 'from_normal'] = None
+    df.loc[df['to_normal'] == '', 'to_normal'] = None
+    df['Fee'] = eu.calculate_gas(df['gasPrice'], df['gasUsed_normal'])
+    df['value'] = eu.calculate_value_token(df['value'].fillna(0), df['tokenDecimal'].fillna(0))
+
+    df.loc[df['to'] == address, 'To Coin'] = df.loc[df['to'] == address, 'tokenSymbol']
+    df.loc[df['to'] == address, 'To Amount'] = df.loc[df['to'] == address, 'value']
+    df.loc[df['from'] == address, 'From Coin'] = df.loc[df['from'] == address, 'tokenSymbol']
+    df.loc[df['from'] == address, 'From Amount'] = -df.loc[df['from'] == address, 'value']
+
+    df['to_erc721'] = df['to_erc721'].apply(lambda x: x.lower())
+    df['from_erc721'] = df['from_erc721'].apply(lambda x: x.lower())
+    df.loc[df['from_erc721'] == df['to_erc721'], 'from_erc721'] = ''
+
+    df.loc[df['to_erc721'] == address, 'To Coin'] = df.loc[
+        df['to_erc721'] == address, 'erc721_complete_name']
+    df.loc[df['to_erc721'] == address, 'To Amount'] = 1
+    df.loc[df['from_erc721'] == address, 'From Coin'] = df.loc[
+        df['from_erc721'] == address, 'erc721_complete_name']
+    df.loc[df['from_erc721'] == address, 'From Amount'] = -1
+
+    df['value_normal'] = eu.calculate_value_eth(df['value_normal'])
+    df['value_internal'] = eu.calculate_value_eth(df['value_internal'].fillna(0))
+    df['value_normal'] += df['value_internal']
+
+    df.loc[np.logical_and(df['from_normal'] == address, pd.isna(df['From Coin'])), 'From Amount'] = - \
+        df.loc[np.logical_and(df['from_normal'] == address, pd.isna(df['From Coin'])), 'value_normal']
+    df.loc[np.logical_and(df['from_normal'] == address, pd.isna(df['From Coin'])), 'From Coin'] = gas_coin
+
+    df[['Tag', 'Notes']] = ['Trade', 'NFT']
+
+    df = df[[x for x in df.columns if x in columns_out]]
+    df = df.sort_index()
+
+    return df
