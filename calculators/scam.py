@@ -432,5 +432,6 @@ scam = [
     'Father Of Meme',
     'BaseWif',
     'PPBox.io',
-    'BASED USA'
+    'BASED USA',
+    'Shigure UI'
 ]

@@ -1981,6 +1981,7 @@ def sofi_swap(df, address, columns_out, gas_coin):
 
     return sofi_out
 
+
 def sync_swap(df, address, columns_out, gas_coin):
     sync_out = pd.DataFrame()
 
@@ -2271,6 +2272,7 @@ def spacefi(df, address, columns_out, gas_coin):
             temp_df["functionName"].str.contains("deposit"),
             ["value_normal", "value"],
         ] = None
+        temp_df['Fee'] /= 2
         liquidity_df = pd.concat([liquidity_df, temp_df])
 
     liquidity_df.loc[
@@ -2332,6 +2334,7 @@ def spacefi(df, address, columns_out, gas_coin):
 
     return spacefi_out
 
+
 def koi(df, address, columns_out, gas_coin):
     koi_out = pd.DataFrame()
 
@@ -2375,16 +2378,17 @@ def koi(df, address, columns_out, gas_coin):
             temp_df["functionName"].str.contains("deposit"),
             ["value_normal", "value"],
         ] = None
+        temp_df['Fee'] /= 2
         liquidity_df = pd.concat([liquidity_df, temp_df])
 
     liquidity_df.loc[
         liquidity_df["functionName"].str.contains("deposit"),
         ["Tag", "Notes"],
-    ] = ["Movement", "SyncSwap - Deposit"]
+    ] = ["Movement", "Koi - Deposit"]
     liquidity_df.loc[
         liquidity_df["functionName"].str.contains("remove"),
         ["Tag", "Notes"],
-    ] = ["Reward", "SyncSwap - Withdraw"]
+    ] = ["Reward", "Koi - Withdraw"]
 
     liquidity_df = pd.concat([liquidity_df, liquidity_df.loc[liquidity_df["functionName"].str.contains("remove")]])
 
@@ -2439,6 +2443,55 @@ def koi(df, address, columns_out, gas_coin):
     claim_df[['Tag', 'Notes']] = ['Reward', 'Koi - withdraw']
 
     koi_out = pd.concat([koi_out, claim_df])
+
+    # Swap
+    swapeth = df[df['methodId'] == '0x51cbf10f'].copy()
+    df = pd.concat([df, swapeth]).drop_duplicates(keep=False)
+
+    swapeth["from_internal"] = swapeth["from_internal"].fillna('').apply(lambda x: x.lower())
+    swapeth["to_internal"] = swapeth["to_internal"].fillna('').apply(lambda x: x.lower())
+
+    swapeth["from"] = swapeth["from"].fillna('').apply(lambda x: x.lower())
+    swapeth["to"] = swapeth["to"].fillna('').apply(lambda x: x.lower())
+
+    swapeth.loc[swapeth["from_normal"] == address, "From Coin"] = gas_coin
+    swapeth.loc[swapeth["from_normal"] == address, "To Coin"] = swapeth.loc[
+        swapeth["from_normal"] == address, "tokenSymbol"]
+
+    swapeth.loc[swapeth["to_normal"] == address, "To Coin"] = gas_coin
+    swapeth.loc[swapeth["to_normal"] == address, "From Coin"] = swapeth.loc[
+        swapeth["to_normal"] == address, "tokenSymbol"
+    ]
+
+    swapeth["value"] = eu.calculate_value_token(
+        swapeth.value.fillna(0), swapeth.tokenDecimal.fillna(0)
+    )
+    swapeth["value_normal"] = eu.calculate_value_eth(
+        swapeth.value_normal.fillna(0)
+    )
+    swapeth["value_internal"] = eu.calculate_value_eth(
+        swapeth.value_internal.fillna(0)
+    )
+    swapeth["value_normal"] -= swapeth["value_internal"]
+
+    swapeth.loc[
+        swapeth["from_normal"] == address, "From Amount"
+    ] = -swapeth.loc[swapeth["from_normal"] == address, "value_normal"].values
+    swapeth.loc[
+        swapeth["from_normal"] == address, "To Amount"
+    ] = swapeth.loc[swapeth["from_normal"] == address, "value"]
+
+    swapeth.loc[swapeth["to_normal"] == address, "To Amount"] = swapeth.loc[
+        swapeth["to_normal"] == address, "value_normal"
+    ]
+    swapeth.loc[
+        swapeth["to_normal"] == address, "From Amount"
+    ] = -swapeth.loc[swapeth["to_normal"] == address, "value"]
+
+    swapeth["Tag"] = "Trade"
+    swapeth["Notes"] = "Koi - swapETHForExactTokens"
+
+    koi_out = pd.concat([koi_out, swapeth])
 
     if df.shape[0] > 0:
         print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI KOI SONO INCLUSE")
@@ -2674,7 +2727,7 @@ def izumi(df, address, columns_out, gas_coin):
     burn_df = df[df["methodId"].isin(["0x42966c68"])].copy()
     df = pd.concat([burn_df, df]).drop_duplicates(keep=False)
 
-    burn_df["Tag"] = "Trade"
+    burn_df["Tag"] = "Movement"
     burn_df["Notes"] = "iZUMi - burn nft"
 
     # Adding and removing liquidity with ETH
@@ -2854,69 +2907,11 @@ def maverick(df, address, columns_out, gas_coin):
     df.loc[df['from_normal'] == '', 'from_normal'] = None
     df.loc[df['to_normal'] == '', 'to_normal'] = None
     df['Fee'] = eu.calculate_gas(df['gasPrice'], df['gasUsed_normal'])
-    df.loc[df['to_erc721'].fillna('').apply(lambda x: x.lower()) == address, ['methodId', 'functionName']] = ['liquidity', 'deposit']
-    df.loc[df['to_internal']!=df['from_normal'], ['methodId', 'functionName']] = ['liquidity', 'deposit']
+    df.loc[df['to_erc721'].fillna('').apply(lambda x: x.lower()) == address, ['methodId', 'functionName']] = [
+        'liquidity', 'deposit']
+    df.loc[df['to'] != address, ['methodId', 'functionName']] = ['liquidity', 'deposit']
 
-    df.loc[df['to']=='', ['methodId', 'functionName']] = ['liquidity', 'remove']
-
-    # Swap ETH
-    swap_df = df[df["methodId"].isin(["0xac9650d8"])].copy()
-    df = pd.concat([swap_df, df]).drop_duplicates(keep=False)
-
-    swap_df["value"] = eu.calculate_value_token(swap_df.value, swap_df.tokenDecimal)
-    swap_df["value_normal"] = eu.calculate_value_eth(swap_df.value_normal)
-    swap_df["value_internal"] = eu.calculate_value_eth(swap_df.value_internal)
-
-    swap_df.loc[swap_df['from_internal'] == address, 'value_internal'] *= -1
-    swap_df.loc[swap_df['from_normal'] == address, 'value_normal'] *= -1
-
-    swap_df["value_normal"] += swap_df["value_internal"]
-    swap_df["value_normal"] = swap_df["value_normal"].abs()
-
-    swap_df["from"] = swap_df["from"].fillna('').apply(lambda x: x.lower())
-    swap_df["to"] = swap_df["to"].fillna('').apply(lambda x: x.lower())
-
-    count_df = swap_df.groupby(swap_df.index).agg({'hash': 'count'}).reset_index()
-    if any(count_df['hash'] == 2):
-        count_df.index = count_df['timeStamp_normal']
-        count_df = count_df.drop('timeStamp_normal', axis=1)
-        swap_df = pd.merge(count_df, swap_df, left_on='timeStamp_normal', right_index=True)
-        for indexl in swap_df[swap_df['hash_x'] == 2].index.unique():
-            if swap_df[swap_df.index == indexl]['value_internal'].iloc[0] != \
-                    swap_df[swap_df.index == indexl]['value_internal'].iloc[1]:
-                swap_df.loc[swap_df.index == indexl, 'value_internal'] = swap_df.loc[
-                    swap_df.index == indexl, 'value_internal'].sum()
-
-            if swap_df[swap_df.index == indexl]['value'].iloc[0] != \
-                    swap_df[swap_df.index == indexl]['value'].iloc[1]:
-                swap_df.loc[swap_df.index == indexl, 'value'] = swap_df.loc[
-                    swap_df.index == indexl, 'value'].sum()
-
-    swap_df.loc[swap_df["to"] == address, "From Coin"] = gas_coin
-    swap_df.loc[swap_df["to"] == address, "To Coin"] = swap_df.loc[swap_df["to"] == address, "tokenSymbol"]
-
-    swap_df.loc[swap_df["from"] == address, "To Coin"] = gas_coin
-    swap_df.loc[swap_df["from"] == address, "From Coin"] = swap_df.loc[swap_df["from"] == address, "tokenSymbol"]
-
-    swap_df.loc[swap_df["to"] == address, "From Amount"] = -swap_df.loc[
-        swap_df["to"] == address, "value_normal"]
-    swap_df.loc[swap_df["to"] == address, "To Amount"] = swap_df.loc[swap_df["to"] == address, "value"]
-
-    swap_df.loc[swap_df["from"] == address, "To Amount"] = swap_df.loc[
-        swap_df["from"] == address, "value_normal"]
-    swap_df.loc[swap_df["from"] == address, "From Amount"] = -swap_df.loc[
-        swap_df["from"] == address, "value"]
-
-    swap_df["Fee"] = eu.calculate_gas(swap_df.gasPrice, swap_df.gasUsed_normal)
-
-    swap_df["Tag"] = "Trade"
-    swap_df["Notes"] = "iZUMi - swap eth"
-
-    if any(count_df['hash'] == 2):
-        swap_df = swap_df.drop_duplicates(subset=columns_out)
-        swap_df = swap_df.drop('hash_x', axis=1)
-
-    maverick_out = pd.concat([maverick_out, swap_df])
+    df.loc[np.logical_or(df['to'] == '', df['to'] == address), ['methodId', 'functionName']] = ['liquidity', 'remove']
 
     # Adding and removing liquidity with ETH
     liquidity_df = df[df["methodId"].isin(["liquidity"])].copy()
@@ -2986,6 +2981,7 @@ def maverick(df, address, columns_out, gas_coin):
     liquidity_df = liquidity_df.sort_index()
 
     for indx in liquidity_df.loc[liquidity_df["functionName"].str.contains("remove")].index.unique():
+        liquidity_df['Fee'] /= 2
         if liquidity_df.loc[liquidity_df.index == indx, 'From Amount'].iloc[0] == \
                 liquidity_df.loc[liquidity_df.index == indx, 'From Amount'].iloc[1]:
             liquidity_df.loc[liquidity_df.index == indx, 'From Amount'] = [None, liquidity_df.loc[
@@ -3002,7 +2998,7 @@ def maverick(df, address, columns_out, gas_coin):
     maverick_out = pd.concat([maverick_out, liquidity_df])
 
     if df.shape[0] > 0:
-        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI IZUMI SONO INCLUSE")
+        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI Maverick SONO INCLUSE")
 
     maverick_out = maverick_out[[x for x in maverick_out.columns if x in columns_out]]
     maverick_out = maverick_out.sort_index()
@@ -3010,3 +3006,230 @@ def maverick(df, address, columns_out, gas_coin):
     maverick_out = maverick_out.drop_duplicates()
 
     return maverick_out
+
+
+def pancake_swap_zk(df, address, columns_out, gas_coin):
+    ps_zk_out = pd.DataFrame()
+
+    df.index = df["timeStamp_normal"]
+    df.loc[df['from_internal'] == '', 'from_internal'] = None
+    df.loc[df['to_internal'] == '', 'to_internal'] = None
+    df.loc[df['from_normal'] == '', 'from_normal'] = None
+    df.loc[df['to_normal'] == '', 'to_normal'] = None
+    df['Fee'] = eu.calculate_gas(df['gasPrice'], df['gasUsed_normal'])
+    df.loc[np.logical_and(df['methodId'] == '0xac9650d8',
+                          df['to_internal'].fillna('').apply(lambda x: x.lower()) == address), ['methodId',
+                                                                                                'functionName']] = [
+        'liquidity', 'remove']
+    df.loc[np.logical_and(df['methodId'] == '0xac9650d8', pd.isna(df['to_internal'])), ['methodId', 'functionName']] = [
+        'liquidity', 'deposit']
+
+    # Swap ETH
+    swap_df = df[df["methodId"].isin(["0x5ae401dc"])].copy()
+    df = pd.concat([swap_df, df]).drop_duplicates(keep=False)
+
+    swap_df["value"] = eu.calculate_value_token(swap_df.value, swap_df.tokenDecimal)
+    swap_df["value_normal"] = eu.calculate_value_eth(swap_df.value_normal)
+    swap_df["value_internal"] = eu.calculate_value_eth(swap_df.value_internal)
+
+    swap_df.loc[swap_df['from_internal'] == address, 'value_internal'] *= -1
+    swap_df.loc[swap_df['from_normal'] == address, 'value_normal'] *= -1
+
+    swap_df["value_normal"] += swap_df["value_internal"]
+    swap_df["value_normal"] = swap_df["value_normal"].abs()
+
+    swap_df["from"] = swap_df["from"].fillna('').apply(lambda x: x.lower())
+    swap_df["to"] = swap_df["to"].fillna('').apply(lambda x: x.lower())
+
+    count_df = swap_df.groupby(swap_df.index).agg({'hash': 'count'}).reset_index()
+    if any(count_df['hash'] == 2):
+        count_df.index = count_df['timeStamp_normal']
+        count_df = count_df.drop('timeStamp_normal', axis=1)
+        swap_df = pd.merge(count_df, swap_df, left_on='timeStamp_normal', right_index=True)
+        for indexl in swap_df[swap_df['hash_x'] == 2].index.unique():
+            if swap_df[swap_df.index == indexl]['value_internal'].iloc[0] != \
+                    swap_df[swap_df.index == indexl]['value_internal'].iloc[1]:
+                swap_df.loc[swap_df.index == indexl, 'value_internal'] = swap_df.loc[
+                    swap_df.index == indexl, 'value_internal'].sum()
+
+            if swap_df[swap_df.index == indexl]['value'].iloc[0] != \
+                    swap_df[swap_df.index == indexl]['value'].iloc[1]:
+                swap_df.loc[swap_df.index == indexl, 'value'] = swap_df.loc[
+                    swap_df.index == indexl, 'value'].sum()
+
+    swap_df.loc[swap_df["to"] == address, "From Coin"] = gas_coin
+    swap_df.loc[swap_df["to"] == address, "To Coin"] = swap_df.loc[swap_df["to"] == address, "tokenSymbol"]
+
+    swap_df.loc[swap_df["from"] == address, "To Coin"] = gas_coin
+    swap_df.loc[swap_df["from"] == address, "From Coin"] = swap_df.loc[swap_df["from"] == address, "tokenSymbol"]
+
+    swap_df.loc[swap_df["to"] == address, "From Amount"] = -swap_df.loc[
+        swap_df["to"] == address, "value_normal"]
+    swap_df.loc[swap_df["to"] == address, "To Amount"] = swap_df.loc[swap_df["to"] == address, "value"]
+
+    swap_df.loc[swap_df["from"] == address, "To Amount"] = swap_df.loc[
+        swap_df["from"] == address, "value_normal"]
+    swap_df.loc[swap_df["from"] == address, "From Amount"] = -swap_df.loc[
+        swap_df["from"] == address, "value"]
+
+    swap_df["Fee"] = eu.calculate_gas(swap_df.gasPrice, swap_df.gasUsed_normal)
+
+    swap_df["Tag"] = "Trade"
+    swap_df["Notes"] = "Pancake Swap - swap eth"
+
+    if any(count_df['hash'] == 2):
+        swap_df = swap_df.drop_duplicates(subset=columns_out)
+        swap_df = swap_df.drop('hash_x', axis=1)
+
+    ps_zk_out = pd.concat([ps_zk_out, swap_df])
+
+    # Burning position NFT
+    burn_df = df[df["methodId"].isin(["0x42842e0e"])].copy()
+    df = pd.concat([burn_df, df]).drop_duplicates(keep=False)
+
+    burn_df["Tag"] = "Movement"
+    burn_df["Notes"] = "Pancake Swap - burn nft"
+
+    # Adding and removing liquidity with ETH
+    liquidity_df = df[df["methodId"].isin(["liquidity"])].copy()
+    df = pd.concat([liquidity_df, df]).drop_duplicates(keep=False)
+
+    liquidity_df["value"] = eu.calculate_value_token(
+        liquidity_df.value.fillna(0), liquidity_df.tokenDecimal.fillna(0)
+    )
+    liquidity_df["value_normal"] = eu.calculate_value_eth(
+        liquidity_df.value_normal.fillna(0)
+    )
+    liquidity_df["value_internal"] = eu.calculate_value_eth(
+        liquidity_df.value_internal.fillna(0)
+    )
+    liquidity_df["value_normal"] += liquidity_df["value_internal"]
+
+    liquidity_df.loc[
+        liquidity_df["functionName"].str.contains("deposit"),
+        ["value_normal", "value"],
+    ] *= -1
+    liquidity_df = liquidity_df.sort_index()
+
+    cake_rewards = liquidity_df[np.logical_and(liquidity_df['functionName'] == 'remove',
+                                               liquidity_df['tokenSymbol'] == 'Cake')].copy()
+    liquidity_df = pd.concat([liquidity_df, cake_rewards]).drop_duplicates(keep=False)
+
+    for token in liquidity_df["tokenSymbol"].unique():
+        temp_df = liquidity_df[liquidity_df["tokenSymbol"] == token].copy()
+        liquidity_df = pd.concat([liquidity_df, temp_df]).drop_duplicates(keep=False)
+        temp_df["value"] = temp_df["value"].cumsum()
+        temp_df["value_normal"] = temp_df["value_normal"].cumsum()
+        temp_df.loc[
+            temp_df["functionName"].str.contains("deposit"),
+            ["value_normal", "value"],
+        ] = None
+        liquidity_df = pd.concat([liquidity_df, temp_df])
+
+    liquidity_df.loc[
+        liquidity_df["functionName"].str.contains("deposit"),
+        ["Tag", "Notes"],
+    ] = ["Movement", "Pancake Swap - Deposit"]
+    liquidity_df.loc[
+        liquidity_df["functionName"].str.contains("remove"),
+        ["Tag", "Notes"],
+    ] = ["Reward", "Pancake Swap - Withdraw"]
+
+    liquidity_df = pd.concat([liquidity_df, liquidity_df.loc[liquidity_df["functionName"].str.contains("remove")]])
+
+    liquidity_df.loc[liquidity_df["value_normal"] < 0, "From Amount"
+    ] = liquidity_df.loc[liquidity_df["value_normal"] < 0, "value_normal"]
+    liquidity_df.loc[liquidity_df["value_normal"] > 0, "To Amount"
+    ] = liquidity_df.loc[liquidity_df["value_normal"] > 0, "value_normal"]
+    liquidity_df.loc[liquidity_df["value_normal"] < 0, "From Coin"] = gas_coin
+    liquidity_df.loc[liquidity_df["value_normal"] > 0, "To Coin"] = gas_coin
+
+    liquidity_df.loc[liquidity_df["value"] < 0, "From Amount"] = liquidity_df.loc[
+        liquidity_df["value"] < 0, "value"
+    ]
+    liquidity_df.loc[liquidity_df["value"] > 0, "To Amount"] = liquidity_df.loc[
+        liquidity_df["value"] > 0, "value"
+    ]
+    liquidity_df.loc[liquidity_df["value"] < 0, "From Coin"] = liquidity_df.loc[
+        liquidity_df["value"] < 0, "tokenSymbol"
+    ]
+    liquidity_df.loc[liquidity_df["value"] > 0, "To Coin"] = liquidity_df.loc[
+        liquidity_df["value"] > 0, "tokenSymbol"
+    ]
+
+    liquidity_df = liquidity_df.sort_index()
+
+    for indx in liquidity_df.loc[liquidity_df["functionName"].str.contains("remove")].index.unique():
+        if liquidity_df.loc[liquidity_df.index == indx, 'From Amount'].iloc[0] == \
+                liquidity_df.loc[liquidity_df.index == indx, 'From Amount'].iloc[1]:
+            liquidity_df.loc[liquidity_df.index == indx, 'From Amount'] = [None, liquidity_df.loc[
+                liquidity_df.index == indx, 'From Amount'].iloc[0]]
+            liquidity_df.loc[liquidity_df.index == indx, 'From Coin'] = [None, liquidity_df.loc[
+                liquidity_df.index == indx, 'From Coin'].iloc[0]]
+        if liquidity_df.loc[liquidity_df.index == indx, 'To Amount'].iloc[0] == \
+                liquidity_df.loc[liquidity_df.index == indx, 'To Amount'].iloc[1]:
+            liquidity_df.loc[liquidity_df.index == indx, 'To Amount'] = [
+                liquidity_df.loc[liquidity_df.index == indx, 'To Amount'].iloc[0], None]
+            liquidity_df.loc[liquidity_df.index == indx, 'To Coin'] = [
+                liquidity_df.loc[liquidity_df.index == indx, 'To Coin'].iloc[0], None]
+
+    if cake_rewards.shape[0] > 0:
+        cake_rewards['To Coin'] = 'Cake'
+        cake_rewards['To Amount'] = cake_rewards['value']
+        cake_rewards[["Tag", "Notes"]] = ["Reward", "Pancake Swap- Withdraw"]
+        liquidity_df = pd.concat([liquidity_df, cake_rewards])
+
+    ps_zk_out = pd.concat([ps_zk_out, liquidity_df])
+
+    if df.shape[0] > 0:
+        print("ATTENZIONE: NON TUTTE LE TRANSAZIONI DI PANCAKE SWAP ZKSYNC SONO INCLUSE")
+
+    ps_zk_out = ps_zk_out[[x for x in ps_zk_out.columns if x in columns_out]]
+    ps_zk_out = ps_zk_out.sort_index()
+
+    ps_zk_out = ps_zk_out.drop_duplicates()
+
+    return ps_zk_out
+
+
+def weth_zk(weth_df, gas_coin, columns_out):
+    weth_df.index = weth_df["timeStamp_normal"]
+    weth_df[["value_normal", "value_internal"]] = weth_df[["value_normal", "value_internal"]].map(
+        lambda c: 0 if pd.isna(c) else int(c))
+    weth_df["value_normal"] += weth_df["value_internal"]
+
+    weth_df["value_normal"] = eu.calculate_value_eth(weth_df["value_normal"])
+    weth_df["Fee"] = eu.calculate_gas(weth_df.gasPrice, weth_df.gasUsed_normal)
+
+    koi_weth = weth_df[weth_df['methodId'] == '0x6e745b93']
+    weth_df = pd.concat([weth_df, koi_weth]).drop_duplicates(keep=False)
+
+    weth_df.loc[weth_df["methodId"] == "0x2e1a7d4d", "value_normal"] *= -1
+
+    if koi_weth.shape[0] > 0:
+        koi_weth.loc[~pd.isna(koi_weth['gas_internal']), "value_normal"] *= -1
+        weth_df = pd.concat([weth_df, koi_weth])
+
+    weth_df.loc[weth_df["value_normal"] < 0, "From Amount"] = weth_df.loc[weth_df["value_normal"] < 0, "value_normal"]
+    weth_df.loc[weth_df["value_normal"] < 0, "To Amount"] = -weth_df.loc[
+        weth_df["value_normal"] < 0, "value_normal"
+    ]
+    weth_df.loc[weth_df["value_normal"] < 0, "From Coin"] = f"W{gas_coin}"
+    weth_df.loc[weth_df["value_normal"] < 0, "To Coin"] = gas_coin
+
+    weth_df.loc[weth_df["value_normal"] > 0, "To Amount"] = weth_df.loc[
+        weth_df["value_normal"] > 0, "value_normal"
+    ]
+    weth_df.loc[weth_df["value_normal"] > 0, "From Amount"] = -weth_df.loc[
+        weth_df["value_normal"] > 0, "value_normal"
+    ]
+    weth_df.loc[weth_df["value_normal"] > 0, "To Coin"] = f"W{gas_coin}"
+    weth_df.loc[weth_df["value_normal"] > 0, "From Coin"] = gas_coin
+
+    weth_df["Notes"] = "WETH contract"
+    weth_df["Tag"] = "Trade"
+
+    weth_df = weth_df[[x for x in weth_df.columns if x in columns_out]]
+    weth_df = weth_df.sort_index()
+
+    return weth_df
