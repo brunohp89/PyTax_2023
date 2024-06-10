@@ -355,8 +355,8 @@ def the_sandbox(df, columns_out):
         tsb_1155['To Coin'] = tsb_1155['erc1155_complete_name']
         tsb_1155['To Amount'] = tsb_1155['tokenValue']
 
-        tsb_1155['Notes'] = 'Movement'
-        tsb_1155['Tag'] = 'The Sandbox - NFT'
+        tsb_1155['Tag'] = 'Movement'
+        tsb_1155['Notes'] = 'The Sandbox - NFT'
 
         grouped = tsb_1155.groupby(tsb_1155.index).agg({'Tag': 'count', 'Fee': 'mean'}).reset_index()
         grouped.loc[grouped['Tag'] > 1, 'Fee'] /= grouped.loc[grouped['Tag'] > 1, 'Tag']

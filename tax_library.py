@@ -608,7 +608,7 @@ def income(
 
     rendita["From Amount"] = rendita["From Amount"].fillna(0)
     rendita["Fiat Price"] = [
-        -x if y < 0 else x
+        -abs(x) if y < 0 else x
         for x, y in zip(rendita["Fiat Price"], rendita["From Amount"])
     ]
 

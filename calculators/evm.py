@@ -1065,7 +1065,7 @@ def get_transactions_df(address, chain, scan_key=None):
     vout['From Amount'] = vout['From Amount'].astype(float)
     vout['To Amount'] = vout['To Amount'].astype(float)
 
-    vout['Source'] = f'{gas_coin}-{address[0:10]}'
+    vout['Source'] = f'{chain}-{address[0:10]}'
 
     vout = vout.sort_index()
     return vout

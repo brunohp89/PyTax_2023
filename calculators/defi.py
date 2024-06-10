@@ -1281,8 +1281,8 @@ def quick_swap(df, address, columns_out, gas_coin):
             multicall.gasPrice, multicall.gasUsed_normal
         )
 
-        multicall["Tag"] = "Quick Swap - Execute"
-        multicall["Notes"] = "Trade"
+        multicall["Notes"] = "Quick Swap - Execute"
+        multicall["Tag"] = "Trade"
 
         quick_out = pd.concat([quick_out, multicall])
     if df.shape[0] > 0:
