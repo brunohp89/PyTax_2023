@@ -702,7 +702,7 @@ def all_fiat_invested(final_df, year_sel="all"):
     )
 
 
-def calculate_pl(df_transactions, year_sel):
+def calculate_pl(df_transactions, year_sel, return_lots=False):
     # Negativi (per ora solo chashback reversal, bisogna ragionare su cosa fare con le minusvalenza
     # da liquidity pool
 
@@ -787,9 +787,6 @@ def calculate_pl(df_transactions, year_sel):
     trades_df = trades_df.sort_index()
 
     for i in range(trades_df.shape[0]):
-        if trades_df.iloc[i, 3] == 'Vessel - 61812 -> 0x5b1085136a811e55b2bb2ca1ea456ba82126a376':
-            print(8123987321)
-            break
         if trades_df.iloc[i, 2] in fiat or trades_df.iloc[i, 2] in stablecoins:
             temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
             temp_df.index = [trades_df.iloc[[i]].index[0]]
@@ -864,5 +861,8 @@ def calculate_pl(df_transactions, year_sel):
     pldf = pldf.sort_index()
 
     pldf = pldf[pldf['Tag'] != 'LOTM']
+
+    if return_lots:
+        return [pldf, value_df]
 
     return pldf
