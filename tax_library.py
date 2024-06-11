@@ -723,101 +723,26 @@ def calculate_pl(df_transactions, year_sel):
 
     transfers = pd.concat([transfers, trades_df2]).drop_duplicates('ind1', keep=False).sort_index()
     # ----------------------------------------------------------
-    # NFTs -----------------------------------------------------
-    nfts = [x for x in list(df_transactions[~pd.isna(df_transactions.Tag)].Tag.unique()) if
-            'ERC721' in x and 'Transfer' not in x]
-    nfts.extend(
-        [x for x in list(df_transactions[~pd.isna(df_transactions.Tag)].Tag.unique()) if
-         'ERC1155' in x and 'Transfer' not in x])
-    nfts.extend(
-        [x for x in list(df_transactions[~pd.isna(df_transactions.Notes)].Notes.unique()) if
-         'NFT' in x and 'Transfer' not in x])
-
-    trades_df3 = transfers[np.logical_or(transfers['Notes'].isin(nfts), transfers['Tag'].isin(nfts))].copy()
-    trades_df3 = trades_df3[np.logical_or(~pd.isna(trades_df3['To Coin']), ~pd.isna(trades_df3['From Coin']))].copy()
-
-    transfers = pd.concat([transfers, trades_df3]).drop_duplicates('ind1', keep=False).sort_index()
-
-    # Metto l'NFT come token
-    trades_df3[['From Amount', 'To Amount']] = trades_df3[['From Amount', 'To Amount']].fillna(1)
-    trades_df3.loc[pd.isna(trades_df3['Tag']), 'Tag'] = trades_df3.loc[pd.isna(trades_df3['Tag']), 'Notes']
-    trades_df3.loc[pd.isna(trades_df3['To Coin']), 'To Coin'] = [k.split('_')[1] if len(k.split('_')) > 1 else k for k
-                                                                 in
-                                                                 trades_df3.loc[pd.isna(trades_df3['To Coin']), 'Tag']]
-    trades_df3.loc[pd.isna(trades_df3['From Coin']), 'From Coin'] = [k.split('_')[1] if len(k.split('_')) > 1 else k for
-                                                                     k
-                                                                     in trades_df3.loc[
-                                                                         pd.isna(trades_df3['From Coin']), 'Tag']]
-    trades_df3.loc[trades_df3['From Coin'] == 'ZKSYNC', 'From Coin'] = trades_df3.loc[trades_df3[
-                                                                                          'From Coin'] == 'ZKSYNC', 'From Coin'] + '_' + \
-                                                                       trades_df3[trades_df3[
-                                                                                      'From Coin'] == 'ZKSYNC'].Index.astype(
-                                                                           str)
-    trades_df3.loc[trades_df3['To Coin'] == 'ZKSYNC', 'To Coin'] = trades_df3.loc[trades_df3[
-                                                                                      'From Coin'] == 'ZKSYNC', 'To Coin'] + '_' + \
-                                                                   trades_df3[
-                                                                       trades_df3['To Coin'] == 'ZKSYNC'].Index.astype(
-                                                                       str)
-
-    # Merge values when the transaction is slipt in 2 (part going to opensea and part going to the creator for example)
-    trades_df3 = pd.merge(trades_df3, trades_df3[trades_df3['To Coin'].str.len() > 10].groupby(['To Coin']).agg(
-        {'From Amount': 'sum', 'Fee': 'sum', 'Fee Fiat': 'sum', 'Fiat Price': 'sum'}).copy().reset_index(),
-                          how='outer', on='To Coin', suffixes=('', '1'))
-
-    trades_df3['Notes'] = trades_df3['Notes'].fillna('')
-    trades_df3.loc[
-        np.logical_and(trades_df3['Notes'] == '', ~pd.isna(trades_df3['From Amount1'])), ['From Amount', 'Fee',
-                                                                                          'Fee Fiat',
-                                                                                          'Fiat Price']] = \
-        trades_df3.loc[
-            np.logical_and(trades_df3['Notes'] == '', ~pd.isna(trades_df3['From Amount1'])), ['From Amount1', 'Fee1',
-                                                                                              'Fee Fiat1',
-                                                                                              'Fiat Price1']].values
-    trades_df3[np.logical_and(trades_df3['Notes'] == '', ~pd.isna(trades_df3['From Amount1']))] = trades_df3[
-        np.logical_and(trades_df3['Notes'] == '', ~pd.isna(trades_df3['From Amount1']))].drop_duplicates()
-    trades_df3 = trades_df3[np.logical_or(~pd.isna(trades_df3['From Coin']), ~pd.isna(trades_df3['To Coin']))]
-
-    trades_df3 = trades_df3.drop_duplicates(subset=['Index', 'From Coin', 'To Coin'])
-    trades_df3 = trades_df3.drop(['From Amount1', 'Fee1', 'Fee Fiat1', 'Fiat Price1'], axis=1)
-
-    # ----------------------------------------------------------
     # Other transactions -----------------------------------------------------
-    # Transazioni senza valore
-    to_exclude = transfers[np.logical_and(pd.isna(transfers['To Amount']), pd.isna(transfers['From Amount']))].copy()
-
+    # Escludo aggiustamenti
+    to_exclude = transfers[transfers['Tag'] == 'Aggiustamenti'].copy()
     transfers = pd.concat([transfers, to_exclude]).drop_duplicates('ind1', keep=False).sort_index()
-
-    # Acquisto di servizi (genopets, star atlas, registrazione chiavi NEAR...)
-    other_actions = ["[{'action': 'ADD_KEY', 'method': None}]",
-                     "[{'action': 'DELETE_KEY', 'method': None}]",
-                     "[{'action': 'FUNCTION_CALL', 'method': 'claim'}]",
-                     'SWEAT Grow Jar', 'Swap DooarSwap', 'SWEAT Optin Prize',
-                     'SWEAT Governance Voting', "[{'action': 'FUNCTION_CALL', 'method': 'storage_deposit'}]",
-                     'Genopet Harvest Ki', 'Refine Crystals Genopets',
-                     'Convert Ki to Energy Genopets', 'Repair Habitat Genopets',
-                     'Create Object Genopet', 'Buy NFT - Create Habitat Genopets',
-                     'Genopet Subhabitat Management', 'Genopet Mint Ki',
-                     'Raydium Incomplete', 'SWEAT Spin Wheel', 'SWEAT Fees',
-                     'Revive Habitat Genopets', 'Star Atlas Registration']
-    other_trades = transfers[transfers['Notes'].isin(other_actions)].copy()
-    transfers = transfers[~transfers['Notes'].isin(other_actions)].copy()
-
-    other_actions = ['Trade', 'Aggiustamenti', '0xc10619a447fa4574145261528e091b40aee35824c808e3411d053766c91ad3cf - ']
-
-    other_trades = pd.concat([other_trades, transfers[transfers['Tag'].isin(other_actions)]]).sort_index()
-    transfers = transfers[~transfers['Tag'].isin(other_actions)]
-
     # ----------------------------------------------------------------------
+    # Escludo il resto dove la fee è nulla
+    to_exclude = transfers[pd.isna(transfers['Tag'])].copy()
+    transfers = pd.concat([transfers, to_exclude]).drop_duplicates('ind1', keep=False).sort_index()
+    # ----------------------------------------------------------------------
+    # Includo LOTM assets
+    lotm_df = transfers[transfers['Tag'] == 'LOTM'].copy()
 
-    trades_df = pd.concat([trades_df1, trades_df2, trades_df3, other_trades])
+    trades_df = pd.concat([trades_df1, trades_df2, lotm_df])
 
     trades_df['Real Fiat Price'] = None
     trades_df.index = trades_df.Index
     trades_df = trades_df.drop(['Index', 'ind1'], axis=1)
 
     # If From amount is missing (a reward for example) it will be seen as a buy
-    trades_df.loc[pd.isna(trades_df['From Coin']), 'From Amount'] = trades_df.loc[
-        pd.isna(trades_df['From Coin']), 'Fiat Price']
+    trades_df.loc[pd.isna(trades_df['From Coin']), 'From Amount'] = trades_df.loc[pd.isna(trades_df['From Coin']), 'Fiat Price']
     trades_df.loc[pd.isna(trades_df['From Coin']), 'From Coin'] = 'EUR'
 
     # If no amount is in from amount the price is zero
@@ -852,7 +777,6 @@ def calculate_pl(df_transactions, year_sel):
 
     trades_df = trades_df[np.logical_or(~pd.isna(trades_df['From Amount']), ~pd.isna(trades_df['To Amount']))].copy()
     trades_df = trades_df.sort_index()
-
     for i in range(trades_df.shape[0]):
         if trades_df.iloc[i, 2] == 'EUR' or trades_df.iloc[i, 2] in stablecoins:
             temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
