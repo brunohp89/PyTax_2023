@@ -742,7 +742,8 @@ def calculate_pl(df_transactions, year_sel):
     trades_df = trades_df.drop(['Index', 'ind1'], axis=1)
 
     # If From amount is missing (a reward for example) it will be seen as a buy
-    trades_df.loc[pd.isna(trades_df['From Coin']), 'From Amount'] = trades_df.loc[pd.isna(trades_df['From Coin']), 'Fiat Price']
+    trades_df.loc[pd.isna(trades_df['From Coin']), 'From Amount'] = trades_df.loc[
+        pd.isna(trades_df['From Coin']), 'Fiat Price']
     trades_df.loc[pd.isna(trades_df['From Coin']), 'From Coin'] = 'EUR'
 
     # If no amount is in from amount the price is zero
@@ -771,19 +772,36 @@ def calculate_pl(df_transactions, year_sel):
     coins.extend(list(trades_df['From Coin'].unique()))
     coins = list(set(coins))
     value_df = {coin: pd.DataFrame() for coin in coins}
+
     stablecoins = ['BUSD', 'USDT', 'FUSD', 'USDC', 'DAI', 'FDUSD']
+
+    nfts = list(set(trades_df.loc[trades_df['From Coin'].str.contains('->', na=False), 'From Coin']))
+    nfts.extend(list(set(trades_df.loc[trades_df['To Coin'].str.contains('->', na=False), 'To Coin'])))
+    nfts = list(set(nfts))
+
+    fiat = ['EUR']
 
     trades_df = trades_df.sort_index()
 
     trades_df = trades_df[np.logical_or(~pd.isna(trades_df['From Amount']), ~pd.isna(trades_df['To Amount']))].copy()
     trades_df = trades_df.sort_index()
+
     for i in range(trades_df.shape[0]):
-        if trades_df.iloc[i, 2] == 'EUR' or trades_df.iloc[i, 2] in stablecoins:
+        if trades_df.iloc[i, 3] == 'Vessel - 61812 -> 0x5b1085136a811e55b2bb2ca1ea456ba82126a376':
+            print(8123987321)
+            break
+        if trades_df.iloc[i, 2] in fiat or trades_df.iloc[i, 2] in stablecoins:
             temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
             temp_df.index = [trades_df.iloc[[i]].index[0]]
             temp_df.columns = ['Coin', 'Amount']
             value_df[trades_df.iloc[i, 3]] = pd.concat([value_df[trades_df.iloc[i, 3]], temp_df])
         else:
+            if trades_df.iloc[i, 2] in nfts:
+                temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
+                temp_df.index = [trades_df.iloc[[i]].index[0]]
+                temp_df.columns = ['Coin', 'Amount']
+                value_df[trades_df.iloc[i, 3]] = pd.concat([value_df[trades_df.iloc[i, 3]], temp_df])
+
             if value_df[trades_df.iloc[i, 2]].copy().shape[0] == 0:
                 temp_df = pd.DataFrame([abs(trades_df.iloc[i, 4]), 0]).T
                 temp_df.columns = ['Coin', 'Amount']
@@ -798,7 +816,8 @@ def calculate_pl(df_transactions, year_sel):
 
             temp_df['cumsum2'] = quantita_vendita - temp_df['cumsum']
             if any(temp_df['cumsum2'] < 0):
-                temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, 0] = abs(temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, -1])
+                temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, 0] = abs(
+                    temp_df[temp_df['cumsum2'] < 0].copy().iloc[-1, -1])
                 temp_df.loc[temp_df['cumsum2'] < 0, 'frac'] = (temp_df.loc[temp_df['cumsum2'] < 0, 'Coin'].abs() -
                                                                temp_df.loc[temp_df['cumsum2'] < 0, 'cumsum2'].abs()) / \
                                                               temp_df.loc[temp_df['cumsum2'] < 0, 'Coin'].abs()
@@ -818,7 +837,7 @@ def calculate_pl(df_transactions, year_sel):
 
             value_df[trades_df.iloc[i, 2]] = temp_df[['Coin', 'Amount']].copy()
 
-            if len(trades_df.iloc[i, 3]) > 10 or trades_df.iloc[i, 3] in stablecoins:
+            if trades_df.iloc[i, 3] in fiat or trades_df.iloc[i, 3] in stablecoins:
                 temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
                 temp_df.columns = ['Coin', 'Amount']
                 temp_df.index = [trades_df.iloc[[i]].index[0]]
@@ -828,8 +847,9 @@ def calculate_pl(df_transactions, year_sel):
                 temp_df = pd.DataFrame([trades_df.iloc[i, 5], fiat_sold]).T
                 temp_df.columns = ['Coin', 'Amount']
                 temp_df.index = [trades_df.iloc[[i]].index[0]]
-                value_df[trades_df.iloc[i, 3]] = pd.concat([value_df[trades_df.iloc[i, 3]], temp_df])[
-                    ['Coin', 'Amount']]
+                if trades_df.iloc[i, 2] not in nfts:
+                    value_df[trades_df.iloc[i, 3]] = pd.concat([value_df[trades_df.iloc[i, 3]], temp_df])[
+                        ['Coin', 'Amount']]
 
             trades_df.iloc[i, [i for i, x in enumerate(trades_df.columns) if x == 'Real Fiat Price'][0]] = fiat_sold
 
@@ -842,5 +862,7 @@ def calculate_pl(df_transactions, year_sel):
                       pldf[pldf['From Coin'].str.len() > 10], pldf[pldf['To Coin'].isin(stablecoins)]]).sort_index()
     pldf = pldf.drop_duplicates()
     pldf = pldf.sort_index()
+
+    pldf = pldf[pldf['Tag'] != 'LOTM']
 
     return pldf
