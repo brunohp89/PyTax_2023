@@ -734,8 +734,38 @@ def calculate_pl(df_transactions, year_sel, return_lots=False):
     # ----------------------------------------------------------------------
     # Includo LOTM assets
     lotm_df = transfers[transfers['Tag'] == 'LOTM'].copy()
+    transfers = transfers[transfers['Tag'] != 'LOTM']
+    # ----------------------------------------------------------------------
+    # Inlcudo acquisto di servizi che appaiono come trasferimenti
+    to_exclude = transfers[np.logical_and(pd.isna(transfers['From Coin']), pd.isna(transfers['To Coin']))]
+    transfers = pd.concat([transfers, to_exclude]).drop_duplicates('ind1', keep=False).sort_index()
+    transfers = transfers[~transfers['Tag'].isin(['Deposit', 'Withdraw'])]
+    transfers = transfers[~pd.isna(transfers['Notes'])]
+    transfers = transfers[~transfers['Notes'].str.contains('Transfer')]
+    transfers = transfers[~transfers['Notes'].str.contains('transfer')]
+    transfers = transfers[~transfers['Notes'].str.contains('deposit')]
+    transfers = transfers[~transfers['Notes'].str.contains('Bridging')]
+    transfers = transfers[~transfers['Notes'].str.contains('Harvest Ki')]
+    to_exclude = transfers[
+        np.logical_and(transfers['Tag'] == 'Movement', transfers['Notes'].str.contains('NFT', na=False))]
+    transfers = pd.concat([transfers, to_exclude]).drop_duplicates('ind1', keep=False).sort_index()
 
-    trades_df = pd.concat([trades_df1, trades_df2, lotm_df])
+    to_exclude = transfers[
+        np.logical_and(transfers['Tag'] == 'Movement', transfers['Notes'].str.contains('Bridge', na=False))]
+    transfers = pd.concat([transfers, to_exclude]).drop_duplicates('ind1', keep=False).sort_index()
+
+    transfers.loc[pd.isna(transfers['To Coin']), 'To Amount'] = transfers.loc[
+        pd.isna(transfers['To Coin']), 'Fiat Price'].abs()
+    transfers.loc[pd.isna(transfers['To Coin']), 'To Coin'] = 'EUR'
+
+    transfers.loc[pd.isna(transfers['From Coin']), 'From Amount'] = transfers.loc[
+        pd.isna(transfers['From Coin']), 'Fiat Price'].abs()
+    transfers.loc[pd.isna(transfers['From Coin']), 'From Coin'] = 'EUR'
+
+    transfers[['From Amount', 'To Amount', 'Fiat Price']] = transfers[
+        ['From Amount', 'To Amount', 'Fiat Price']].fillna(0)
+
+    trades_df = pd.concat([trades_df1, trades_df2, lotm_df, transfers])
 
     trades_df['Real Fiat Price'] = None
     trades_df.index = trades_df.Index
