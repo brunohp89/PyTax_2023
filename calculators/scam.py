@@ -433,5 +433,8 @@ scam = [
     'BaseWif',
     'PPBox.io',
     'BASED USA',
-    'Shigure UI'
+    '$100,000 UNISWAP',
+    'Shigure UI',
+    'Wormhole Airdrop: worm-drop.org',
+    'Chinese BRETT'
 ]
