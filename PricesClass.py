@@ -83,23 +83,27 @@ class Prices:
             self.prices["Prices"]["USD"][symbol.upper()]["Values"] = exc_rate_history
         self.prices["Prices"]["USD"][symbol.upper()]["LastUpdate"] = dt.date.today()
 
-    def get_prices(self, symbol_list: List[str], force_update=False):
+    def get_prices(self, symbol_list: List[str], force_update=False,verbose=True):
         for symbol in symbol_list:
             if symbol.upper() in self.prices["Prices"]["USD"].keys():
                 if (
                     self.prices["Prices"]["USD"][symbol.upper()]["LastUpdate"]
                     < dt.date.today()
                 ):
-                    print(f"Getting prices for {symbol.upper()}")
+                    if verbose:
+                        print(f"Getting prices for {symbol.upper()}")
                     self.call_prices(symbol)
                 else:
                     if not force_update:
-                        print(f"{symbol.upper()} prices already updated")
+                        if verbose:
+                            print(f"{symbol.upper()} prices already updated")
                 if force_update:
-                    print(f"Getting prices for {symbol.upper()}")
+                    if verbose:
+                        print(f"Getting prices for {symbol.upper()}")
                     self.call_prices(symbol)
             else:
-                print(f"Getting prices for {symbol.upper()}")
+                if verbose:
+                    print(f"Getting prices for {symbol.upper()}")
                 self.call_prices(symbol)
         save_pickle(self.prices, "prices.pickle")
 
@@ -152,14 +156,15 @@ class Prices:
         self.exchange_rates[currency.upper()] = exc_rate_list
         save_pickle(self.exchange_rates, "exchange_rates.pickle")
 
-    def convert_prices(self, token_list, currency):
+    def convert_prices(self, token_list, currency,verbose=True):
         self.get_exchange_rates(currency)
 
         if currency.upper() not in self.prices["Prices"].keys():
             self.prices["Prices"][currency.upper()] = dict()
 
         for token in token_list:
-            print(f"Converting prices of {token.upper()} to {currency.upper()}")
+            if verbose:
+                print(f"Converting prices of {token.upper()} to {currency.upper()}")
             token = token.upper()
 
             if token not in self.prices["Prices"]["USD"].keys():

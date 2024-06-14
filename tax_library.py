@@ -433,7 +433,7 @@ def balances(
     return prepare_df(temp_df, year_sel, cummulative, allow_negative)
 
 
-def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False):
+def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False, verbose=True):
     df_in = df_in.sort_index()
     nfts = []
     tokens = df_in["Fee Coin"].tolist()
@@ -459,8 +459,8 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
         for c in df_in["From Coin"]
     ]
 
-    prices_in.get_prices(tokens)
-    prices_in.convert_prices(tokens, "EUR")
+    prices_in.get_prices(tokens, verbose=verbose)
+    prices_in.convert_prices(tokens, "EUR", verbose=verbose)
 
     if not only_fee:
         df_in.loc[df_in["From Coin"] == "EUR", "Fiat Price"] = df_in.loc[
@@ -702,7 +702,7 @@ def all_fiat_invested(final_df, year_sel="all"):
     )
 
 
-def calculate_pl(df_transactions, year_sel, return_lots=False):
+def calculate_pl(df_transactions, year_sel, return_lots=False, return_trades=False, verbose=False):
     # Negativi (per ora solo chashback reversal, bisogna ragionare su cosa fare con le minusvalenza
     # da liquidity pool
 
@@ -789,7 +789,7 @@ def calculate_pl(df_transactions, year_sel, return_lots=False):
     fees_df[['From Coin', 'From Amount', 'To Amount']] = fees_df[['Fee Coin', 'Fee', 'Fee Fiat']]
     fees_df['To Coin'] = 'EUR'
     fees_df['Tag'] = 'GAS'
-    fees_df = price_transactions_df(fees_df, Prices())
+    fees_df = price_transactions_df(fees_df, Prices(), verbose=verbose)
 
     # Put together
     trades_df = pd.concat([trades_df, fees_df])
@@ -815,6 +815,9 @@ def calculate_pl(df_transactions, year_sel, return_lots=False):
 
     trades_df = trades_df[np.logical_or(~pd.isna(trades_df['From Amount']), ~pd.isna(trades_df['To Amount']))].copy()
     trades_df = trades_df.sort_index()
+
+    if return_trades:
+        return trades_df
 
     for i in range(trades_df.shape[0]):
         if trades_df.iloc[i, 2] in fiat or trades_df.iloc[i, 2] in stablecoins:
@@ -896,3 +899,15 @@ def calculate_pl(df_transactions, year_sel, return_lots=False):
         return [pldf, value_df]
 
     return pldf
+
+
+def calculate_pmc(coin, transactions):
+    transactions_df = calculate_pl(transactions, 0, return_trades=True)
+    transactions_df = transactions_df[
+        np.logical_or(transactions_df['To Coin'] == coin, transactions_df['From Coin'] == coin)].copy()
+
+    buys = transactions_df[transactions_df['To Coin'] == coin]
+    sells = transactions_df[transactions_df['From Coin'] == coin]
+
+    return [round(buys['Fiat Price'].abs().sum() / buys['To Amount'].abs().sum(), 5),
+            round(sells['Fiat Price'].abs().sum() / sells['From Amount'].abs().sum(), 5)]
