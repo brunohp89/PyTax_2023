@@ -119,7 +119,9 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x93e11BE33b25D562635558348DA0Dd5f74D8377B".lower(),
         "0x98e871aB1cC7e3073B6Cc1B661bE7cA678A33f7F".lower(),  # Harmony Bridge BSC
         "0x177d36dbe2271a4ddb2ad8304d82628eb921d790".lower(),
-        "0x45f1A95A4D3f3836523F5c83673c797f4d4d263B".lower()
+        "0x45f1A95A4D3f3836523F5c83673c797f4d4d263B".lower(),
+        "0xe8CDF27AcD73a434D661C84887215F7598e7d0d3".lower(),
+        "0xdc181Bd607330aeeBEF6ea62e03e5e1Fb4B6F7C7".lower()
     ]
 
     stargate_df = trx_df[np.logical_and(trx_df["to_normal"].isin(stargate_contracts),
@@ -145,11 +147,14 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x10ED43C718714eb63d5aA57B78B54704E256024E".lower(),
         "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC".lower(),
         "0xF15965AEBA71E4A9D2ED0D1aB568a6A3334F8e1F".lower(),
-        "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F".lower()
+        "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F".lower(),
+        "0xdAee41E335322C85ff2c5a6745c98e1351806e98".lower()
     ]
     pancake_df = trx_df[trx_df["to_normal"].isin(pancake_contracts)].copy()
     trx_df = pd.concat([pancake_df, trx_df]).drop_duplicates(keep=False)
     if pancake_df.shape[0] >= 0:
+        if chain == 'zksync-mainnet':
+            pancake_df.loc[pancake_df['methodId'] == '0x3593564c', 'functionName'] = 'multicall'
         pancake_df = defi.pancake(pancake_df, address, columns_out, gas_coin)
         vout = pd.concat([vout, pancake_df])
     del pancake_df
@@ -177,7 +182,8 @@ def get_transactions_df(address, chain, scan_key=None):
         "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD".lower(),
         "0xb555edF5dcF85f42cEeF1f3630a52A108E55A654".lower(),
         "0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2".lower(),
-        "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower()
+        "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower(),
+        "0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8".lower(),
     ]
 
     uniswap_df = trx_df[

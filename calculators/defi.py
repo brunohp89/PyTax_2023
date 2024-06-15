@@ -31,10 +31,13 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["value_normal"] += multicall["value_internal"]
         multicall["value_normal"] = multicall["value_normal"].abs()
 
-        multicall["from_normal"] = multicall["from_normal"].combine_first(
-            multicall["from_internal"].fillna('').apply(lambda x: x.lower()))
-        multicall["to_normal"] = multicall["to_normal"].combine_first(
-            multicall["to_internal"].fillna('').apply(lambda x: x.lower()))
+        multicall.loc[pd.isna(multicall["from_normal"]), "from_normal"] = multicall.loc[
+            pd.isna(multicall["from_normal"]), "from_internal"]
+        multicall.loc[pd.isna(multicall["to_normal"]), "to_normal"] = multicall.loc[
+            pd.isna(multicall["to_normal"]), "to_internal"]
+
+        multicall["from_normal"] = multicall["from_normal"].apply(lambda x: x.lower())
+        multicall["to_normal"] = multicall["to_normal"].apply(lambda x: x.lower())
 
         multicall["from"] = multicall["from"].fillna('').apply(lambda x: x.lower())
         multicall["to"] = multicall["to"].fillna('').apply(lambda x: x.lower())
@@ -248,16 +251,11 @@ def uniswap(df, address, columns_out, gas_coin):
         multicall["value_normal"] += multicall["value_internal"]
         multicall["value_normal"] = multicall["value_normal"].abs()
 
-        multicall["from_internal"] = (
-            multicall["from_internal"]
-            .combine_first(multicall["from_normal"])
-            .apply(lambda x: x.lower())
-        )
-        multicall["to_internal"] = (
-            multicall["to_internal"]
-            .combine_first(multicall["to_normal"])
-            .apply(lambda x: x.lower())
-        )
+        multicall.loc[pd.isna(multicall["from_internal"]), "from_internal"] = multicall.loc[pd.isna(multicall["from_internal"]), "from_normal"]
+        multicall.loc[pd.isna(multicall["to_internal"]), "to_internal"] = multicall.loc[pd.isna(multicall["to_internal"]), "to_normal"]
+
+        multicall["from_internal"] = multicall["from_internal"].apply(lambda x: x.lower())
+        multicall["to_internal"] = multicall["to_internal"].apply(lambda x: x.lower())
 
         multicall["from"] = multicall["from"].apply(lambda x: x.lower())
         multicall["to"] = multicall["to"].apply(lambda x: x.lower())
@@ -478,7 +476,7 @@ def stargate(df, address, gas_coin, columns_out):
         stargate_out = pd.concat([stargate_out, withdraw_df])
 
         # Bridging ETH
-        temp_df = df.loc[df["functionName"] == "swapETH"].copy()
+        temp_df = df.loc[np.logical_or(df["functionName"] == "swapETH", df["functionName"] == "send")].copy()
         df = pd.concat([df, temp_df]).drop_duplicates(keep=False)
         temp_df['From Amount'] = -temp_df['value_normal']
         temp_df['From Coin'] = gas_coin
