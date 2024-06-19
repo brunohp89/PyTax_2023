@@ -436,5 +436,7 @@ scam = [
     '$100,000 UNISWAP',
     'Shigure UI',
     'Wormhole Airdrop: worm-drop.org',
-    'Chinese BRETT'
+    'Chinese BRETT',
+    '1ETH reward at [ethers.biz] 🎁',
+    'kurbi'
 ]
