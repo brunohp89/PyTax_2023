@@ -184,6 +184,7 @@ def get_transactions_df(address, chain, scan_key=None):
         "0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2".lower(),
         "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower(),
         "0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8".lower(),
+        "0x4dae2f939acf50408e13d58534ff8c2776d45265".lower()
     ]
 
     uniswap_df = trx_df[
@@ -967,6 +968,24 @@ def get_transactions_df(address, chain, scan_key=None):
         name_service_df = name_service_df[[x for x in name_service_df.columns if x in columns_out]]
         vout = pd.concat([vout, name_service_df])
     del name_service_df
+    # ZRO airdrop ------------------------------------------------------------------------------------------------------
+    zro_drop_df = trx_df[trx_df["to_normal"] == '0x9c26831a80ef7fb60ca940eb9aa22023476b3468'].copy()
+    if zro_drop_df.shape[0] > 0:
+        trx_df = pd.concat([trx_df, zro_drop_df]).drop_duplicates(keep=False)
+        zro_drop_df.index = zro_drop_df['timeStamp_normal']
+        zro_drop_df['Fee'] = eu.calculate_gas(zro_drop_df['gasPrice'], zro_drop_df['gasUsed_normal'])
+        zro_drop_df['value_normal'] = eu.calculate_value_eth(zro_drop_df['value_normal'])
+        zro_drop_df['value'] = eu.calculate_value_token(zro_drop_df['value'], zro_drop_df['tokenDecimal'])
+        values = [-zro_drop_df['value'].iloc[0], -zro_drop_df['value_normal'].iloc[0]]
+        tokens = [zro_drop_df['tokenSymbol'].iloc[0], gas_coin]
+        zro_drop_df = pd.concat([zro_drop_df, zro_drop_df])
+        zro_drop_df['From Coin'] = tokens
+        zro_drop_df['From Amount'] = values
+        zro_drop_df['Fee'] /= 2
+        zro_drop_df[['Tag', 'Notes']] = ['Movement', 'ZRO Airdrop']
+        zro_drop_df = zro_drop_df[[x for x in zro_drop_df.columns if x in columns_out]]
+        vout = pd.concat([vout, zro_drop_df])
+    del zro_drop_df
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
     erc20_transfers_df = erc20_transfers_df[
