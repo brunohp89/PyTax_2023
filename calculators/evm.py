@@ -1,11 +1,11 @@
-import pandas as pd
-import numpy as np
-from PricesClass import Prices
-import tax_library as tx
 import os
+import numpy as np
+import pandas as pd
+import calculators.defi as defi
 import calculators.evm_utils as eu
 import calculators.nft_utils as nu
-import calculators.defi as defi
+import tax_library as tx
+from PricesClass import Prices
 
 pd.set_option('future.no_silent_downcasting', True)
 
@@ -271,6 +271,30 @@ def get_transactions_df(address, chain, scan_key=None):
         vout = pd.concat([vout, weth_df])
     # END WETH ---------------------------------------------------------------------------------------------------------
     del weth_df
+    # Alpha Season 4 TSB -----------------------------------------------------------------------------------------------
+    batch = trx_df[np.logical_and(trx_df['functionName'].str.contains('batchClaim', na=False),
+                                  trx_df['contractAddress'] == '0xbbba073c31bf03b8acf7c28ef0738decf3695683')]
+    if batch.shape[0] > 0:
+        trx_df = pd.concat([trx_df, batch]).drop_duplicates(keep=False)
+
+    if 'tokenName_erc721' in trx_df.columns:
+        # Season 4 batch claims have to be manually added to the csv file
+        alpha4 = trx_df[np.logical_and(trx_df['contractAddress'] == '0xbbba073c31bf03b8acf7c28ef0738decf3695683',
+                                       trx_df['tokenName_erc721'].str.contains('4AlphaPass', na=False))].copy()
+        if alpha4.shape[0] > 0:
+            trx_df = pd.concat([trx_df, alpha4]).drop_duplicates(keep=False)
+            alpha4[['From', 'To']] = None
+            alpha4['From Coin'] = 'SAND'
+            alpha4['To Coin'] = 'The Sandbox Assets -> AlphaPass4'
+            alpha4['From Amount'] = -25
+            alpha4['To Amount'] = 1
+            alpha4['Fee'] = eu.calculate_gas(alpha4['gasPrice_erc721'], alpha4['gasUsed_erc721'])
+            alpha4['Fee Coin'] = gas_coin
+            alpha4['Tag'] = 'Trade'
+            alpha4[['Source', 'Notes']] = 'The Sandbox Alpha4 - NFT'
+            alpha4.index = alpha4['timeStamp']
+
+            vout = pd.concat([alpha4[vout.columns], vout])
     # Open sea ---------------------------------------------------------------------------------------------------------
     opensea_contracts = ["0x921Fd42f147B26b51AA3c7fa3F2E2Ce7704c2858".lower(),
                          "0x00000000006c3852cbEf3e08E8dF289169EdE581".lower(),
@@ -986,6 +1010,7 @@ def get_transactions_df(address, chain, scan_key=None):
         zro_drop_df = zro_drop_df[[x for x in zro_drop_df.columns if x in columns_out]]
         vout = pd.concat([vout, zro_drop_df])
     del zro_drop_df
+
     # Normal ERC20 transfers -------------------------------------------------------------------------------------------
     erc20_transfers_df = trx_df[~pd.isna(trx_df['tokenSymbol'])].copy()
     erc20_transfers_df = erc20_transfers_df[
@@ -1052,6 +1077,17 @@ def get_transactions_df(address, chain, scan_key=None):
     # END Approvals ----------------------------------------------------------------------------------------------------
     del approvals_df
 
+    # LAST PIECE, SHOULD ALWAYS BE AT THE END, REMAINING SAND OPENSEA TRANSACTIONS
+    opensea_df = trx_df[trx_df['contractAddress'] == "0xbbba073c31bf03b8acf7c28ef0738decf3695683"].copy()
+    if opensea_df.shape[0] > 0:
+        trx_df = pd.concat([opensea_df, trx_df]).drop_duplicates(keep=False)
+        opensea_df.loc[opensea_df['contractAddress'] == "0xbbba073c31bf03b8acf7c28ef0738decf3695683", 'functionName'] = ''
+        opensea_df = nu.opensea(opensea_df, address, columns_out)
+        opensea_df = opensea_df.drop_duplicates()
+        vout = pd.concat([vout, opensea_df])
+    del opensea_df
+    # END Opensea2---
+
     if trx_df.shape[0] > 0:
         print("ATTENZIONE: TRANSAZIONI MANCANTI")
     # ------------------------------------------------------------------------------------------------------------------
@@ -1068,6 +1104,8 @@ def get_transactions_df(address, chain, scan_key=None):
 
     vout.loc[vout[
                  'To Coin'] == 'Steakumm Diploma', 'To Coin'] = 'Steakumm Diploma - 78068537175149303339275974498724216528870561790231264965564858097064072486720 -> 0x1134d0998f2c7b66cd661d3cdeda84b590c8f83e'
+
+    vout.loc[vout['To Coin'] == "The Sandbox's ASSETs", 'To Coin'] += ' ->'
 
     eth_prices = Prices()
 
