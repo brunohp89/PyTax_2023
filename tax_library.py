@@ -703,7 +703,7 @@ def all_fiat_invested(final_df, year_sel="all"):
 
 
 def calculate_pl(df_transactions, year_sel, return_lots=False, return_trades=False, verbose=False):
-    # Negativi (per ora solo chashback reversal, bisogna ragionare su cosa fare con le minusvalenza
+    # Negativi (per ora solo cashback reversal, bisogna ragionare su cosa fare con le minusvalenza
     # da liquidity pool
 
     transfers = df_transactions.copy()
@@ -803,7 +803,7 @@ def calculate_pl(df_transactions, year_sel, return_lots=False, return_trades=Fal
     coins = list(set(coins))
     value_df = {coin: pd.DataFrame() for coin in coins}
 
-    stablecoins = ['BUSD', 'USDT', 'FUSD', 'USDC', 'DAI', 'FDUSD']
+    stablecoins = ['BUSD', 'FUSD', 'USDC', 'FDUSD'] # DAI and USDT are not mica compliant
 
     nfts = list(set(trades_df.loc[trades_df['From Coin'].str.contains('->', na=False), 'From Coin']))
     nfts.extend(list(set(trades_df.loc[trades_df['To Coin'].str.contains('->', na=False), 'To Coin'])))
@@ -820,6 +820,8 @@ def calculate_pl(df_transactions, year_sel, return_lots=False, return_trades=Fal
         return trades_df
 
     for i in range(trades_df.shape[0]):
+        if i == 24792:
+            break
         if trades_df.iloc[i, 2] in fiat or trades_df.iloc[i, 2] in stablecoins:
             temp_df = pd.DataFrame([trades_df.iloc[i, 5], trades_df.iloc[i, 10]]).T
             temp_df.index = [trades_df.iloc[[i]].index[0]]
@@ -882,6 +884,8 @@ def calculate_pl(df_transactions, year_sel, return_lots=False, return_trades=Fal
                         ['Coin', 'Amount']]
 
             trades_df.iloc[i, [i for i, x in enumerate(trades_df.columns) if x == 'Real Fiat Price'][0]] = fiat_sold
+
+    trades_df.loc[(trades_df['To Coin'] == 'EUR') & (trades_df['Tag'] == 'Trade'), 'Fiat Price'] = trades_df.loc[(trades_df['To Coin'] == 'EUR') & (trades_df['Tag'] == 'Trade'), 'To Amount']
 
     trades2023 = trades_df[trades_df.index.year == year_sel].copy()
     trades2023.loc[~pd.isna(trades2023['Real Fiat Price']), 'pl'] = trades2023.loc[~pd.isna(

@@ -7,6 +7,9 @@ import requests
 import json
 import os
 
+
+###### TEMPORANEAMENTE INUTILIZZABILE, IL RATE LIMIT DI NEARBLOCKS E' TROPPO PICCOLO 6calls/min ########
+
 def get_transactions_df(address):
     address = address.lower()
     normal_df = pd.DataFrame()

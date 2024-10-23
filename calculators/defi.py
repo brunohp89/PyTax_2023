@@ -821,17 +821,17 @@ def pancake(df, address, columns_out, gas_coin):
             temp_df.loc[temp_df["functionName"].str.contains("removeLiquidityETH"), 'Fee'] /= 2
             temp_df = pd.concat([temp_df, temp_df.iloc[[-1], :]])
 
-            if temp_df.iloc[-1, 40] > 0:
+            if float(temp_df.iloc[-1, 40]) > 0:
                 temp_df.iloc[-1, 94] = temp_df.iloc[-1, 40]
                 temp_df.iloc[-1, 92] = temp_df.iloc[-1, 42]
-            elif temp_df.iloc[-1, 40] < 0:
+            elif float(temp_df.iloc[-1, 40]) < 0:
                 temp_df.iloc[-1, 93] = temp_df.iloc[-1, 40]
                 temp_df.iloc[-1, 91] = temp_df.iloc[-1, 42]
 
-            if temp_df.iloc[-2, 8] > 0:
+            if float(temp_df.iloc[-2, 8]) > 0:
                 temp_df.iloc[-2, 94] = temp_df.iloc[-2, 8]
                 temp_df.iloc[-2, 92] = 'BNB'
-            elif temp_df.iloc[-2, 8] < 0:
+            elif float(temp_df.iloc[-2, 8]) < 0:
                 temp_df.iloc[-2, 93] = temp_df.iloc[-2, 8]
                 temp_df.iloc[-2, 91] = 'BNB'
 
