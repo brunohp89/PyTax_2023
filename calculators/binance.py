@@ -10,8 +10,8 @@ import tax_library as tx
 def get_transactions_df(raw=False, card_transactions=False):
     print("Reminder: For Binance purchases made with credit card or made with bank transfers with automatic conversion must be manually entered in the file manual_binance.csv")
     binance_files = [
-        os.path.join(os.path.abspath("binance"), x)
-        for x in os.listdir(os.path.abspath("binance"))
+        os.path.join(os.path.abspath("input/binance"), x)
+        for x in os.listdir(os.path.abspath("input/binance"))
         if "automatico" not in x
     ]
 
@@ -44,7 +44,7 @@ def get_transactions_df(raw=False, card_transactions=False):
         ].copy()
         busd_rewards["Operation"] = "Distribution"
 
-        fixes = pd.read_csv('manual_binance.csv')
+        fixes = pd.read_csv('input/manual_binance.csv')
         final_df = pd.concat([final_df, fixes, busd_rewards])
 
         to_exclude = [
@@ -122,6 +122,11 @@ def get_transactions_df(raw=False, card_transactions=False):
         final_df.loc[
             final_df["UTC_Time"] == "2023-05-03 17:48:23", "UTC_Time"
         ] = "2023-05-03 17:48:22"
+
+        final_df.loc[
+            final_df["UTC_Time"] == "2024-10-23 17:01:08", "UTC_Time"
+        ] = "2024-10-23 17:01:07"
+
         final_df.index = [tx.str_to_datetime(j) for j in final_df["UTC_Time"]]
 
         final_df.loc[

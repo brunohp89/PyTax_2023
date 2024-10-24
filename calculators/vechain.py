@@ -9,7 +9,7 @@ from PricesClass import Prices
 
 
 def get_transactions_df(raw=False):
-    vechain_directory = os.path.abspath("vechain")
+    vechain_directory = os.path.abspath("input/vechain")
     vechain_files = [
         os.path.join(vechain_directory, x) for x in os.listdir(vechain_directory)
     ]

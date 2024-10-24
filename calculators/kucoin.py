@@ -11,8 +11,8 @@ warnings.simplefilter("ignore")
 
 def get_transactions_df():
     orders = [
-        os.path.join(os.path.abspath("kucoin"), x)
-        for x in os.listdir(os.path.abspath("kucoin"))
+        os.path.join(os.path.abspath("input/kucoin"), x)
+        for x in os.listdir(os.path.abspath("input/kucoin"))
         if "Ordini" in x
     ]
 
@@ -82,8 +82,8 @@ def get_transactions_df():
         )
 
     deposits = [
-        os.path.join(os.path.abspath("kucoin"), x)
-        for x in os.listdir(os.path.abspath("kucoin"))
+        os.path.join(os.path.abspath("input/kucoin"), x)
+        for x in os.listdir(os.path.abspath("input/kucoin"))
         if "deposit" in x
     ]
 
@@ -123,8 +123,8 @@ def get_transactions_df():
         )
 
     withdraws = [
-        os.path.join(os.path.abspath("kucoin"), x)
-        for x in os.listdir(os.path.abspath("kucoin"))
+        os.path.join(os.path.abspath("input/kucoin"), x)
+        for x in os.listdir(os.path.abspath("input/kucoin"))
         if "withdrawal" in x
     ]
 
@@ -170,8 +170,8 @@ def get_transactions_df():
         )
 
     convert = [
-        os.path.join(os.path.abspath("kucoin"), x)
-        for x in os.listdir(os.path.abspath("kucoin"))
+        os.path.join(os.path.abspath("input/kucoin"), x)
+        for x in os.listdir(os.path.abspath("input/kucoin"))
         if "convert" in x
     ]
 

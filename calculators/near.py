@@ -137,7 +137,7 @@ def get_transactions_df(address):
     outdf.loc[outdf['From'].isin(['tge-lockup.sweat','claim.sweat']), 'Tag'] = 'Reward'
     outdf.loc[np.logical_and(outdf['To'] == address, ~outdf['From'].isin(['jars.sweat', 'claim.sweat', address])), 'Fee'] *= 0
 
-    if "near.csv" in os.listdir():
+    if "near.csv" in os.listdir(os.path.join('input')):
         manual = pd.read_csv("near.csv", parse_dates=True, index_col="Timestamp")
         outdf = pd.concat([manual, outdf])
 

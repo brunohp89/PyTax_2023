@@ -1091,8 +1091,8 @@ def get_transactions_df(address, chain, scan_key=None):
     if trx_df.shape[0] > 0:
         print("ATTENZIONE: TRANSAZIONI MANCANTI")
     # ------------------------------------------------------------------------------------------------------------------
-    if f'{chain}_{address}.csv' in os.listdir():
-        vout = pd.concat([pd.read_csv(f'{chain}_{address}.csv', index_col='Timestamp', parse_dates=True), vout])
+    if f'{chain}_{address}.csv' in os.listdir(os.path.join("input")):
+        vout = pd.concat([pd.read_csv(os.path.join("input",f'{chain}_{address}.csv'), index_col='Timestamp', parse_dates=True), vout])
 
     if chain == "cro-mainnet":
         cro_org = eu.get_crypto_dot_org_transactions(address)

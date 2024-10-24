@@ -7,8 +7,8 @@ import tax_library as tx
 
 def get_transactions_df(raw=False):
     transactions_uphold = [
-        os.path.join(os.path.abspath("uphold"), x)
-        for x in os.listdir(os.path.abspath("uphold"))
+        os.path.join(os.path.abspath("input/uphold"), x)
+        for x in os.listdir(os.path.abspath("input/uphold"))
     ]
     if len(transactions_uphold) == 0:
         print("No files for uphold found")

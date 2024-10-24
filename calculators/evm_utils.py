@@ -553,7 +553,7 @@ def ens(df, columns_keep):
 # The transactions on Crypto.org chain have to be extracted manually, refer to the example file
 def get_crypto_dot_org_transactions(address):
     address = address.lower()
-    if address not in os.listdir("cryptodotorg"):
+    if address not in os.listdir(os.path.join("input","cryptodotorg")):
         print("No files for crypto.org found")
         return pd.DataFrame(
             columns=[
@@ -574,8 +574,8 @@ def get_crypto_dot_org_transactions(address):
             ]
         )
     cronos_files = [
-        os.path.join(os.path.abspath(f"cryptodotorg/{address}"), x)
-        for x in os.listdir(os.path.abspath(f"cryptodotorg/{address}"))
+        os.path.join(os.path.abspath(f"input/cryptodotorg/{address}"), x)
+        for x in os.listdir(os.path.abspath(f"input/cryptodotorg/{address}"))
         if "automatico" not in x
     ]
     df_list = []

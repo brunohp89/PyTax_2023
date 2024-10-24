@@ -7,7 +7,7 @@ import datetime as dt
 
 def get_transactions_df(raw=False):
     coinbase_files = [
-        os.path.join(os.path.abspath("coinbase"), x) for x in os.listdir(os.path.abspath("coinbase")) if
+        os.path.join(os.path.abspath("input/coinbase"), x) for x in os.listdir(os.path.abspath("input/coinbase")) if
         '.DS_Store' not in x
     ]
 

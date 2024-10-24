@@ -11,8 +11,8 @@ import datetime as dt
 
 def get_transactions_df(raw=False):
     transactions_yp = [
-        os.path.join(os.path.abspath("young_platform"), x)
-        for x in os.listdir(os.path.abspath("young_platform"))
+        os.path.join(os.path.abspath("input/young_platform"), x)
+        for x in os.listdir(os.path.abspath("input/young_platform"))
     ]
     if len(transactions_yp) == 0:
         print("No files for young platform found")

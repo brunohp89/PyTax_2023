@@ -557,8 +557,8 @@ def get_transactions_df(address):
         ]
     ]
 
-    if f"{address}.csv" in os.listdir():
-        manual = pd.read_csv(f"{address}.csv", parse_dates=True, index_col="Timestamp")
+    if f"{address}.csv" in os.listdir(os.path.join('input')):
+        manual = pd.read_csv(f"input/{address}.csv", parse_dates=True, index_col="Timestamp")
         final_df = pd.concat([manual, final_df])
     final_df = final_df.sort_index()
     final_df["Fee Coin"] = "SOL"

@@ -11,8 +11,8 @@ def get_transactions_df(raw=False, return_fiat=False):
     # the amount of supercharger will be wrong
     if return_fiat:
         fiat_files =  [
-        os.path.join(os.path.abspath('crypto.com'), x)
-        for x in os.listdir(os.path.abspath('crypto.com'))
+        os.path.join(os.path.abspath('input/crypto.com'), x)
+        for x in os.listdir(os.path.abspath('input/crypto.com'))
             if "fiat" in x
         ]
 
@@ -31,8 +31,8 @@ def get_transactions_df(raw=False, return_fiat=False):
             return fiat_df
 
     cdc_files =  [
-        os.path.join(os.path.abspath('crypto.com'), x)
-        for x in os.listdir(os.path.abspath('crypto.com'))
+        os.path.join(os.path.abspath('input/crypto.com'), x)
+        for x in os.listdir(os.path.abspath('input/crypto.com'))
         if "crypto_transactions_record" in x
     ]
     if len(cdc_files) == 0:
@@ -206,8 +206,8 @@ def get_transactions_df(raw=False, return_fiat=False):
         final_df.loc[final_df["Tag"] == 'Trade', 'From Amount'] = [-abs(c) for c in
                                                                final_df.loc[final_df["Tag"] == 'Trade', 'From Amount']]
 
-        if "cryptodotcom.csv" in os.listdir():
-            manual = pd.read_csv("cryptodotcom.csv", parse_dates=True, index_col="Timestamp")
+        if "cryptodotcom.csv" in os.listdir(os.path.join('input')):
+            manual = pd.read_csv("input/cryptodotcom.csv", parse_dates=True, index_col="Timestamp")
             final_df = pd.concat([manual, final_df])
         final_df = final_df.sort_index()
 

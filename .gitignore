@@ -1,19 +1,19 @@
-binance
+input/binance
 exchange_rates.pickle
 prices.pickle
-coinbase
+input/coinbase
 .idea/
 __pycache__
-crypto.com exchange
-crypto.com
-uphold
+input/crypto.com exchange
+input/crypto.com
+input/uphold
 main.py
-kucoin
+input/kucoin
 .json
-young_platform
-cryptodotorg
+input/young_platform
+input/cryptodotorg
 solana
-vechain
+input/vechain
 log.txt
 pdf_producer.py
 bkp
@@ -21,14 +21,16 @@ tax_calculator.py
 manual_transactions.txt
 calculators/solana_calc.py
 *_tokens.pickle
-manual_transactions.csv
+input/manual_transactions.csv
 calculators/cosmos.py
 .DS_Store
 venv
-plutus
+input/plutus
 *.xlsx
 *.txt
 *.csv
 Transazioni_*.xlsx
 manual_*
 nft_prices*
+input
+output
