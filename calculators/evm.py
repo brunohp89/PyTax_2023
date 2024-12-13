@@ -194,8 +194,17 @@ def get_transactions_df(address, chain, scan_key=None):
         )
     ].copy()
 
-    if uniswap_df.shape[0] > 0:
+    if chain == 'arb-mainnet':
+        new_swaps = trx_df[trx_df["from_internal"] == '0x1bd1aadc9e230626c44a139d7e70d842749351eb'].copy()
+        if new_swaps.shape[0] > 0:
+            trx_df = pd.concat([new_swaps, trx_df]).drop_duplicates(keep=False)
+            new_swaps['functionName'] = 'execute'
+    else:
+        new_swaps = pd.DataFrame()
+
+    if uniswap_df.shape[0] > 0 or new_swaps.shape[0] > 0:
         trx_df = pd.concat([uniswap_df, trx_df]).drop_duplicates(keep=False)
+        uniswap_df = pd.concat([uniswap_df, new_swaps])
         # Bitget wallet swap
         uniswap_df.loc[
             uniswap_df['to_normal'] == "0x1A8f43e01B78979EB4Ef7feBEC60F32c9A72f58E".lower(), 'functionName'] = 'execute'
@@ -1081,7 +1090,8 @@ def get_transactions_df(address, chain, scan_key=None):
     opensea_df = trx_df[trx_df['contractAddress'] == "0xbbba073c31bf03b8acf7c28ef0738decf3695683"].copy()
     if opensea_df.shape[0] > 0:
         trx_df = pd.concat([opensea_df, trx_df]).drop_duplicates(keep=False)
-        opensea_df.loc[opensea_df['contractAddress'] == "0xbbba073c31bf03b8acf7c28ef0738decf3695683", 'functionName'] = ''
+        opensea_df.loc[
+            opensea_df['contractAddress'] == "0xbbba073c31bf03b8acf7c28ef0738decf3695683", 'functionName'] = ''
         opensea_df = nu.opensea(opensea_df, address, columns_out)
         opensea_df = opensea_df.drop_duplicates()
         vout = pd.concat([vout, opensea_df])
@@ -1092,7 +1102,9 @@ def get_transactions_df(address, chain, scan_key=None):
         print("ATTENZIONE: TRANSAZIONI MANCANTI")
     # ------------------------------------------------------------------------------------------------------------------
     if f'{chain}_{address}.csv' in os.listdir(os.path.join("input")):
-        vout = pd.concat([pd.read_csv(os.path.join("input",f'{chain}_{address}.csv'), index_col='Timestamp', parse_dates=True), vout])
+        vout = pd.concat(
+            [pd.read_csv(os.path.join("input", f'{chain}_{address}.csv'), index_col='Timestamp', parse_dates=True),
+             vout])
 
     if chain == "cro-mainnet":
         cro_org = eu.get_crypto_dot_org_transactions(address)
@@ -1131,4 +1143,8 @@ def get_transactions_df(address, chain, scan_key=None):
     vout['Source'] = f'{chain}-{address[0:10]}'
 
     vout = vout.sort_index()
+
+    if chain == 'arb-mainnet':
+        return vout.drop_duplicates()
+
     return vout

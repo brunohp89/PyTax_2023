@@ -471,5 +471,21 @@ scam = [
     'www.liquid-swap.live',
     '1ETH Reward at [webeth.lol] 🎁',
     '3000MATIC voucher at [matics.lat] 🎁',
-    'starboredapebox'
+    'starboredapebox',
+    'deBridge Airdrop https://t.ly/ethers',
+    'deBridge Airdrop',
+    '6.25ETH Airdrop at layerz.lat',
+    'Worlds',
+    '[ MysteryBox ] #697',
+    'Cubes 219',
+    '10,000 USDТ (Claim at nft-ex.xyz)',
+    '10,000 USDТ (Claim at tclaim.xyz)',
+    'MaticSlot.com Free Token Deposit',
+    '10,000 USDТ Airdrop',
+    '5,000 USDТ Airdrop',
+    'DeusWallet QR Code',
+    '! [!] boxevent.io #0041311',
+    '! [ ! ] 5000 TO 50000',
+    '! [#] DAONEXT. COM',
+    '! [!] boxdao.io #021017'
 ]

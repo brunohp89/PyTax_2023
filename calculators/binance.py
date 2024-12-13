@@ -127,6 +127,10 @@ def get_transactions_df(raw=False, card_transactions=False):
             final_df["UTC_Time"] == "2024-10-23 17:01:08", "UTC_Time"
         ] = "2024-10-23 17:01:07"
 
+        final_df.loc[
+            final_df["UTC_Time"] == "2024-11-24 13:23:44", "UTC_Time"
+        ] = "2024-11-24 13:23:45"
+
         final_df.index = [tx.str_to_datetime(j) for j in final_df["UTC_Time"]]
 
         final_df.loc[

@@ -433,7 +433,7 @@ def balances(
     return prepare_df(temp_df, year_sel, cummulative, allow_negative)
 
 
-def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False, verbose=True):
+def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False, verbose=True, currency="EUR"):
     df_in = df_in.sort_index()
     nfts = []
     tokens = df_in["Fee Coin"].tolist()
@@ -460,7 +460,7 @@ def price_transactions_df(df_in: pd.DataFrame, prices_in: Prices, only_fee=False
     ]
 
     prices_in.get_prices(tokens, verbose=verbose)
-    prices_in.convert_prices(tokens, "EUR", verbose=verbose)
+    prices_in.convert_prices(tokens, currency, verbose=verbose)
 
     if not only_fee:
         df_in.loc[df_in["From Coin"] == "EUR", "Fiat Price"] = df_in.loc[
